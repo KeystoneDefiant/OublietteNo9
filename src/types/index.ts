@@ -15,7 +15,7 @@ export interface Hand {
   id: string;
 }
 
-export type HandRank = 
+export type HandRank =
   | 'royal-flush'
   | 'straight-flush'
   | 'four-of-a-kind'
@@ -40,6 +40,8 @@ export interface RewardTable {
 
 export type GameScreen = 'menu' | 'game' | 'shop' | 'gameOver' | 'credits' | 'rules';
 
+export type GamePhase = 'preDraw' | 'playing' | 'results';
+
 export interface DeckModifications {
   deadCards: Card[];
   wildCards: Card[];
@@ -47,8 +49,22 @@ export interface DeckModifications {
   cardRemovalCount: number; // Track number of removals for cost calculation
 }
 
+export interface ThemeBackgroundAnimation {
+  html?: string; // HTML markup for background elements
+  css?: string; // CSS styles for background animation
+  fromFiles?: boolean; // Load HTML and CSS from background.html and background.css files in theme directory
+}
+
+export interface ThemeConfig {
+  name: string; // Internal name (lowercase, no spaces)
+  displayName: string; // Human-readable display name
+  description?: string; // Theme description
+  backgroundAnimation?: ThemeBackgroundAnimation; // Optional custom background animations
+}
+
 export interface GameState {
   screen: GameScreen;
+  gamePhase: GamePhase;
   playerHand: Card[];
   heldIndices: number[];
   parallelHands: Hand[];

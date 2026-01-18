@@ -1,23 +1,37 @@
 import { useState, useEffect } from 'react';
 import { useGameState } from './hooks/useGameState';
+import { useThemeBackgroundAnimation } from './hooks/useThemeBackgroundAnimation';
 import { MainMenu } from './components/MainMenu';
+import { PreDraw } from './components/PreDraw';
 import { GameTable } from './components/GameTable';
+import { Results } from './components/Results';
 import { Shop } from './components/Shop';
 import { GameOver } from './components/GameOver';
 import { Credits } from './components/Credits';
 import { Rules } from './components/Rules';
 import { Settings } from './components/Settings';
-import { initializeTheme } from './utils/themeManager';
+import { initializeTheme, getSelectedTheme, loadThemeConfig } from './utils/themeManager';
+import { ThemeConfig } from './types/index';
 
 function App() {
   const [showCredits, setShowCredits] = useState(false);
   const [showRules, setShowRules] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [themeConfig, setThemeConfig] = useState<ThemeConfig | null>(null);
 
   useEffect(() => {
     initializeTheme();
+
+    // Load the initial theme config for background animation
+    const theme = getSelectedTheme();
+    loadThemeConfig(theme).then((config) => {
+      setThemeConfig(config);
+    });
   }, []);
-  
+
+  // Apply theme background animation
+  useThemeBackgroundAnimation(themeConfig);
+
   const {
     state,
     dealHand,
@@ -28,8 +42,8 @@ function App() {
     upgradeHandCount,
     upgradeRewardTable,
     returnToMenu,
+    returnToPreDraw,
     startNewRun,
-    buyAnotherHand,
     setBetAmount,
     setSelectedHandCount,
     addDeadCard,
@@ -37,6 +51,8 @@ function App() {
     addWildCard,
     increase2xChance,
     purchaseExtraDraw,
+    cheatAddCredits,
+    cheatAddHands,
   } = useGameState();
 
   return (
@@ -50,65 +66,101 @@ function App() {
         />
       )}
 
-      {showCredits && (
-        <Credits onClose={() => setShowCredits(false)} />
+      {showCredits && <Credits onClose={() => setShowCredits(false)} />}
+
+      {showRules && <Rules onClose={() => setShowRules(false)} />}
+
+      {state.screen === 'game' && state.gamePhase === 'preDraw' && (
+        <PreDraw
+          credits={state.credits}
+          handCount={state.handCount}
+          selectedHandCount={state.selectedHandCount}
+          betAmount={state.betAmount}
+          minimumBet={state.minimumBet}
+          rewardTable={state.rewardTable}
+          gameOver={state.gameOver}
+          onSetBetAmount={setBetAmount}
+          onSetSelectedHandCount={setSelectedHandCount}
+          onDealHand={dealHand}
+          onOpenShop={openShop}
+          onCheatAddCredits={cheatAddCredits}
+          onCheatAddHands={cheatAddHands}
+        />
       )}
 
-      {showRules && (
-        <Rules onClose={() => setShowRules(false)} />
-      )}
-
-      {state.screen === 'game' && (
+      {state.screen === 'game' && state.gamePhase === 'playing' && (
         <GameTable
           playerHand={state.playerHand}
           heldIndices={state.heldIndices}
           parallelHands={state.parallelHands}
           rewardTable={state.rewardTable}
           credits={state.credits}
-          handCount={state.handCount}
           selectedHandCount={state.selectedHandCount}
-          betAmount={state.betAmount}
-          minimumBet={state.minimumBet}
           round={state.round}
           totalEarnings={state.totalEarnings}
-          additionalHandsBought={state.additionalHandsBought}
           firstDrawComplete={state.firstDrawComplete}
           secondDrawAvailable={state.secondDrawAvailable}
           onToggleHold={toggleHold}
           onDraw={drawParallelHands}
-          onDealHand={dealHand}
-          onOpenShop={openShop}
-          onBuyAnotherHand={buyAnotherHand}
-          onSetBetAmount={setBetAmount}
-          onSetSelectedHandCount={setSelectedHandCount}
+        />
+      )}
+
+      {state.screen === 'game' && state.gamePhase === 'results' && (
+        <Results
+          playerHand={state.playerHand}
+          heldIndices={state.heldIndices}
+          parallelHands={state.parallelHands}
+          rewardTable={state.rewardTable}
+          betAmount={state.betAmount}
+          onReturnToPreDraw={returnToPreDraw}
         />
       )}
 
       {state.screen === 'shop' && (
         <>
-          <GameTable
-            playerHand={state.playerHand}
-            heldIndices={state.heldIndices}
-            parallelHands={state.parallelHands}
-            rewardTable={state.rewardTable}
-            credits={state.credits}
-            handCount={state.handCount}
-            selectedHandCount={state.selectedHandCount}
-            betAmount={state.betAmount}
-            minimumBet={state.minimumBet}
-            round={state.round}
-            totalEarnings={state.totalEarnings}
-            additionalHandsBought={state.additionalHandsBought}
-            firstDrawComplete={state.firstDrawComplete}
-            secondDrawAvailable={state.secondDrawAvailable}
-            onToggleHold={toggleHold}
-            onDraw={drawParallelHands}
-            onDealHand={dealHand}
-            onOpenShop={openShop}
-            onBuyAnotherHand={buyAnotherHand}
-            onSetBetAmount={setBetAmount}
-            onSetSelectedHandCount={setSelectedHandCount}
-          />
+          {state.gamePhase === 'preDraw' && (
+            <PreDraw
+              credits={state.credits}
+              handCount={state.handCount}
+              selectedHandCount={state.selectedHandCount}
+              betAmount={state.betAmount}
+              minimumBet={state.minimumBet}
+              rewardTable={state.rewardTable}
+              gameOver={state.gameOver}
+              onSetBetAmount={setBetAmount}
+              onSetSelectedHandCount={setSelectedHandCount}
+              onDealHand={dealHand}
+              onOpenShop={openShop}
+              onCheatAddCredits={cheatAddCredits}
+              onCheatAddHands={cheatAddHands}
+            />
+          )}
+          {state.gamePhase === 'playing' && (
+            <GameTable
+              playerHand={state.playerHand}
+              heldIndices={state.heldIndices}
+              parallelHands={state.parallelHands}
+              rewardTable={state.rewardTable}
+              credits={state.credits}
+              selectedHandCount={state.selectedHandCount}
+              round={state.round}
+              totalEarnings={state.totalEarnings}
+              firstDrawComplete={state.firstDrawComplete}
+              secondDrawAvailable={state.secondDrawAvailable}
+              onToggleHold={toggleHold}
+              onDraw={drawParallelHands}
+            />
+          )}
+          {state.gamePhase === 'results' && (
+            <Results
+              playerHand={state.playerHand}
+              heldIndices={state.heldIndices}
+              parallelHands={state.parallelHands}
+              rewardTable={state.rewardTable}
+              betAmount={state.betAmount}
+              onReturnToPreDraw={returnToPreDraw}
+            />
+          )}
           <Shop
             credits={state.credits}
             handCount={state.handCount}
@@ -143,9 +195,7 @@ function App() {
         />
       )}
 
-      {showSettings && (
-        <Settings onClose={() => setShowSettings(false)} />
-      )}
+      {showSettings && <Settings onClose={() => setShowSettings(false)} />}
     </div>
   );
 }

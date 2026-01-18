@@ -1,5 +1,13 @@
 import { useState, useEffect } from 'react';
-import { getAvailableThemes, getSelectedTheme, saveSelectedTheme, applyThemeToBody } from '../utils/themeManager';
+import {
+  getAvailableThemes,
+  getSelectedTheme,
+  saveSelectedTheme,
+  applyThemeToBody,
+  loadThemeConfig,
+} from '../utils/themeManager';
+import { useThemeBackgroundAnimation } from '../hooks/useThemeBackgroundAnimation';
+import { ThemeConfig } from '../types/index';
 
 interface SettingsProps {
   onClose: () => void;
@@ -7,10 +15,28 @@ interface SettingsProps {
 
 export function Settings({ onClose }: SettingsProps) {
   const [selectedTheme, setSelectedTheme] = useState<string>(getSelectedTheme());
-  const [availableThemes] = useState<string[]>(getAvailableThemes());
+  const [availableThemes, setAvailableThemes] = useState<string[]>([]);
+  const [currentThemeConfig, setCurrentThemeConfig] = useState<ThemeConfig | null>(null);
+
+  // Discover available themes on mount
+  useEffect(() => {
+    getAvailableThemes().then((themes) => {
+      setAvailableThemes(themes);
+    });
+  }, []);
+
+  // Load theme config on mount and when theme selection changes
+  useEffect(() => {
+    loadThemeConfig(selectedTheme).then((config) => {
+      setCurrentThemeConfig(config);
+    });
+  }, [selectedTheme]);
+
+  // Apply theme background animation
+  useThemeBackgroundAnimation(currentThemeConfig);
 
   useEffect(() => {
-    // Apply theme when component mounts
+    // Apply theme class when component mounts
     applyThemeToBody(selectedTheme);
   }, []);
 
@@ -27,14 +53,14 @@ export function Settings({ onClose }: SettingsProps) {
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg shadow-2xl p-8 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+      <div className="bg-white rounded-lg shadow-2xl p-8 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto relative">
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-3xl font-bold text-gray-800">Settings</h2>
           <button
             onClick={onClose}
-            className="absolute top-4 right-4 bg-gray-800 hover:bg-gray-900 text-white font-bold py-2 px-4 rounded-lg transition-colors"
+            className="text-gray-500 hover:text-gray-700 text-2xl font-bold"
           >
-            Close
+            ×
           </button>
         </div>
 
@@ -48,9 +74,10 @@ export function Settings({ onClose }: SettingsProps) {
                   key={theme}
                   className={`
                     flex items-center p-3 rounded-lg cursor-pointer transition-colors
-                    ${selectedTheme === theme
-                      ? 'bg-blue-100 border-2 border-blue-500'
-                      : 'bg-gray-50 border-2 border-gray-200 hover:bg-gray-100'
+                    ${
+                      selectedTheme === theme
+                        ? 'bg-blue-100 border-2 border-blue-500'
+                        : 'bg-gray-50 border-2 border-gray-200 hover:bg-gray-100'
                     }
                   `}
                 >

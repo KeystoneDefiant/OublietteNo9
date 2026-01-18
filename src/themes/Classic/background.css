@@ -1,0 +1,60 @@
+.theme-bg-gradient {
+  position: fixed;
+  inset: 0;
+  z-index: -10;
+  background: linear-gradient(
+    135deg,
+    hsl(200, 70%, 20%) 0%,
+    hsl(260, 70%, 25%) 50%,
+    hsl(320, 70%, 20%) 100%
+  );
+  background-size: 200% 200%;
+  animation: gradientShift 10s ease infinite;
+}
+
+.theme-bg-pattern {
+  position: absolute;
+  width: 150%;
+  height: 150%;
+  left: -50%;
+  top: -50%;
+  inset: 0;
+  z-index: -9;
+  background-image:
+    repeating-linear-gradient(
+      45deg,
+      transparent,
+      transparent 10px,
+      rgba(255, 255, 255, 0.1) 10px,
+      rgba(255, 255, 255, 0.1) 20px
+    ),
+    repeating-linear-gradient(
+      -45deg,
+      transparent,
+      transparent 10px,
+      rgba(255, 255, 255, 0.1) 10px,
+      rgba(255, 255, 255, 0.1) 20px
+    );
+  opacity: 0.2;
+  animation: patternMove 20s linear infinite;
+}
+
+@keyframes gradientShift {
+  0%,
+  100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+@keyframes patternMove {
+  0%,
+  100% {
+    transform: translateX(0) translateY(0);
+  }
+  50% {
+    transform: translateX(20px) translateY(20px);
+  }
+}
