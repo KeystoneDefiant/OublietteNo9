@@ -33,7 +33,7 @@ export const gameConfig = {
     startingBet: 1,
     startingMinimumBet: 1,
     minimumBetIncreasePercent: 5,
-    startingHandCount: 1,
+    startingHandCount: 10,
     starting2xChance: 5,
   },
   rewards: {

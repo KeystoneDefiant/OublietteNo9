@@ -12,7 +12,7 @@ const INITIAL_STATE: GameState = {
   playerHand: [],
   heldIndices: [],
   parallelHands: [],
-  handCount: 1,
+  handCount: config.gameplay.startingHandCount,
   rewardTable: DEFAULT_REWARD_TABLE,
   credits: config.gameplay.startingCredits,
   currentRun: 0,
