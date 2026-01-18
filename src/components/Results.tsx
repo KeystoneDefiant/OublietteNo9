@@ -233,19 +233,18 @@ export function Results({
                       </span>
                     </div>
                     <div className="flex justify-between items-center">
-                      <span className="text-lg font-semibold text-gray-700">Profit:</span>
+                      <span className="text-lg font-semibold text-gray-700">Total Payout:</span>
+                      <span className="text-2xl font-bold text-green-600">
+                        {totalPayout} credits
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-xl font-bold text-gray-800">Profit:</span>
                       <span
-                        className={`text-2xl font-bold ${totalPayout >= betAmount * selectedHandCount ? 'text-green-600' : 'text-red-600'}`}
+                        className={`text-3xl font-bold ${totalPayout >= betAmount * selectedHandCount ? 'text-green-600' : 'text-red-600'}`}
                       >
                         {totalPayout - betAmount * selectedHandCount} credit
                         {totalPayout - betAmount * selectedHandCount !== 1 ? 's' : ''}
-                      </span>
-                    </div>
-
-                    <div className="flex justify-between items-center">
-                      <span className="text-xl font-bold text-gray-800">Total Payout:</span>
-                      <span className="text-3xl font-bold text-green-600">
-                        {totalPayout} credits
                       </span>
                     </div>
                   </div>
