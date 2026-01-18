@@ -15,7 +15,7 @@ export function Rules({ onClose }: RulesProps) {
             ×
           </button>
         </div>
-        
+
         <div className="space-y-4 text-gray-700">
           <div>
             <h3 className="text-xl font-bold text-gray-800 mb-2">How to Play</h3>
@@ -25,9 +25,10 @@ export function Rules({ onClose }: RulesProps) {
               <li>Hold cards you want to keep by clicking on them</li>
               <li>Draw to generate parallel hands based on your held cards</li>
               <li>Earn credits based on your hand rankings and multipliers</li>
+              <li>Buy cool stuff in the store to make big numbers go bigger.</li>
             </ol>
           </div>
-          
+
           <div>
             <h3 className="text-xl font-bold text-gray-800 mb-2">Hand Rankings</h3>
             <p className="mb-2">Hands are ranked from highest to lowest:</p>
@@ -41,18 +42,27 @@ export function Rules({ onClose }: RulesProps) {
               <li>Three of a Kind</li>
               <li>Two Pair</li>
               <li>One Pair (Jacks or better)</li>
-              <li>High Card</li>
             </ol>
           </div>
-          
+
           <div>
             <h3 className="text-xl font-bold text-gray-800 mb-2">Special Features</h3>
             <ul className="list-disc list-inside space-y-2 text-sm">
-              <li><strong>Dead Cards:</strong> Cards that don't count toward any poker hand</li>
-              <li><strong>Wild Cards:</strong> Count as any suit and rank (max 3 in deck)</li>
-              <li><strong>Card Removal:</strong> Permanently remove cards from the deck</li>
-              <li><strong>2x Payout Chance:</strong> Random chance to double your payout</li>
-              <li><strong>Minimum Bet:</strong> Increases by 5% each round</li>
+              <li>
+                <strong>Dead Cards:</strong> Cards that don't count toward any poker hand
+              </li>
+              <li>
+                <strong>Wild Cards:</strong> Count as any suit and rank (max 3 in deck)
+              </li>
+              <li>
+                <strong>Card Removal:</strong> Permanently remove cards from the deck
+              </li>
+              <li>
+                <strong>2x Payout Chance:</strong> Random chance to double your payout
+              </li>
+              <li>
+                <strong>Minimum Bet:</strong> Increases by 5% each round
+              </li>
             </ul>
           </div>
         </div>
