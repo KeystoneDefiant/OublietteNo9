@@ -1,0 +1,174 @@
+/* Neon Cyberpunk Theme - Background Animations */
+
+.neon-bg-container {
+  position: fixed;
+  inset: 0;
+  z-index: -10;
+  overflow: hidden;
+}
+
+.neon-bg-base {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    135deg,
+    #0a0a1a 0%,
+    #15152e 25%,
+    #1a1a3e 50%,
+    #15152e 75%,
+    #0a0a1a 100%
+  );
+  background-size: 400% 400%;
+  animation: neonBgShift 15s ease infinite;
+}
+
+@keyframes neonBgShift {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.neon-bg-grid {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(
+      0deg,
+      transparent 24%,
+      rgba(0, 255, 255, 0.05) 25%,
+      rgba(0, 255, 255, 0.05) 26%,
+      transparent 27%,
+      transparent 74%,
+      rgba(0, 255, 255, 0.05) 75%,
+      rgba(0, 255, 255, 0.05) 76%,
+      transparent 77%,
+      transparent
+    ),
+    linear-gradient(
+      90deg,
+      transparent 24%,
+      rgba(0, 255, 255, 0.05) 25%,
+      rgba(0, 255, 255, 0.05) 26%,
+      transparent 27%,
+      transparent 74%,
+      rgba(0, 255, 255, 0.05) 75%,
+      rgba(0, 255, 255, 0.05) 76%,
+      transparent 77%,
+      transparent
+    );
+  background-size: 100px 100px;
+  animation: neonGridMove 20s linear infinite;
+}
+
+@keyframes neonGridMove {
+  0% {
+    background-position:
+      0 0,
+      0 0;
+  }
+  100% {
+    background-position:
+      100px 100px,
+      100px 100px;
+  }
+}
+
+.neon-bg-glow-cyan {
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle at 30% 40%, rgba(0, 255, 255, 0.15) 0%, transparent 50%);
+  animation: neonGlowCyanMove 15s ease-in-out infinite;
+}
+
+@keyframes neonGlowCyanMove {
+  0% {
+    transform: translate(0, 0) scale(1);
+  }
+  50% {
+    transform: translate(50px, -50px) scale(1.2);
+  }
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+}
+
+.neon-bg-glow-magenta {
+  position: absolute;
+  bottom: -50%;
+  right: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle at 70% 60%, rgba(255, 0, 255, 0.15) 0%, transparent 50%);
+  animation: neonGlowMagentaMove 20s ease-in-out infinite;
+}
+
+@keyframes neonGlowMagentaMove {
+  0% {
+    transform: translate(0, 0) scale(1);
+  }
+  50% {
+    transform: translate(-70px, 70px) scale(1.2);
+  }
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+}
+
+.neon-bg-scanlines {
+  position: absolute;
+  inset: 0;
+  background-image: repeating-linear-gradient(
+    0deg,
+    rgba(0, 255, 255, 0.03) 0px,
+    rgba(0, 255, 255, 0.03) 1px,
+    transparent 1px,
+    transparent 2px
+  );
+  background-size: 100% 2px;
+  animation: neonScanlineScroll 8s linear infinite;
+  pointer-events: none;
+}
+
+@keyframes neonScanlineScroll {
+  0% {
+    background-position: 0 0;
+  }
+  100% {
+    background-position: 0 100%;
+  }
+}
+
+.neon-bg-particles {
+  position: absolute;
+  inset: 0;
+  background-image:
+    radial-gradient(2px 2px at 10% 20%, rgba(0, 255, 255, 0.3), transparent),
+    radial-gradient(2px 2px at 30% 70%, rgba(255, 0, 255, 0.3), transparent),
+    radial-gradient(2px 2px at 60% 40%, rgba(0, 255, 0, 0.2), transparent),
+    radial-gradient(2px 2px at 80% 80%, rgba(0, 255, 255, 0.2), transparent),
+    radial-gradient(2px 2px at 50% 50%, rgba(255, 0, 255, 0.2), transparent);
+  background-size: 200% 200%;
+  background-position: 0% 0%;
+  animation: neonParticleFloat 30s ease infinite;
+}
+
+@keyframes neonParticleFloat {
+  0% {
+    background-position: 0% 0%;
+  }
+  50% {
+    background-position: 100% 100%;
+  }
+  100% {
+    background-position: 0% 0%;
+  }
+}

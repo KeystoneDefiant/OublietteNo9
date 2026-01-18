@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { RewardTable } from './RewardTable';
 import { CheatsModal } from './CheatsModal';
+import { GameHeader } from './GameHeader';
 
 interface PreDrawProps {
   credits: number;
@@ -39,20 +40,11 @@ export function PreDraw({
   const canPlayRound = !gameOver && canAffordBet;
 
   return (
-    <div className="min-h-screen p-6 relative overflow-hidden">
+    <div id="preDraw-screen" className="min-h-screen p-6 relative overflow-hidden">
       <div className="max-w-5xl mx-auto relative z-0">
         {/* Header */}
-        <div className="flex justify-between items-center mb-6 flex-wrap gap-4">
-          <div className="flex items-center gap-4">
-            <div className="bg-white rounded-lg shadow-lg p-3 h-16 w-24 flex items-center justify-center border-2 border-dashed border-gray-300">
-              <span className="text-gray-400 text-xs">Logo</span>
-            </div>
-            <div className="bg-white rounded-lg shadow-lg px-6 py-3">
-              <p className="text-lg font-bold text-gray-800">
-                Credits: <span className="text-green-600">{credits}</span>
-              </p>
-            </div>
-          </div>
+        <div className="flex justify-between items-center mb-6">
+          <GameHeader credits={credits} />
           <div className="flex gap-3">
             <button
               onClick={() => setShowCheats(true)}
@@ -97,15 +89,29 @@ export function PreDraw({
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Bet Amount per Hand (Min: {minimumBet})
                   </label>
-                  <input
-                    type="number"
-                    min={minimumBet}
-                    value={betAmount}
-                    onChange={(e) =>
-                      onSetBetAmount(Math.max(minimumBet, parseInt(e.target.value) || minimumBet))
-                    }
-                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-lg"
-                  />
+                  <div className="flex items-center gap-3">
+                    <button
+                      onClick={() => onSetBetAmount(Math.max(minimumBet, betAmount - 1))}
+                      className="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-3 px-4 rounded-lg transition-colors text-xl"
+                    >
+                      ▼
+                    </button>
+                    <input
+                      type="number"
+                      min={minimumBet}
+                      value={betAmount}
+                      onChange={(e) =>
+                        onSetBetAmount(Math.max(minimumBet, parseInt(e.target.value) || minimumBet))
+                      }
+                      className="flex-1 px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-lg"
+                    />
+                    <button
+                      onClick={() => onSetBetAmount(betAmount + 1)}
+                      className="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-3 px-4 rounded-lg transition-colors text-xl"
+                    >
+                      ▲
+                    </button>
+                  </div>
                 </div>
 
                 {/* Hand Count */}
@@ -113,18 +119,40 @@ export function PreDraw({
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Number of Hands to Play (1 to {handCount})
                   </label>
-                  <input
-                    type="number"
-                    min={1}
-                    max={handCount}
-                    value={selectedHandCount}
-                    onChange={(e) =>
-                      onSetSelectedHandCount(
-                        Math.max(1, Math.min(handCount, parseInt(e.target.value) || 1))
-                      )
-                    }
-                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-lg"
-                  />
+                  <div className="flex items-center gap-3">
+                    <button
+                      onClick={() => onSetSelectedHandCount(Math.max(1, selectedHandCount - 1))}
+                      className="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-3 px-4 rounded-lg transition-colors text-xl"
+                    >
+                      ▼
+                    </button>
+                    <input
+                      type="number"
+                      min={1}
+                      max={handCount}
+                      value={selectedHandCount}
+                      onChange={(e) =>
+                        onSetSelectedHandCount(
+                          Math.max(1, Math.min(handCount, parseInt(e.target.value) || 1))
+                        )
+                      }
+                      className="flex-1 px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-lg"
+                    />
+                    <button
+                      onClick={() =>
+                        onSetSelectedHandCount(Math.min(handCount, selectedHandCount + 1))
+                      }
+                      className="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-3 px-4 rounded-lg transition-colors text-xl"
+                    >
+                      ▲
+                    </button>
+                    <button
+                      onClick={() => onSetSelectedHandCount(handCount)}
+                      className="bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 px-4 rounded-lg transition-colors whitespace-nowrap"
+                    >
+                      Max
+                    </button>
+                  </div>
                 </div>
 
                 {/* Total Cost */}

@@ -112,6 +112,10 @@ function App() {
           parallelHands={state.parallelHands}
           rewardTable={state.rewardTable}
           betAmount={state.betAmount}
+          credits={state.credits}
+          round={state.round}
+          totalEarnings={state.totalEarnings}
+          selectedHandCount={state.selectedHandCount}
           onReturnToPreDraw={returnToPreDraw}
         />
       )}
@@ -158,6 +162,10 @@ function App() {
               parallelHands={state.parallelHands}
               rewardTable={state.rewardTable}
               betAmount={state.betAmount}
+              credits={state.credits}
+              round={state.round}
+              totalEarnings={state.totalEarnings}
+              selectedHandCount={state.selectedHandCount}
               onReturnToPreDraw={returnToPreDraw}
             />
           )}

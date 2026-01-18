@@ -40,12 +40,12 @@
 
 @keyframes slideLeftAndFade {
   0% {
-    opacity: 1;
-    transform: translateX(0);
+    opacity: 0;
+    transform: translateX(200px);
   }
   100% {
-    opacity: 0;
-    transform: translateX(-200px);
+    opacity: 1;
+    transform: translateX(0);
   }
 }
 

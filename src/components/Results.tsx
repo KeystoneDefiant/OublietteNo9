@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Card as CardType, Hand } from '../types';
 import { Card } from './Card';
+import { GameHeader } from './GameHeader';
 import { PokerEvaluator } from '../utils/pokerEvaluator';
 import { RewardTable } from './RewardTable';
 
@@ -10,6 +11,10 @@ interface ResultsProps {
   parallelHands: Hand[];
   rewardTable: { [key: string]: number };
   betAmount: number;
+  credits: number;
+  round: number;
+  totalEarnings: number;
+  selectedHandCount: number;
   onReturnToPreDraw: (payout: number) => void;
 }
 
@@ -19,9 +24,14 @@ export function Results({
   parallelHands,
   rewardTable,
   betAmount,
+  credits,
+  round,
+  totalEarnings,
+  selectedHandCount,
   onReturnToPreDraw,
 }: ResultsProps) {
   const [showSummary, setShowSummary] = useState(false);
+  const efficiency = round > 0 ? (totalEarnings / round).toFixed(2) : '0.00';
 
   // Calculate total payouts
   const handPayouts = parallelHands.map((hand) => {
@@ -53,38 +63,10 @@ export function Results({
   }, [parallelHands.length, delayPerHandMs, slideAnimationDurationMs]);
 
   return (
-    <div className="min-h-screen p-6 relative overflow-hidden">
-      {/* Animated Background */}
-      <div
-        className="fixed inset-0 -z-10"
-        style={{
-          background: `linear-gradient(135deg, 
-            hsl(60, 70%, 20%) 0%, 
-            hsl(120, 70%, 25%) 50%, 
-            hsl(180, 70%, 20%) 100%)`,
-          backgroundSize: '200% 200%',
-          animation: 'gradientShift 10s ease infinite',
-        }}
-      >
-        <div
-          className="absolute inset-0 opacity-20"
-          style={{
-            backgroundImage: `
-              repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(255,255,255,0.1) 10px, rgba(255,255,255,0.1) 20px),
-              repeating-linear-gradient(-45deg, transparent, transparent 10px, rgba(255,255,255,0.1) 10px, rgba(255,255,255,0.1) 20px)
-            `,
-            animation: 'patternMove 20s linear infinite',
-          }}
-        />
-      </div>
-
+    <div id="results-screen" className="min-h-screen p-6 relative overflow-hidden">
       <div className="max-w-7xl mx-auto relative z-0">
         {/* Header */}
-        <div className="flex justify-between items-center mb-6">
-          <div className="bg-white rounded-lg shadow-lg p-3 h-16 w-24 flex items-center justify-center border-2 border-dashed border-gray-300">
-            <span className="text-gray-400 text-xs">Logo</span>
-          </div>
-        </div>
+        <GameHeader credits={credits} round={round} efficiency={efficiency} />
 
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           {/* Main Content */}
@@ -130,8 +112,7 @@ export function Results({
 
             {/* Animated Parallel Hands */}
             {!showSummary && (
-              <div className="bg-white rounded-lg shadow-lg p-6" id="results">
-                <h2 className="text-2xl font-bold mb-4 text-gray-800">Parallel Hands Results</h2>
+              <div className="p-6" id="results">
                 <div className="overflow-x-auto no-scrollbar">
                   <div className="flex gap-4 pb-4 min-w-full">
                     {parallelHands.map((hand, index) => {
@@ -160,7 +141,7 @@ export function Results({
                             style={{
                               animation: `slideLeftAndFade ${slideAnimationDurationMs}ms ease-in forwards`,
                               animationDelay: `${index * delayPerHandMs}ms`,
-                              opacity: showSummary ? 0 : 1,
+                              opacity: showSummary ? 1 : 0,
                             }}
                           >
                             <div className="flex gap-1 justify-center mb-2">
@@ -244,9 +225,29 @@ export function Results({
                 </div>
 
                 <div className="bg-white rounded-lg p-6 border-2 border-green-400 mb-8">
-                  <div className="flex justify-between items-center">
-                    <span className="text-2xl font-bold text-gray-800">Total Payout:</span>
-                    <span className="text-4xl font-bold text-green-600">{totalPayout} credits</span>
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="text-lg font-semibold text-gray-700">Round Cost:</span>
+                      <span className="text-2xl font-bold text-red-600">
+                        {betAmount * selectedHandCount} credits
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-lg font-semibold text-gray-700">Profit:</span>
+                      <span
+                        className={`text-2xl font-bold ${totalPayout >= betAmount * selectedHandCount ? 'text-green-600' : 'text-red-600'}`}
+                      >
+                        {totalPayout - betAmount * selectedHandCount} credit
+                        {totalPayout - betAmount * selectedHandCount !== 1 ? 's' : ''}
+                      </span>
+                    </div>
+
+                    <div className="flex justify-between items-center">
+                      <span className="text-xl font-bold text-gray-800">Total Payout:</span>
+                      <span className="text-3xl font-bold text-green-600">
+                        {totalPayout} credits
+                      </span>
+                    </div>
                   </div>
                 </div>
 

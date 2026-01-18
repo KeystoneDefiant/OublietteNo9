@@ -7,15 +7,19 @@ services:
       dockerfile: Dockerfile.dev
     container_name: pokerthing-dev
     ports:
-      - "5173:5173"
+      - '5173:5173'
+      - '5174:5174'
     volumes:
       - .:/app
       - /app/node_modules
     environment:
       - NODE_ENV=development
+      - VITE_HMR_HOST=localhost
+      - VITE_HMR_PORT=5173
+      - VITE_HMR_PROTOCOL=ws
     stdin_open: true
     tty: true
-    command: ["sleep", "infinity"]
+    command: ['npm', 'run', 'dev']
 
   prod:
     build:
@@ -23,5 +27,5 @@ services:
       dockerfile: Dockerfile
     container_name: pokerthing-prod
     ports:
-      - "8080:80"
+      - '8080:80'
     restart: unless-stopped
