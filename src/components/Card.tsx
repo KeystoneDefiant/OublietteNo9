@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Card as CardType } from '../types';
+import { gameConfig } from '../config/gameConfig';
 
 interface CardProps {
   card: CardType;
@@ -30,7 +31,14 @@ const SIZE_CLASSES = {
   large: 'w-20 h-32 text-base',
 };
 
-export function Card({ card, isHeld = false, onClick, size = 'medium', showBack = false, flipDelay = 0 }: CardProps) {
+export function Card({
+  card,
+  isHeld = false,
+  onClick,
+  size = 'medium',
+  showBack = false,
+  flipDelay = 0,
+}: CardProps) {
   const [isFlipped, setIsFlipped] = useState(showBack);
   const suitSymbol = SUIT_SYMBOLS[card.suit];
   const suitColor = SUIT_COLORS[card.suit];
@@ -41,7 +49,7 @@ export function Card({ card, isHeld = false, onClick, size = 'medium', showBack 
       setIsFlipped(true);
       const timer = setTimeout(() => {
         setIsFlipped(false);
-      }, flipDelay + 500); // Wait for flipDelay then flip after 500ms
+      }, flipDelay + gameConfig.animation.cardFlip);
       return () => clearTimeout(timer);
     } else {
       setIsFlipped(false);
@@ -75,21 +83,13 @@ export function Card({ card, isHeld = false, onClick, size = 'medium', showBack 
         }}
       >
         <div className="flex flex-col items-center justify-center h-full">
-          <div className={`font-bold ${suitColor}`}>
-            {card.rank}
-          </div>
-          <div className={`text-2xl ${suitColor}`}>
-            {suitSymbol}
-          </div>
-          {card.isWild && (
-            <div className="text-xs text-orange-600 font-bold mt-1">WILD</div>
-          )}
-          {card.isDead && (
-            <div className="text-xs text-gray-500 font-bold mt-1">DEAD</div>
-          )}
+          <div className={`font-bold ${suitColor}`}>{card.rank}</div>
+          <div className={`text-2xl ${suitColor}`}>{suitSymbol}</div>
+          {card.isWild && <div className="text-xs text-orange-600 font-bold mt-1">WILD</div>}
+          {card.isDead && <div className="text-xs text-gray-500 font-bold mt-1">DEAD</div>}
         </div>
       </div>
-      
+
       {/* Card Back */}
       <div
         className={`

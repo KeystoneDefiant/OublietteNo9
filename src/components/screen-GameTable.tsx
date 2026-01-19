@@ -36,7 +36,7 @@ export function GameTable({
   const efficiency = round > 0 ? (totalEarnings / round).toFixed(2) : '0.00';
 
   return (
-    <div id="gameTable-screen" className="min-h-screen p-6 relative overflow-hidden">
+    <div id="gameTable-screen" className="min-h-screen p-6 relative overflow-hidden select-none">
       <div className="max-w-7xl mx-auto relative z-0">
         {/* Header */}
         <GameHeader credits={credits} round={round} efficiency={efficiency} />

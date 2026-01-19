@@ -1,6 +1,25 @@
 /* Classic Theme: Colors, Transitions, Backgrounds, Card Styles */
 
+/* Font Declarations for Classic Theme */
+@import url('https://fonts.googleapis.com/css2?family=Federo&family=Pompiere&display=swap');
+
+.pompiere-regular {
+  font-family: 'Pompiere', sans-serif;
+  font-weight: 400;
+  font-style: normal;
+}
+
+.federo-regular {
+  font-family: 'Federo', sans-serif;
+  font-weight: 400;
+  font-style: normal;
+}
+
 :root {
+  /* Font Family - Classic theme uses Pompiere and Federo */
+  --font-primary: 'Pompiere', sans-serif;
+  --font-secondary: 'Federo', sans-serif;
+
   /* Color Scheme */
   --primary-green: #16a34a;
   --primary-green-dark: #15803d;
@@ -33,7 +52,24 @@
 }
 
 /* Theme-specific overrides when body has theme class */
+html {
+  scroll-behavior: smooth;
+  font-family: var(--font-secondary);
+}
+
 body.theme-classic {
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: var(--font-secondary);
+
+  H1,
+  H2,
+  H3,
+  H4,
+  H5,
+  H6 {
+    font-family: var(--font-primary);
+  }
 }
 
 /* Card Back Styles */

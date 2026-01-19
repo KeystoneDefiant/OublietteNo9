@@ -11,10 +11,11 @@ interface PreDrawProps {
   minimumBet: number;
   rewardTable: { [key: string]: number };
   gameOver: boolean;
+  round: number;
+  totalEarnings: number;
   onSetBetAmount: (amount: number) => void;
   onSetSelectedHandCount: (count: number) => void;
   onDealHand: () => void;
-  onOpenShop: () => void;
   onCheatAddCredits: (amount: number) => void;
   onCheatAddHands: (amount: number) => void;
 }
@@ -27,10 +28,11 @@ export function PreDraw({
   minimumBet,
   rewardTable,
   gameOver,
+  round,
+  totalEarnings,
   onSetBetAmount,
   onSetSelectedHandCount,
   onDealHand,
-  onOpenShop,
   onCheatAddCredits,
   onCheatAddHands,
 }: PreDrawProps) {
@@ -38,25 +40,20 @@ export function PreDraw({
   const totalBetCost = betAmount * selectedHandCount;
   const canAffordBet = credits >= totalBetCost;
   const canPlayRound = !gameOver && canAffordBet;
+  const efficiency = round > 0 ? (totalEarnings / round).toFixed(2) : '0.00';
 
   return (
-    <div id="preDraw-screen" className="min-h-screen p-6 relative overflow-hidden">
-      <div className="max-w-5xl mx-auto relative z-0">
+    <div id="preDraw-screen" className="min-h-screen p-6 relative overflow-hidden select-none">
+      <div className="max-w-7xl mx-auto relative z-0">
         {/* Header */}
         <div className="flex justify-between items-center mb-6">
-          <GameHeader credits={credits} />
+          <GameHeader credits={credits} round={round} efficiency={efficiency} />
           <div className="flex gap-3">
             <button
               onClick={() => setShowCheats(true)}
               className="bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-6 rounded-lg transition-colors"
             >
               Cheats
-            </button>
-            <button
-              onClick={onOpenShop}
-              className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg transition-colors"
-            >
-              Shop
             </button>
           </div>
         </div>

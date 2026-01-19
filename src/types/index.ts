@@ -7,7 +7,6 @@ export interface Card {
   id: string; // Unique identifier for React keys
   isWild?: boolean; // Wild card flag
   isDead?: boolean; // Dead card flag
-  has2xBonus?: boolean; // 2x payout bonus (per-hand)
 }
 
 export interface Hand {
@@ -38,15 +37,31 @@ export interface RewardTable {
   [key: string]: number; // HandRank -> multiplier
 }
 
-export type GameScreen = 'menu' | 'game' | 'shop' | 'gameOver' | 'credits' | 'rules';
+export type GameScreen =
+  | 'menu'
+  | 'game'
+  | 'shop'
+  | 'parallelHandsAnimation'
+  | 'gameOver'
+  | 'credits'
+  | 'rules';
 
-export type GamePhase = 'preDraw' | 'playing' | 'results';
+export type ShopOptionType =
+  | 'hand-count'
+  | 'parallel-hands-bundle'
+  | 'dead-card'
+  | 'wild-card'
+  | 'extra-draw'
+  | 'remove-single-dead-card'
+  | 'remove-all-dead-cards';
+
+export type GamePhase = 'preDraw' | 'playing' | 'parallelHandsAnimation' | 'results';
 
 export interface DeckModifications {
   deadCards: Card[];
   wildCards: Card[];
   removedCards: Card[];
-  cardRemovalCount: number; // Track number of removals for cost calculation
+  deadCardRemovalCount: number; // Track total dead card removals (single + bulk) for cost calculation
 }
 
 export interface ThemeBackgroundAnimation {
@@ -55,11 +70,32 @@ export interface ThemeBackgroundAnimation {
   fromFiles?: boolean; // Load HTML and CSS from background.html and background.css files in theme directory
 }
 
+export interface ThemeAnimationConfig {
+  transitionDuration: number; // Duration in milliseconds for screen transitions (fade in/out)
+}
+
+export interface ThemeSoundConfig {
+  buttonClick?: string; // Path relative to theme/sounds/ directory
+  shopPurchase?: string;
+  screenTransition?: string;
+  returnToPreDraw?: string;
+  handScoring?: {
+    [key: string]: string; // HandRank -> sound file path
+  };
+}
+
+export interface ThemeMusicConfig {
+  backgroundMusic?: string; // Path relative to theme/sounds/ directory
+}
+
 export interface ThemeConfig {
   name: string; // Internal name (lowercase, no spaces)
   displayName: string; // Human-readable display name
   description?: string; // Theme description
   backgroundAnimation?: ThemeBackgroundAnimation; // Optional custom background animations
+  animation?: ThemeAnimationConfig; // Animation settings
+  sounds?: ThemeSoundConfig; // Optional sound effects
+  music?: ThemeMusicConfig; // Optional background music
 }
 
 export interface GameState {
@@ -83,7 +119,8 @@ export interface GameState {
   hasExtraDraw: boolean;
   firstDrawComplete: boolean;
   secondDrawAvailable: boolean;
-  random2xChance: number;
   wildCardCount: number;
   gameOver: boolean;
+  showShopNextRound: boolean; // Flag to show shop after results
+  selectedShopOptions: ShopOptionType[]; // Selected shop options for this round
 }

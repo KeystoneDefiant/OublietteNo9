@@ -1,6 +1,26 @@
 /* Neon Cyberpunk Theme: Colors, Transitions, Backgrounds, Card Styles */
 
+/* Font Declarations for Neon Theme */
+@import url('https://fonts.googleapis.com/css2?family=Exo:ital,wght@0,100..900;1,100..900&family=Michroma&display=swap');
+
+.michroma-regular {
+  font-family: 'Michroma', sans-serif;
+  font-weight: 400;
+  font-style: normal;
+}
+
+.exo-100 {
+  font-family: 'Exo', sans-serif;
+  font-optical-sizing: auto;
+  font-weight: 100;
+  font-style: normal;
+}
+
 :root {
+  /* Font Family - Neon theme uses Michroma and Exo (geometric, tech) */
+  --font-primary: 'Michroma', monospace;
+  --font-secondary: 'Exo', sans-serif;
+
   /* Neon Color Scheme - Vibrant Cyberpunk */
   --primary-cyan: #00ffff;
   --primary-cyan-dark: #00cccc;
@@ -39,10 +59,25 @@
   --transition-slow: 500ms cubic-bezier(0.4, 0, 0.6, 1);
 }
 
+html {
+  scroll-behavior: smooth;
+  font-family: var(--font-secondary);
+}
+
 /* Theme-specific overrides when body has neon theme class */
 body.theme-neon {
   background-color: var(--bg-primary);
   color: var(--text-primary);
+  font-family: var(--font-secondary);
+
+  H1,
+  H2,
+  H3,
+  H4,
+  H5,
+  H6 {
+    font-family: var(--font-primary);
+  }
 }
 
 /* Card Back Styles - Neon */

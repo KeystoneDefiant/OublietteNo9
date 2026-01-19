@@ -2,9 +2,16 @@ import { useState, useCallback } from 'react';
 import { GameState, Card, HandRank } from '../types';
 import { createFullDeck, shuffleDeck } from '../utils/deck';
 import { generateParallelHands } from '../utils/parallelHands';
-import { config, calculateWildCardCost, calculateCardRemovalCost } from '../utils/config';
+import { selectRandomShopOptions } from '../utils/shopSelection';
+import {
+  calculateWildCardCost,
+  calculateSingleDeadCardRemovalCost,
+  calculateAllDeadCardsRemovalCost,
+  calculateParallelHandsBundleCost,
+} from '../utils/config';
+import { gameConfig, getCurrentGameMode } from '../config/gameConfig';
 
-const DEFAULT_REWARD_TABLE = config.rewards.defaultTable;
+const currentMode = getCurrentGameMode();
 
 const INITIAL_STATE: GameState = {
   screen: 'menu',
@@ -12,29 +19,30 @@ const INITIAL_STATE: GameState = {
   playerHand: [],
   heldIndices: [],
   parallelHands: [],
-  handCount: config.gameplay.startingHandCount,
-  rewardTable: DEFAULT_REWARD_TABLE,
-  credits: config.gameplay.startingCredits,
+  handCount: currentMode.startingHandCount,
+  rewardTable: currentMode.rewards,
+  credits: currentMode.startingCredits,
   currentRun: 0,
   additionalHandsBought: 0,
-  betAmount: config.gameplay.startingBet,
-  selectedHandCount: config.gameplay.startingHandCount,
-  minimumBet: config.gameplay.startingMinimumBet,
-  round: 0,
+  betAmount: currentMode.startingBet,
+  selectedHandCount: currentMode.startingHandCount,
+  minimumBet: currentMode.startingBet,
+  round: 1,
   totalEarnings: 0,
   deckModifications: {
     deadCards: [],
     wildCards: [],
     removedCards: [],
-    cardRemovalCount: 0,
+    deadCardRemovalCount: 0,
   },
   extraDrawPurchased: false,
   hasExtraDraw: false,
   firstDrawComplete: false,
   secondDrawAvailable: false,
-  random2xChance: config.gameplay.starting2xChance,
   wildCardCount: 0,
   gameOver: false,
+  showShopNextRound: false,
+  selectedShopOptions: [],
 };
 
 export function useGameState() {
@@ -94,10 +102,29 @@ export function useGameState() {
         return prev;
       }
 
-      // If this is the first draw and extra draw is available, just mark first draw complete
+      // If this is the first draw and extra draw is available, mark first draw complete and redraw non-held cards
       if (!prev.firstDrawComplete && prev.hasExtraDraw) {
+        // Create a deck and shuffle it
+        const deck = shuffleDeck(
+          createFullDeck(
+            prev.deckModifications.deadCards,
+            prev.deckModifications.removedCards,
+            prev.deckModifications.wildCards
+          )
+        );
+
+        // Replace non-held cards with new cards from the deck
+        const updatedHand = [...prev.playerHand];
+        let deckIndex = 0;
+        for (let i = 0; i < 5; i++) {
+          if (!prev.heldIndices.includes(i)) {
+            updatedHand[i] = deck[deckIndex++];
+          }
+        }
+
+        // Generate parallel hands from the updated player hand
         const parallelHands = generateParallelHands(
-          prev.playerHand,
+          updatedHand,
           prev.heldIndices,
           prev.selectedHandCount,
           prev.deckModifications.deadCards,
@@ -107,15 +134,37 @@ export function useGameState() {
 
         return {
           ...prev,
+          playerHand: updatedHand,
           parallelHands,
           firstDrawComplete: true,
           secondDrawAvailable: true,
         };
       }
 
-      // Second draw or no extra draw - generate final hands and move to results
+      // Second draw or no extra draw - generate final hands and move to parallel hands animation
+      // For second draw, also replace non-held cards
+      let handForAnimation = prev.playerHand;
+      if (prev.firstDrawComplete && prev.hasExtraDraw) {
+        const deck = shuffleDeck(
+          createFullDeck(
+            prev.deckModifications.deadCards,
+            prev.deckModifications.removedCards,
+            prev.deckModifications.wildCards
+          )
+        );
+
+        const updatedHand = [...prev.playerHand];
+        let deckIndex = 0;
+        for (let i = 0; i < 5; i++) {
+          if (!prev.heldIndices.includes(i)) {
+            updatedHand[i] = deck[deckIndex++];
+          }
+        }
+        handForAnimation = updatedHand;
+      }
+
       const parallelHands = generateParallelHands(
-        prev.playerHand,
+        handForAnimation,
         prev.heldIndices,
         prev.selectedHandCount,
         prev.deckModifications.deadCards,
@@ -125,8 +174,9 @@ export function useGameState() {
 
       return {
         ...prev,
+        playerHand: handForAnimation,
         parallelHands,
-        gamePhase: 'results',
+        gamePhase: 'parallelHandsAnimation',
         firstDrawComplete: false,
         secondDrawAvailable: false,
       };
@@ -186,13 +236,19 @@ export function useGameState() {
       const newCredits = prev.credits + payout;
       const newTotalEarnings = prev.totalEarnings + payout;
 
-      // Increment round and apply 5% bet increase
+      // Increment round and apply bet increase
       const newRound = prev.round + 1;
-      const minBetMultiplier = 1 + config.percentages.minimumBetIncrease / 100;
+      const minBetMultiplier = 1 + currentMode.minimumBetIncreasePercent / 100;
       const newMinimumBet = Math.floor(prev.minimumBet * minBetMultiplier);
 
       // Check if player can still play after bet increase
       const gameOver = newCredits < newMinimumBet * prev.selectedHandCount;
+
+      // Check if shop should appear next round and generate options if so
+      const showShopNextRound = newRound % currentMode.shopFrequency === 0;
+      const selectedShopOptions = showShopNextRound
+        ? selectRandomShopOptions(currentMode.shopWeights, currentMode.shopOptionCount)
+        : [];
 
       return {
         ...prev,
@@ -207,6 +263,8 @@ export function useGameState() {
         credits: newCredits,
         totalEarnings: newTotalEarnings,
         gameOver,
+        showShopNextRound,
+        selectedShopOptions,
       };
     });
   }, []);
@@ -221,13 +279,15 @@ export function useGameState() {
       parallelHands: [],
       additionalHandsBought: 0,
       currentRun: prev.currentRun + 1,
-      betAmount: config.gameplay.startingBet,
+      betAmount: currentMode.startingBet,
       selectedHandCount: prev.handCount,
-      minimumBet: config.gameplay.startingMinimumBet,
-      round: 0,
+      minimumBet: currentMode.startingBet,
+      round: 1,
       totalEarnings: 0,
       gameOver: false,
       hasExtraDraw: false,
+      showShopNextRound: false,
+      selectedShopOptions: [],
     }));
   }, []);
 
@@ -303,7 +363,12 @@ export function useGameState() {
 
   const addDeadCard = useCallback(() => {
     setState((prev) => {
-      const reward = config.shop.deadCard.baseCost;
+      // Check if adding a dead card would exceed the limit
+      if (prev.deckModifications.deadCards.length >= gameConfig.deadCardLimit) {
+        return prev; // Don't add if at limit
+      }
+
+      const reward = currentMode.shop.deadCard.creditReward;
 
       // Create a dead card (random suit/rank, marked as dead)
       const suits: Array<'hearts' | 'diamonds' | 'clubs' | 'spades'> = [
@@ -337,24 +402,22 @@ export function useGameState() {
     });
   }, []);
 
-  const removeCard = useCallback((cardToRemove: Card) => {
+  const removeSingleDeadCard = useCallback(() => {
     setState((prev) => {
-      const cost = calculateCardRemovalCost(prev.deckModifications.cardRemovalCount);
+      // Check if there are any dead cards
+      if (prev.deckModifications.deadCards.length === 0) {
+        return prev;
+      }
+
+      const cost = calculateSingleDeadCardRemovalCost(prev.deckModifications.deadCardRemovalCount);
 
       if (prev.credits < cost) {
         return prev;
       }
 
-      // Check if card is already removed
-      if (prev.deckModifications.removedCards.some((c) => c.id === cardToRemove.id)) {
-        return prev;
-      }
-
-      // Remove the card from deadCards or wildCards if it's one of those
+      // Remove the first dead card
+      const cardToRemove = prev.deckModifications.deadCards[0];
       const updatedDeadCards = prev.deckModifications.deadCards.filter(
-        (c) => c.id !== cardToRemove.id
-      );
-      const updatedWildCards = prev.deckModifications.wildCards.filter(
         (c) => c.id !== cardToRemove.id
       );
 
@@ -364,9 +427,41 @@ export function useGameState() {
         deckModifications: {
           ...prev.deckModifications,
           deadCards: updatedDeadCards,
-          wildCards: updatedWildCards,
           removedCards: [...prev.deckModifications.removedCards, cardToRemove],
-          cardRemovalCount: prev.deckModifications.cardRemovalCount + 1,
+          deadCardRemovalCount: prev.deckModifications.deadCardRemovalCount + 1,
+        },
+      };
+    });
+  }, []);
+
+  const removeAllDeadCards = useCallback(() => {
+    setState((prev) => {
+      // Check if there are any dead cards
+      if (prev.deckModifications.deadCards.length === 0) {
+        return prev;
+      }
+
+      const deadCardCount = prev.deckModifications.deadCards.length;
+      const cost = calculateAllDeadCardsRemovalCost(
+        prev.deckModifications.deadCardRemovalCount,
+        deadCardCount
+      );
+
+      if (prev.credits < cost) {
+        return prev;
+      }
+
+      // Remove all dead cards
+      const cardsToRemove = prev.deckModifications.deadCards;
+
+      return {
+        ...prev,
+        credits: prev.credits - cost,
+        deckModifications: {
+          ...prev.deckModifications,
+          deadCards: [],
+          removedCards: [...prev.deckModifications.removedCards, ...cardsToRemove],
+          deadCardRemovalCount: prev.deckModifications.deadCardRemovalCount + deadCardCount,
         },
       };
     });
@@ -375,7 +470,7 @@ export function useGameState() {
   const addWildCard = useCallback(() => {
     setState((prev) => {
       const cost = calculateWildCardCost(prev.wildCardCount);
-      if (prev.credits < cost || prev.wildCardCount >= config.shop.wildCard.maxCount) {
+      if (prev.credits < cost || prev.wildCardCount >= currentMode.shop.wildCard.maxCount) {
         return prev;
       }
 
@@ -399,25 +494,9 @@ export function useGameState() {
     });
   }, []);
 
-  const increase2xChance = useCallback(() => {
-    setState((prev) => {
-      const cost = config.shop['2xChance'].baseCost;
-      const maxChance = config.shop['2xChance'].maxChance;
-      const increaseAmount = config.shop['2xChance'].increaseAmount;
-      if (prev.credits < cost || prev.random2xChance >= maxChance) {
-        return prev;
-      }
-      return {
-        ...prev,
-        credits: prev.credits - cost,
-        random2xChance: Math.min(maxChance, prev.random2xChance + increaseAmount),
-      };
-    });
-  }, []);
-
   const purchaseExtraDraw = useCallback(() => {
     setState((prev) => {
-      const cost = config.shop.extraDraw.cost;
+      const cost = currentMode.shop.extraDraw.cost;
       if (prev.credits < cost || prev.extraDrawPurchased) {
         return prev;
       }
@@ -425,6 +504,44 @@ export function useGameState() {
         ...prev,
         credits: prev.credits - cost,
         extraDrawPurchased: true,
+      };
+    });
+  }, []);
+
+  const addParallelHandsBundle = useCallback(() => {
+    setState((prev) => {
+      const cost = calculateParallelHandsBundleCost(prev.handCount);
+      if (prev.credits < cost) {
+        return prev;
+      }
+      return {
+        ...prev,
+        handCount: prev.handCount + 10,
+        credits: prev.credits - cost,
+      };
+    });
+  }, []);
+
+  const moveToNextScreen = useCallback(() => {
+    setState((prev) => {
+      if (prev.gamePhase === 'parallelHandsAnimation') {
+        return {
+          ...prev,
+          gamePhase: 'results',
+        };
+      }
+      return prev;
+    });
+  }, []);
+
+  const proceedFromResults = useCallback(() => {
+    setState((prev) => {
+      // Always hide the shop and go to PreDraw
+      return {
+        ...prev,
+        screen: 'game',
+        gamePhase: 'preDraw',
+        showShopNextRound: false,
       };
     });
   }, []);
@@ -460,10 +577,13 @@ export function useGameState() {
     setBetAmount,
     setSelectedHandCount,
     addDeadCard,
-    removeCard,
+    removeSingleDeadCard,
+    removeAllDeadCards,
     addWildCard,
-    increase2xChance,
     purchaseExtraDraw,
+    addParallelHandsBundle,
+    moveToNextScreen,
+    proceedFromResults,
     cheatAddCredits,
     cheatAddHands,
   };

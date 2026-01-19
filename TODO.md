@@ -2,13 +2,28 @@
 
 ## Fixes
 
-- When the player has the extra draw feature, the hand should be redrawn, but held cards will not be included in the redraw. For instance, if the player holds an ace and redraws, the ace is held, the 4 other cards are discarded and 4 new cards are drawn to be held.
+- Shop is showing all options, but should only be showing the number of options stated in the game mode. Verify weighting is also displayed.
+- Shop is not calculating Parallel Hands Bundle correctly. It is currently set to 1000, where a single additional hand is also 1000. Verify these are being calculated correctly.
+- The user can gain more dead cards than allowed in the config. Verify this logic.
+- If the player has multiple re-draws, the player is not presented with new cards. When the redraw occurs, held cards should remain, and any cards not held should be removed and new cards should be drawn to the hand maximum.
 
 ## Improvements
 
+- Screen transitions do not seem to be integrated. Please verify, and add a basic crossfade animation to all themes as a starting point. HIGH PRIORITY.
+
+## Shop
+
+## Parallel Hands Animation Screen
+
+- Slow down the Parallel Hands animation and give vertical room to each hand being animated.
+- At 50% of the animation, have the hand element pulse and scale up slightly and back down, while showing the hand's type and payout.
+
 ## Themes
 
-- Remove all styling that is integrated to the game (such as bg-white classes) and move those into the themes. Use SCSS to import classes and apply them inside of the theme. The game elements themselves should not determine colors, but the theme should.
-  - (In progress - themes now have ID targeting capability)
+- Integrate audio hooks
 
-## Settings Screen
+## Maintenance
+
+- Review all files and resolve any linting errors
+- Test the build
+- Review all files and resolve any linting errors again

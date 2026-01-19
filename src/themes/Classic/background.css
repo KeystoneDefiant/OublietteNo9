@@ -14,10 +14,9 @@
 
 .theme-bg-pattern {
   position: absolute;
-  width: 150%;
-  height: 150%;
-  left: -50%;
-  top: -50%;
+  width: 200%;
+  height: 200%;
+  margin: -25%;
   inset: 0;
   z-index: -9;
   background-image:

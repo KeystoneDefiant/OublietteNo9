@@ -1,8 +1,20 @@
 import { Card, HandResult } from '../types';
+import { gameConfig } from '../config/gameConfig';
 
 const RANK_VALUES: { [key: string]: number } = {
-  '2': 2, '3': 3, '4': 4, '5': 5, '6': 6, '7': 7, '8': 8, '9': 9,
-  '10': 10, 'J': 11, 'Q': 12, 'K': 13, 'A': 14,
+  '2': 2,
+  '3': 3,
+  '4': 4,
+  '5': 5,
+  '6': 6,
+  '7': 7,
+  '8': 8,
+  '9': 9,
+  '10': 10,
+  J: 11,
+  Q: 12,
+  K: 13,
+  A: 14,
 };
 
 export class PokerEvaluator {
@@ -16,8 +28,8 @@ export class PokerEvaluator {
 
     // Filter out dead cards before evaluation - dead cards don't invalidate the hand,
     // they're simply ignored and don't count toward hand calculation
-    const activeHand = hand.filter(card => !card.isDead);
-    
+    const activeHand = hand.filter((card) => !card.isDead);
+
     // If we have no active cards, return high card
     if (activeHand.length === 0) {
       return {
@@ -29,23 +41,22 @@ export class PokerEvaluator {
     }
 
     // Separate wild cards from regular cards
-    const wildCards = activeHand.filter(card => card.isWild);
-    const regularCards = activeHand.filter(card => !card.isWild);
+    const wildCards = activeHand.filter((card) => card.isWild);
+    const regularCards = activeHand.filter((card) => !card.isWild);
 
     // If we have wild cards, evaluate with best possible hand
     if (wildCards.length > 0) {
       return this.evaluateWithWildCards(regularCards, wildCards);
     }
 
-    const sortedHand = [...activeHand].sort((a, b) => 
-      RANK_VALUES[a.rank] - RANK_VALUES[b.rank]
-    );
+    const sortedHand = [...activeHand].sort((a, b) => RANK_VALUES[a.rank] - RANK_VALUES[b.rank]);
 
     const rankCounts = this.getRankCounts(sortedHand);
     const suitCounts = this.getSuitCounts(sortedHand);
-    const ranks = sortedHand.map(c => RANK_VALUES[c.rank]);
+    const ranks = sortedHand.map((c) => RANK_VALUES[c.rank]);
     // Flush requires all cards to be same suit (only check if we have 5 active cards)
-    const isFlush = activeHand.length === 5 && Object.values(suitCounts).some(count => count === 5);
+    const isFlush =
+      activeHand.length === 5 && Object.values(suitCounts).some((count) => count === 5);
     // Straight requires 5 cards in sequence (only check if we have 5 active cards)
     const isStraight = activeHand.length === 5 && this.isStraight(ranks);
     const isRoyal = isStraight && ranks.length === 5 && ranks[0] === 10 && ranks[4] === 14;
@@ -139,8 +150,8 @@ export class PokerEvaluator {
     // One Pair (jacks or better only)
     if (pair) {
       const pairRank = parseInt(pair[0]);
-      // Only score pairs of Jacks (11), Queens (12), Kings (13), or Aces (14)
-      if (pairRank >= 11) {
+      // Only score pairs at or above the minimum pair rank (e.g., Jacks or Better)
+      if (pairRank >= gameConfig.gameRules.minimumPairRank) {
         return {
           rank: 'one-pair',
           multiplier: 0,
@@ -165,14 +176,12 @@ export class PokerEvaluator {
    * Evaluates a regular hand (no wild cards)
    */
   private static evaluateRegularHand(hand: Card[]): HandResult {
-    const sortedHand = [...hand].sort((a, b) => 
-      RANK_VALUES[a.rank] - RANK_VALUES[b.rank]
-    );
+    const sortedHand = [...hand].sort((a, b) => RANK_VALUES[a.rank] - RANK_VALUES[b.rank]);
 
     const rankCounts = this.getRankCounts(sortedHand);
     const suitCounts = this.getSuitCounts(sortedHand);
-    const ranks = sortedHand.map(c => RANK_VALUES[c.rank]);
-    const isFlush = Object.values(suitCounts).some(count => count === 5);
+    const ranks = sortedHand.map((c) => RANK_VALUES[c.rank]);
+    const isFlush = Object.values(suitCounts).some((count) => count === 5);
     const isStraight = this.isStraight(ranks);
     const isRoyal = isStraight && ranks[0] === 10 && ranks[4] === 14;
 
@@ -306,8 +315,13 @@ export class PokerEvaluator {
     for (let i = 1; i < ranks.length; i++) {
       if (ranks[i] !== ranks[i - 1] + 1) {
         // Check for A-2-3-4-5 straight (wheel)
-        if (ranks[0] === 2 && ranks[1] === 3 && ranks[2] === 4 && 
-            ranks[3] === 5 && ranks[4] === 14) {
+        if (
+          ranks[0] === 2 &&
+          ranks[1] === 3 &&
+          ranks[2] === 4 &&
+          ranks[3] === 5 &&
+          ranks[4] === 14
+        ) {
           return true;
         }
         return false;
@@ -332,18 +346,25 @@ export class PokerEvaluator {
   private static evaluateWithWildCards(regularCards: Card[], wildCards: Card[]): HandResult {
     const numWilds = wildCards.length;
     const numRegular = regularCards.length;
-    
+
     // Try to form the best possible hand
     // Strategy: Try royal flush, straight flush, four of a kind, etc.
-    
+
     // For simplicity, we'll try a few key patterns
     // Royal Flush attempt (A, K, Q, J, 10 of same suit)
     if (numRegular + numWilds === 5) {
-      const suits: Array<'hearts' | 'diamonds' | 'clubs' | 'spades'> = ['hearts', 'diamonds', 'clubs', 'spades'];
+      const suits: Array<'hearts' | 'diamonds' | 'clubs' | 'spades'> = [
+        'hearts',
+        'diamonds',
+        'clubs',
+        'spades',
+      ];
       const royalRanks: Array<'10' | 'J' | 'Q' | 'K' | 'A'> = ['10', 'J', 'Q', 'K', 'A'];
-      
+
       for (const suit of suits) {
-        const needed = royalRanks.filter(r => !regularCards.some(c => c.rank === r && c.suit === suit));
+        const needed = royalRanks.filter(
+          (r) => !regularCards.some((c) => c.rank === r && c.suit === suit)
+        );
         if (needed.length <= numWilds) {
           const expanded: Card[] = [...regularCards];
           for (let i = 0; i < needed.length; i++) {
@@ -370,7 +391,7 @@ export class PokerEvaluator {
         }
       }
     }
-    
+
     // Try four of a kind
     if (numRegular > 0) {
       const rankCounts = this.getRankCounts(regularCards);
@@ -381,7 +402,7 @@ export class PokerEvaluator {
           for (let i = 0; i < needed && i < numWilds; i++) {
             expanded.push({
               suit: 'hearts',
-              rank: Object.keys(RANK_VALUES).find(r => RANK_VALUES[r] === parseInt(rank)) as any,
+              rank: Object.keys(RANK_VALUES).find((r) => RANK_VALUES[r] === parseInt(rank)) as any,
               id: `wild-${i}`,
               isWild: true,
             });
@@ -402,7 +423,7 @@ export class PokerEvaluator {
         }
       }
     }
-    
+
     // Try flush
     const suitCounts = this.getSuitCounts(regularCards);
     const mostCommonSuit = Object.entries(suitCounts).sort((a, b) => b[1] - a[1])[0];
@@ -411,7 +432,9 @@ export class PokerEvaluator {
       const suit = mostCommonSuit[0] as 'hearts' | 'diamonds' | 'clubs' | 'spades';
       const ranks = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A'] as const;
       for (let i = 0; i < numWilds; i++) {
-        const availableRank = ranks.find(r => !expanded.some(c => c.rank === r && c.suit === suit));
+        const availableRank = ranks.find(
+          (r) => !expanded.some((c) => c.rank === r && c.suit === suit)
+        );
         expanded.push({
           suit,
           rank: availableRank || 'A',
@@ -420,11 +443,15 @@ export class PokerEvaluator {
         });
       }
       const result = this.evaluateRegularHand(expanded);
-      if (result.rank === 'flush' || result.rank === 'straight-flush' || result.rank === 'royal-flush') {
+      if (
+        result.rank === 'flush' ||
+        result.rank === 'straight-flush' ||
+        result.rank === 'royal-flush'
+      ) {
         return result;
       }
     }
-    
+
     // Default: use wilds as high cards
     const expanded: Card[] = [...regularCards];
     for (let i = 0; i < numWilds; i++) {
