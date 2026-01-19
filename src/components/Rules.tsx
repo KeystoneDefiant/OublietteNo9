@@ -49,19 +49,16 @@ export function Rules({ onClose }: RulesProps) {
             <h3 className="text-xl font-bold text-gray-800 mb-2">Special Features</h3>
             <ul className="list-disc list-inside space-y-2 text-sm">
               <li>
-                <strong>Dead Cards:</strong> Cards that don't count toward any poker hand
+                <strong>Dead Cards:</strong> Cards that don't count toward any poker hand. Add these
+                to your deck for an infusion of credits, max of 10.
               </li>
               <li>
-                <strong>Wild Cards:</strong> Count as any suit and rank (max 3 in deck)
+                <strong>Wild Cards:</strong> Count as any suit and rank to help form better hands.
+                Max of 3 in your deck.
               </li>
               <li>
-                <strong>Card Removal:</strong> Permanently remove cards from the deck
-              </li>
-              <li>
-                <strong>2x Payout Chance:</strong> Random chance to double your payout
-              </li>
-              <li>
-                <strong>Minimum Bet:</strong> Increases by 5% each round
+                <strong>Extra Draw:</strong> Gives you one additional draw per round to improve your
+                hand.
               </li>
             </ul>
           </div>

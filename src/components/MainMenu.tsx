@@ -42,9 +42,7 @@ export function MainMenu({ onStartRun, onCredits, onRules, onSettings }: MainMen
             Settings
           </button>
         </div>
-        <p className="text-center text-gray-500 mt-8 text-sm">
-          Hold cards and draw parallel hands to maximize your winnings!
-        </p>
+        <p className="text-center text-gray-500 mt-8 text-sm">It's video poker. But not.</p>
       </div>
     </div>
   );
