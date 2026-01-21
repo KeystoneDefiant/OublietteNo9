@@ -15,7 +15,8 @@ interface ParallelHandsAnimationProps {
 export function ParallelHandsAnimation({
   parallelHands,
   rewardTable,
-  selectedHandCount,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  selectedHandCount: _selectedHandCount,
   betAmount,
   onAnimationComplete,
 }: ParallelHandsAnimationProps) {

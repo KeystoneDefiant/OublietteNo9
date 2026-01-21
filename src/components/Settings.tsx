@@ -38,6 +38,7 @@ export function Settings({ onClose }: SettingsProps) {
   useEffect(() => {
     // Apply theme class when component mounts
     applyThemeToBody(selectedTheme);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleThemeChange = (themeName: string) => {

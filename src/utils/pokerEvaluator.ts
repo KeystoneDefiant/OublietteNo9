@@ -82,7 +82,7 @@ export class PokerEvaluator {
     }
 
     // Four of a Kind
-    const fourKind = Object.entries(rankCounts).find(([_, count]) => count === 4);
+    const fourKind = Object.entries(rankCounts).find(([, count]) => count === 4);
     if (fourKind) {
       const quadRank = parseInt(fourKind[0]);
       return {
@@ -94,8 +94,8 @@ export class PokerEvaluator {
     }
 
     // Full House
-    const threeKind = Object.entries(rankCounts).find(([_, count]) => count === 3);
-    const pair = Object.entries(rankCounts).find(([_, count]) => count === 2);
+    const threeKind = Object.entries(rankCounts).find(([, count]) => count === 3);
+    const pair = Object.entries(rankCounts).find(([, count]) => count === 2);
     if (threeKind && pair) {
       return {
         rank: 'full-house',
@@ -136,7 +136,7 @@ export class PokerEvaluator {
     }
 
     // Two Pair
-    const pairs = Object.entries(rankCounts).filter(([_, count]) => count === 2);
+    const pairs = Object.entries(rankCounts).filter(([, count]) => count === 2);
     if (pairs.length === 2) {
       const highPair = Math.max(parseInt(pairs[0][0]), parseInt(pairs[1][0]));
       return {
@@ -206,7 +206,7 @@ export class PokerEvaluator {
     }
 
     // Four of a Kind
-    const fourKind = Object.entries(rankCounts).find(([_, count]) => count === 4);
+    const fourKind = Object.entries(rankCounts).find(([, count]) => count === 4);
     if (fourKind) {
       const quadRank = parseInt(fourKind[0]);
       return {
@@ -218,8 +218,8 @@ export class PokerEvaluator {
     }
 
     // Full House
-    const threeKind = Object.entries(rankCounts).find(([_, count]) => count === 3);
-    const pair = Object.entries(rankCounts).find(([_, count]) => count === 2);
+    const threeKind = Object.entries(rankCounts).find(([, count]) => count === 3);
+    const pair = Object.entries(rankCounts).find(([, count]) => count === 2);
     if (threeKind && pair) {
       return {
         rank: 'full-house',
@@ -260,7 +260,7 @@ export class PokerEvaluator {
     }
 
     // Two Pair
-    const pairs = Object.entries(rankCounts).filter(([_, count]) => count === 2);
+    const pairs = Object.entries(rankCounts).filter(([, count]) => count === 2);
     if (pairs.length === 2) {
       const highPair = Math.max(parseInt(pairs[0][0]), parseInt(pairs[1][0]));
       return {
@@ -381,11 +381,11 @@ export class PokerEvaluator {
       if (count === 4 && numWilds >= 1) {
         const expanded = [...regularCards];
         const rankValue = parseInt(rank);
-        const rankStr = allRanks.find((r) => RANK_VALUES[r] === rankValue);
+        const rankStr = allRanks.find((r) => RANK_VALUES[r] === rankValue) as Card['rank'] | undefined;
         if (rankStr) {
           expanded.push({
             suit: 'hearts',
-            rank: rankStr,
+            rank: rankStr as Card['rank'],
             id: `wild-5k`,
             isWild: true,
           });
@@ -414,7 +414,7 @@ export class PokerEvaluator {
           for (let i = 0; i < needed.length; i++) {
             expanded.push({
               suit,
-              rank: needed[i],
+              rank: needed[i] as Card['rank'],
               id: `wild-royal-${i}`,
               isWild: true,
             });
@@ -423,7 +423,7 @@ export class PokerEvaluator {
           for (let i = needed.length; i < numWilds; i++) {
             expanded.push({
               suit,
-              rank: 'A',
+              rank: 'A' as Card['rank'],
               id: `wild-royal-fill-${i}`,
               isWild: true,
             });
@@ -452,7 +452,7 @@ export class PokerEvaluator {
           for (const rank of needed) {
             expanded.push({
               suit,
-              rank,
+              rank: rank as Card['rank'],
               id: `wild-sf-${rank}`,
               isWild: true,
             });
@@ -461,7 +461,7 @@ export class PokerEvaluator {
           for (let i = needed.length; i < numWilds; i++) {
             expanded.push({
               suit,
-              rank: 'A',
+              rank: 'A' as Card['rank'],
               id: `wild-sf-fill-${i}`,
               isWild: true,
             });
@@ -490,7 +490,7 @@ export class PokerEvaluator {
         for (let i = 0; i < needed; i++) {
           expanded.push({
             suit: 'hearts',
-            rank,
+            rank: rank as Card['rank'],
             id: `wild-4k-${i}`,
             isWild: true,
           });
@@ -529,7 +529,7 @@ export class PokerEvaluator {
               for (let i = 0; i < needed1; i++) {
                 expanded.push({
                   suit: 'hearts',
-                  rank: rank1,
+                  rank: rank1 as Card['rank'],
                   id: `wild-fh-3k-${i}`,
                   isWild: true,
                 });
@@ -537,7 +537,7 @@ export class PokerEvaluator {
               for (let i = 0; i < needed2; i++) {
                 expanded.push({
                   suit: 'diamonds',
-                  rank: rank2,
+                  rank: rank2 as Card['rank'],
                   id: `wild-fh-2k-${i}`,
                   isWild: true,
                 });
@@ -565,23 +565,23 @@ export class PokerEvaluator {
     }
 
     // Try Flush
-    const suitCounts = this.getSuitCounts(regularCards);
     for (const suit of suits) {
       const count = regularCards.filter((c) => c.suit === suit).length;
       if (count + numWilds >= 5) {
         const needed = 5 - count;
         const expanded = regularCards.filter((c) => c.suit === suit);
-        const usedRanks = new Set(expanded.map((c) => c.rank));
+        const usedRanks = new Set<Card['rank']>(expanded.map((c) => c.rank));
         for (let i = 0; i < needed; i++) {
-          const availableRank = allRanks.find((r) => !usedRanks.has(r));
+          const availableRank = allRanks.find((r) => !usedRanks.has(r as Card['rank'])) as Card['rank'] | undefined;
           if (availableRank) {
+            const rankToUse = availableRank as Card['rank'];
             expanded.push({
               suit,
-              rank: availableRank,
+              rank: rankToUse,
               id: `wild-flush-${i}`,
               isWild: true,
             });
-            usedRanks.add(availableRank);
+            usedRanks.add(rankToUse);
           }
         }
         // Fill remaining
@@ -622,7 +622,7 @@ export class PokerEvaluator {
         for (const rank of needed) {
           expanded.push({
             suit: 'hearts',
-            rank,
+            rank: rank as Card['rank'],
             id: `wild-straight-${rank}`,
             isWild: true,
           });
@@ -631,7 +631,7 @@ export class PokerEvaluator {
         for (let i = needed.length; i < numWilds; i++) {
           expanded.push({
             suit: 'hearts',
-            rank: 'A',
+            rank: 'A' as Card['rank'],
             id: `wild-straight-fill-${i}`,
             isWild: true,
           });
@@ -659,7 +659,7 @@ export class PokerEvaluator {
         for (let i = 0; i < needed; i++) {
           expanded.push({
             suit: 'hearts',
-            rank,
+            rank: rank as Card['rank'],
             id: `wild-3k-${i}`,
             isWild: true,
           });
@@ -700,7 +700,7 @@ export class PokerEvaluator {
             for (let k = 0; k < needed1; k++) {
               expanded.push({
                 suit: 'hearts',
-                rank: rank1,
+                rank: rank1 as Card['rank'],
                 id: `wild-2p-1-${k}`,
                 isWild: true,
               });
@@ -708,7 +708,7 @@ export class PokerEvaluator {
             for (let k = 0; k < needed2; k++) {
               expanded.push({
                 suit: 'diamonds',
-                rank: rank2,
+                rank: rank2 as Card['rank'],
                 id: `wild-2p-2-${k}`,
                 isWild: true,
               });
@@ -746,7 +746,7 @@ export class PokerEvaluator {
         for (let i = 0; i < needed; i++) {
           expanded.push({
             suit: 'hearts',
-            rank,
+            rank: rank as Card['rank'],
             id: `wild-pair-${i}`,
             isWild: true,
           });

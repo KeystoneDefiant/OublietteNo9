@@ -1,14 +1,10 @@
 import { useState, useCallback } from 'react';
-import { GameState, Card, HandRank } from '../types';
+import { GameState, HandRank, Card } from '../types';
 import { createFullDeck, shuffleDeck } from '../utils/deck';
-import { generateParallelHands } from '../utils/parallelHands';
 import { selectRandomShopOptions } from '../utils/shopSelection';
-import {
-  calculateWildCardCost,
-  calculateSingleDeadCardRemovalCost,
-  calculateAllDeadCardsRemovalCost,
-} from '../utils/config';
-import { gameConfig, getCurrentGameMode } from '../config/gameConfig';
+import { getCurrentGameMode } from '../config/gameConfig';
+import { useGameActions } from './useGameActions';
+import { useShopActions } from './useShopActions';
 
 const currentMode = getCurrentGameMode();
 
@@ -47,140 +43,9 @@ const INITIAL_STATE: GameState = {
 export function useGameState() {
   const [state, setState] = useState<GameState>(INITIAL_STATE);
 
-  const dealHand = useCallback(() => {
-    setState((prev) => {
-      const totalBet = prev.betAmount * prev.selectedHandCount;
-
-      // Check if player can afford the bet
-      if (prev.credits < totalBet) {
-        return prev;
-      }
-
-      const deck = shuffleDeck(
-        createFullDeck(
-          prev.deckModifications.deadCards,
-          prev.deckModifications.removedCards,
-          prev.deckModifications.wildCards
-        )
-      );
-      const newHand: Card[] = deck.slice(0, 5);
-
-      return {
-        ...prev,
-        playerHand: newHand,
-        heldIndices: [],
-        parallelHands: [],
-        additionalHandsBought: 0,
-        credits: prev.credits - totalBet,
-        screen: 'game',
-        gamePhase: 'playing',
-        hasExtraDraw: prev.extraDrawPurchased,
-        firstDrawComplete: false,
-        secondDrawAvailable: false,
-        selectedHandCount: prev.selectedHandCount || prev.handCount,
-      };
-    });
-  }, []);
-
-  const toggleHold = useCallback((index: number) => {
-    setState((prev) => {
-      const heldIndices = prev.heldIndices.includes(index)
-        ? prev.heldIndices.filter((i) => i !== index)
-        : [...prev.heldIndices, index];
-
-      return {
-        ...prev,
-        heldIndices,
-      };
-    });
-  }, []);
-
-  const drawParallelHands = useCallback(() => {
-    setState((prev) => {
-      if (prev.playerHand.length !== 5) {
-        return prev;
-      }
-
-      // If this is the first draw and extra draw is available, mark first draw complete and redraw non-held cards
-      if (!prev.firstDrawComplete && prev.hasExtraDraw) {
-        // Create a deck and shuffle it
-        const deck = shuffleDeck(
-          createFullDeck(
-            prev.deckModifications.deadCards,
-            prev.deckModifications.removedCards,
-            prev.deckModifications.wildCards
-          )
-        );
-
-        // Replace non-held cards with new cards from the deck
-        const updatedHand = [...prev.playerHand];
-        let deckIndex = 0;
-        for (let i = 0; i < 5; i++) {
-          if (!prev.heldIndices.includes(i)) {
-            updatedHand[i] = deck[deckIndex++];
-          }
-        }
-
-        // Generate parallel hands from the updated player hand
-        const parallelHands = generateParallelHands(
-          updatedHand,
-          prev.heldIndices,
-          prev.selectedHandCount,
-          prev.deckModifications.deadCards,
-          prev.deckModifications.removedCards,
-          prev.deckModifications.wildCards
-        );
-
-        return {
-          ...prev,
-          playerHand: updatedHand,
-          parallelHands,
-          firstDrawComplete: true,
-          secondDrawAvailable: true,
-        };
-      }
-
-      // Second draw or no extra draw - generate final hands and move to parallel hands animation
-      // For second draw, also replace non-held cards
-      let handForAnimation = prev.playerHand;
-      if (prev.firstDrawComplete && prev.hasExtraDraw) {
-        const deck = shuffleDeck(
-          createFullDeck(
-            prev.deckModifications.deadCards,
-            prev.deckModifications.removedCards,
-            prev.deckModifications.wildCards
-          )
-        );
-
-        const updatedHand = [...prev.playerHand];
-        let deckIndex = 0;
-        for (let i = 0; i < 5; i++) {
-          if (!prev.heldIndices.includes(i)) {
-            updatedHand[i] = deck[deckIndex++];
-          }
-        }
-        handForAnimation = updatedHand;
-      }
-
-      const parallelHands = generateParallelHands(
-        handForAnimation,
-        prev.heldIndices,
-        prev.selectedHandCount,
-        prev.deckModifications.deadCards,
-        prev.deckModifications.removedCards,
-        prev.deckModifications.wildCards
-      );
-
-      return {
-        ...prev,
-        playerHand: handForAnimation,
-        parallelHands,
-        gamePhase: 'parallelHandsAnimation',
-        firstDrawComplete: false,
-        secondDrawAvailable: false,
-      };
-    });
-  }, []);
+  // Use specialized hooks for different action types
+  const gameActions = useGameActions(state, setState);
+  const shopActions = useShopActions(state, setState);
 
   const openShop = useCallback(() => {
     setState((prev) => ({
@@ -362,194 +227,64 @@ export function useGameState() {
 
   const setBetAmount = useCallback((amount: number) => {
     setState((prev) => {
+      // Validate input is a valid number
+      if (isNaN(amount) || !isFinite(amount)) {
+        return prev;
+      }
+      
+      // Ensure amount is not negative
+      if (amount < 0) {
+        return prev;
+      }
+      
+      // Ensure amount meets minimum bet requirement
       if (amount < prev.minimumBet) {
         return prev;
       }
+      
+      // Floor the amount to ensure it's an integer
+      const validAmount = Math.floor(amount);
+      
       return {
         ...prev,
-        betAmount: amount,
+        betAmount: validAmount,
       };
     });
   }, []);
 
   const setSelectedHandCount = useCallback((count: number) => {
     setState((prev) => {
-      if (count < 1 || count > prev.handCount) {
+      // Validate input is a valid number
+      if (isNaN(count) || !isFinite(count)) {
         return prev;
       }
+      
+      // Ensure count is positive
+      if (count < 1) {
+        return prev;
+      }
+      
+      // Ensure count doesn't exceed available hands
+      if (count > prev.handCount) {
+        return prev;
+      }
+      
+      // Floor the count to ensure it's an integer
+      const validCount = Math.floor(count);
+      
       // Check if player can afford bet with this hand count
-      const totalBet = prev.betAmount * count;
+      const totalBet = prev.betAmount * validCount;
       if (prev.credits < totalBet) {
         return prev;
       }
+      
       return {
         ...prev,
-        selectedHandCount: count,
+        selectedHandCount: validCount,
       };
     });
   }, []);
 
-  const addDeadCard = useCallback(() => {
-    setState((prev) => {
-      // Check if adding a dead card would exceed the limit
-      if (prev.deckModifications.deadCards.length >= gameConfig.deadCardLimit) {
-        return prev; // Don't add if at limit
-      }
-
-      const reward = currentMode.shop.deadCard.creditReward;
-
-      // Create a dead card (random suit/rank, marked as dead)
-      const suits: Array<'hearts' | 'diamonds' | 'clubs' | 'spades'> = [
-        'hearts',
-        'diamonds',
-        'clubs',
-        'spades',
-      ];
-      const ranks: Array<
-        '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' | '10' | 'J' | 'Q' | 'K' | 'A'
-      > = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A'];
-
-      const randomSuit = suits[Math.floor(Math.random() * suits.length)];
-      const randomRank = ranks[Math.floor(Math.random() * ranks.length)];
-
-      const deadCard: Card = {
-        suit: randomSuit,
-        rank: randomRank,
-        id: `dead-${Date.now()}-${Math.random()}`,
-        isDead: true,
-      };
-
-      return {
-        ...prev,
-        credits: prev.credits + reward,
-        deckModifications: {
-          ...prev.deckModifications,
-          deadCards: [...prev.deckModifications.deadCards, deadCard],
-        },
-      };
-    });
-  }, []);
-
-  const removeSingleDeadCard = useCallback(() => {
-    setState((prev) => {
-      // Check if there are any dead cards
-      if (prev.deckModifications.deadCards.length === 0) {
-        return prev;
-      }
-
-      const cost = calculateSingleDeadCardRemovalCost(prev.deckModifications.deadCardRemovalCount);
-
-      if (prev.credits < cost) {
-        return prev;
-      }
-
-      // Remove the first dead card
-      const cardToRemove = prev.deckModifications.deadCards[0];
-      const updatedDeadCards = prev.deckModifications.deadCards.filter(
-        (c) => c.id !== cardToRemove.id
-      );
-
-      return {
-        ...prev,
-        credits: prev.credits - cost,
-        deckModifications: {
-          ...prev.deckModifications,
-          deadCards: updatedDeadCards,
-          removedCards: [...prev.deckModifications.removedCards, cardToRemove],
-          deadCardRemovalCount: prev.deckModifications.deadCardRemovalCount + 1,
-        },
-      };
-    });
-  }, []);
-
-  const removeAllDeadCards = useCallback(() => {
-    setState((prev) => {
-      // Check if there are any dead cards
-      if (prev.deckModifications.deadCards.length === 0) {
-        return prev;
-      }
-
-      const deadCardCount = prev.deckModifications.deadCards.length;
-      const cost = calculateAllDeadCardsRemovalCost(
-        prev.deckModifications.deadCardRemovalCount,
-        deadCardCount
-      );
-
-      if (prev.credits < cost) {
-        return prev;
-      }
-
-      // Remove all dead cards
-      const cardsToRemove = prev.deckModifications.deadCards;
-
-      return {
-        ...prev,
-        credits: prev.credits - cost,
-        deckModifications: {
-          ...prev.deckModifications,
-          deadCards: [],
-          removedCards: [...prev.deckModifications.removedCards, ...cardsToRemove],
-          deadCardRemovalCount: prev.deckModifications.deadCardRemovalCount + deadCardCount,
-        },
-      };
-    });
-  }, []);
-
-  const addWildCard = useCallback(() => {
-    setState((prev) => {
-      const cost = calculateWildCardCost(prev.wildCardCount);
-      if (prev.credits < cost || prev.wildCardCount >= currentMode.shop.wildCard.maxCount) {
-        return prev;
-      }
-
-      // Create a wild card
-      const wildCard: Card = {
-        suit: 'hearts', // Suit doesn't matter for wild cards
-        rank: 'A', // Rank doesn't matter for wild cards
-        id: `wild-${Date.now()}-${Math.random()}`,
-        isWild: true,
-      };
-
-      return {
-        ...prev,
-        credits: prev.credits - cost,
-        wildCardCount: prev.wildCardCount + 1,
-        deckModifications: {
-          ...prev.deckModifications,
-          wildCards: [...prev.deckModifications.wildCards, wildCard],
-        },
-      };
-    });
-  }, []);
-
-  const purchaseExtraDraw = useCallback(() => {
-    setState((prev) => {
-      const cost = currentMode.shop.extraDraw.cost;
-      if (prev.credits < cost || prev.extraDrawPurchased) {
-        return prev;
-      }
-      return {
-        ...prev,
-        credits: prev.credits - cost,
-        extraDrawPurchased: true,
-      };
-    });
-  }, []);
-
-  const addParallelHandsBundle = useCallback((bundleSize: number) => {
-    setState((prev) => {
-      const basePricePerHand = currentMode.shop.parallelHandsBundles.basePricePerHand;
-      const cost = bundleSize * basePricePerHand;
-      if (prev.credits < cost) {
-        return prev;
-      }
-      return {
-        ...prev,
-        handCount: prev.handCount + bundleSize,
-        credits: prev.credits - cost,
-      };
-    });
-  }, []);
 
   const moveToNextScreen = useCallback(() => {
     setState((prev) => {
@@ -593,9 +328,11 @@ export function useGameState() {
 
   return {
     state,
-    dealHand,
-    toggleHold,
-    drawParallelHands,
+    // Game actions
+    ...gameActions,
+    // Shop actions
+    ...shopActions,
+    // Navigation and other actions
     openShop,
     closeShop,
     upgradeRewardTable,
@@ -606,12 +343,6 @@ export function useGameState() {
     buyAnotherHand,
     setBetAmount,
     setSelectedHandCount,
-    addDeadCard,
-    removeSingleDeadCard,
-    removeAllDeadCards,
-    addWildCard,
-    purchaseExtraDraw,
-    addParallelHandsBundle,
     moveToNextScreen,
     proceedFromResults,
     cheatAddCredits,

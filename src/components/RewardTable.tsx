@@ -10,6 +10,7 @@ interface RewardTableProps {
 const RANK_LABELS: { [key in HandRank]: string } = {
   'royal-flush': 'Royal Flush',
   'straight-flush': 'Straight Flush',
+  'five-of-a-kind': 'Five of a Kind',
   'four-of-a-kind': 'Four of a Kind',
   'full-house': 'Full House',
   flush: 'Flush',
@@ -23,6 +24,7 @@ const RANK_LABELS: { [key in HandRank]: string } = {
 const RANK_ORDER: HandRank[] = [
   'royal-flush',
   'straight-flush',
+  'five-of-a-kind',
   'four-of-a-kind',
   'full-house',
   'flush',

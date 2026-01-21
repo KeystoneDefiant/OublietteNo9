@@ -11,6 +11,8 @@ import { GameOver } from './components/screen-GameOver';
 import { Credits } from './components/Credits';
 import { Rules } from './components/Rules';
 import { Settings } from './components/Settings';
+import { ErrorBoundary } from './components/ErrorBoundary';
+import { LoadingSpinner } from './components/LoadingSpinner';
 import { initializeTheme, getSelectedTheme, loadThemeConfig } from './utils/themeManager';
 import { ThemeConfig } from './types/index';
 import './styles/screen-transitions.css';
@@ -20,22 +22,33 @@ function App() {
   const [showRules, setShowRules] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [themeConfig, setThemeConfig] = useState<ThemeConfig | null>(null);
+  const [isThemeLoading, setIsThemeLoading] = useState(true);
 
   useEffect(() => {
-    initializeTheme();
+    const loadTheme = async () => {
+      try {
+        setIsThemeLoading(true);
+        initializeTheme();
 
-    // Load the initial theme config for background animation
-    const theme = getSelectedTheme();
-    loadThemeConfig(theme).then((config) => {
-      setThemeConfig(config);
+        // Load the initial theme config for background animation
+        const theme = getSelectedTheme();
+        const config = await loadThemeConfig(theme);
+        setThemeConfig(config);
 
-      // Set theme transition duration as CSS custom property
-      const transitionDuration = config?.animation?.transitionDuration ?? 300;
-      document.documentElement.style.setProperty(
-        '--transition-duration',
-        `${transitionDuration}ms`
-      );
-    });
+        // Set theme transition duration as CSS custom property
+        const transitionDuration = config?.animation?.transitionDuration ?? 300;
+        document.documentElement.style.setProperty(
+          '--transition-duration',
+          `${transitionDuration}ms`
+        );
+      } catch (error) {
+        console.error('Failed to load theme:', error);
+      } finally {
+        setIsThemeLoading(false);
+      }
+    };
+
+    loadTheme();
   }, []);
 
   // Apply theme background animation
@@ -46,7 +59,6 @@ function App() {
     dealHand,
     toggleHold,
     drawParallelHands,
-    upgradeHandCount,
     returnToMenu,
     returnToPreDraw,
     startNewRun,
@@ -65,17 +77,24 @@ function App() {
     cheatAddHands,
   } = useGameState();
 
+  // Show loading spinner while theme is loading
+  if (isThemeLoading) {
+    return <LoadingSpinner message="Loading theme..." fullScreen />;
+  }
+
   return (
     <div className="min-h-screen">
       {state.screen === 'menu' && (
-        <div key="menu" className="screen-enter">
-          <MainMenu
-            onStartRun={startNewRun}
-            onCredits={() => setShowCredits(true)}
-            onRules={() => setShowRules(true)}
-            onSettings={() => setShowSettings(true)}
-          />
-        </div>
+        <ErrorBoundary>
+          <div key="menu" className="screen-enter">
+            <MainMenu
+              onStartRun={startNewRun}
+              onCredits={() => setShowCredits(true)}
+              onRules={() => setShowRules(true)}
+              onSettings={() => setShowSettings(true)}
+            />
+          </div>
+        </ErrorBoundary>
       )}
 
       {showCredits && (
@@ -91,107 +110,119 @@ function App() {
       )}
 
       {state.screen === 'game' && state.gamePhase === 'preDraw' && !state.showShopNextRound && (
-        <div key="preDraw" className="screen-enter">
-          <PreDraw
-            credits={state.credits}
-            handCount={state.handCount}
-            selectedHandCount={state.selectedHandCount}
-            betAmount={state.betAmount}
-            minimumBet={state.minimumBet}
-            rewardTable={state.rewardTable}
-            gameOver={state.gameOver}
-            round={state.round}
-            totalEarnings={state.totalEarnings}
-            onSetBetAmount={setBetAmount}
-            onSetSelectedHandCount={setSelectedHandCount}
-            onDealHand={dealHand}
-            onEndRun={endRun}
-            onCheatAddCredits={cheatAddCredits}
-            onCheatAddHands={cheatAddHands}
-          />
-        </div>
+        <ErrorBoundary>
+          <div key="preDraw" className="screen-enter">
+            <PreDraw
+              credits={state.credits}
+              handCount={state.handCount}
+              selectedHandCount={state.selectedHandCount}
+              betAmount={state.betAmount}
+              minimumBet={state.minimumBet}
+              rewardTable={state.rewardTable}
+              gameOver={state.gameOver}
+              round={state.round}
+              totalEarnings={state.totalEarnings}
+              onSetBetAmount={setBetAmount}
+              onSetSelectedHandCount={setSelectedHandCount}
+              onDealHand={dealHand}
+              onEndRun={endRun}
+              onCheatAddCredits={cheatAddCredits}
+              onCheatAddHands={cheatAddHands}
+            />
+          </div>
+        </ErrorBoundary>
       )}
 
       {state.screen === 'game' && state.gamePhase === 'playing' && (
-        <div key="gameTable" className="screen-enter">
-          <GameTable
-            playerHand={state.playerHand}
-            heldIndices={state.heldIndices}
-            parallelHands={state.parallelHands}
-            rewardTable={state.rewardTable}
-            credits={state.credits}
-            selectedHandCount={state.selectedHandCount}
-            round={state.round}
-            totalEarnings={state.totalEarnings}
-            firstDrawComplete={state.firstDrawComplete}
-            secondDrawAvailable={state.secondDrawAvailable}
-            onToggleHold={toggleHold}
-            onDraw={drawParallelHands}
-          />
-        </div>
+        <ErrorBoundary>
+          <div key="gameTable" className="screen-enter">
+            <GameTable
+              playerHand={state.playerHand}
+              heldIndices={state.heldIndices}
+              parallelHands={state.parallelHands}
+              rewardTable={state.rewardTable}
+              credits={state.credits}
+              selectedHandCount={state.selectedHandCount}
+              round={state.round}
+              totalEarnings={state.totalEarnings}
+              firstDrawComplete={state.firstDrawComplete}
+              secondDrawAvailable={state.secondDrawAvailable}
+              onToggleHold={toggleHold}
+              onDraw={drawParallelHands}
+            />
+          </div>
+        </ErrorBoundary>
       )}
 
       {state.screen === 'game' && state.gamePhase === 'parallelHandsAnimation' && (
-        <div key="animation" className="screen-enter">
-          <ParallelHandsAnimation
-            parallelHands={state.parallelHands}
-            rewardTable={state.rewardTable}
-            selectedHandCount={state.selectedHandCount}
-            betAmount={state.betAmount}
-            onAnimationComplete={moveToNextScreen}
-          />
-        </div>
+        <ErrorBoundary>
+          <div key="animation" className="screen-enter">
+            <ParallelHandsAnimation
+              parallelHands={state.parallelHands}
+              rewardTable={state.rewardTable}
+              selectedHandCount={state.selectedHandCount}
+              betAmount={state.betAmount}
+              onAnimationComplete={moveToNextScreen}
+            />
+          </div>
+        </ErrorBoundary>
       )}
 
       {state.screen === 'game' && state.gamePhase === 'results' && (
-        <div key="results" className="screen-enter">
-          <Results
-            playerHand={state.playerHand}
-            heldIndices={state.heldIndices}
-            parallelHands={state.parallelHands}
-            rewardTable={state.rewardTable}
-            betAmount={state.betAmount}
-            credits={state.credits}
-            round={state.round}
-            totalEarnings={state.totalEarnings}
-            selectedHandCount={state.selectedHandCount}
-            onReturnToPreDraw={returnToPreDraw}
-            showShopNextRound={state.showShopNextRound}
-          />
-        </div>
+        <ErrorBoundary>
+          <div key="results" className="screen-enter">
+            <Results
+              playerHand={state.playerHand}
+              heldIndices={state.heldIndices}
+              parallelHands={state.parallelHands}
+              rewardTable={state.rewardTable}
+              betAmount={state.betAmount}
+              credits={state.credits}
+              round={state.round}
+              totalEarnings={state.totalEarnings}
+              selectedHandCount={state.selectedHandCount}
+              onReturnToPreDraw={returnToPreDraw}
+              showShopNextRound={state.showShopNextRound}
+            />
+          </div>
+        </ErrorBoundary>
       )}
 
       {state.screen === 'game' && state.showShopNextRound && (
-        <div key="shop" className="screen-enter">
-          <Shop
-            credits={state.credits}
-            handCount={state.handCount}
-            deadCards={state.deckModifications.deadCards}
-            deadCardRemovalCount={state.deckModifications.deadCardRemovalCount}
-            wildCards={state.deckModifications.wildCards}
-            wildCardCount={state.wildCardCount}
-            extraDrawPurchased={state.extraDrawPurchased}
-            selectedShopOptions={state.selectedShopOptions}
-            onAddDeadCard={addDeadCard}
-            onRemoveSingleDeadCard={removeSingleDeadCard}
-            onRemoveAllDeadCards={removeAllDeadCards}
-            onAddWildCard={addWildCard}
-            onPurchaseExtraDraw={purchaseExtraDraw}
-            onAddParallelHandsBundle={addParallelHandsBundle}
-            onClose={proceedFromResults}
-          />
-        </div>
+        <ErrorBoundary>
+          <div key="shop" className="screen-enter">
+            <Shop
+              credits={state.credits}
+              handCount={state.handCount}
+              deadCards={state.deckModifications.deadCards}
+              deadCardRemovalCount={state.deckModifications.deadCardRemovalCount}
+              wildCards={state.deckModifications.wildCards}
+              wildCardCount={state.wildCardCount}
+              extraDrawPurchased={state.extraDrawPurchased}
+              selectedShopOptions={state.selectedShopOptions}
+              onAddDeadCard={addDeadCard}
+              onRemoveSingleDeadCard={removeSingleDeadCard}
+              onRemoveAllDeadCards={removeAllDeadCards}
+              onAddWildCard={addWildCard}
+              onPurchaseExtraDraw={purchaseExtraDraw}
+              onAddParallelHandsBundle={addParallelHandsBundle}
+              onClose={proceedFromResults}
+            />
+          </div>
+        </ErrorBoundary>
       )}
 
       {state.screen === 'gameOver' && (
-        <div key="gameOver" className="screen-enter">
-          <GameOver
-            round={state.round}
-            totalEarnings={state.totalEarnings}
-            credits={state.credits}
-            onReturnToMenu={returnToMenu}
-          />
-        </div>
+        <ErrorBoundary>
+          <div key="gameOver" className="screen-enter">
+            <GameOver
+              round={state.round}
+              totalEarnings={state.totalEarnings}
+              credits={state.credits}
+              onReturnToMenu={returnToMenu}
+            />
+          </div>
+        </ErrorBoundary>
       )}
 
       {showSettings && (

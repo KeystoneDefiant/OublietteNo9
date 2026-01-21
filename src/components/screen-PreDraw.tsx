@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { RewardTable } from './RewardTable';
 import { CheatsModal } from './CheatsModal';
 import { GameHeader } from './GameHeader';
@@ -40,13 +40,87 @@ export function PreDraw({
 }: PreDrawProps) {
   const [showCheats, setShowCheats] = useState(false);
   const [showEndRunConfirm, setShowEndRunConfirm] = useState(false);
-  const totalBetCost = betAmount * selectedHandCount;
-  const canAffordBet = credits >= totalBetCost;
-  const canPlayRound = !gameOver && canAffordBet;
-  const efficiency = round > 0 ? (totalEarnings / round).toFixed(2) : '0.00';
+  const [betInputError, setBetInputError] = useState<string>('');
+  const [handCountInputError, setHandCountInputError] = useState<string>('');
+  
+  // Memoize expensive calculations
+  const totalBetCost = useMemo(
+    () => betAmount * selectedHandCount,
+    [betAmount, selectedHandCount]
+  );
+  const canAffordBet = useMemo(() => credits >= totalBetCost, [credits, totalBetCost]);
+  const canPlayRound = useMemo(() => !gameOver && canAffordBet, [gameOver, canAffordBet]);
+  const efficiency = useMemo(
+    () => (round > 0 ? (totalEarnings / round).toFixed(2) : '0.00'),
+    [round, totalEarnings]
+  );
+
+  const handleBetAmountChange = (value: string) => {
+    // Clear any existing error
+    setBetInputError('');
+    
+    // Parse the input
+    const numValue = parseInt(value);
+    
+    // Validate input
+    if (value === '' || isNaN(numValue)) {
+      setBetInputError('Please enter a valid number');
+      return;
+    }
+    
+    if (numValue < minimumBet) {
+      setBetInputError(`Bet must be at least ${minimumBet} credits`);
+      onSetBetAmount(minimumBet);
+      return;
+    }
+    
+    if (numValue < 0) {
+      setBetInputError('Bet cannot be negative');
+      return;
+    }
+    
+    if (numValue > credits) {
+      setBetInputError(`You only have ${credits} credits`);
+    }
+    
+    onSetBetAmount(numValue);
+  };
+
+  const handleHandCountChange = (value: string) => {
+    // Clear any existing error
+    setHandCountInputError('');
+    
+    // Parse the input
+    const numValue = parseInt(value);
+    
+    // Validate input
+    if (value === '' || isNaN(numValue)) {
+      setHandCountInputError('Please enter a valid number');
+      return;
+    }
+    
+    if (numValue < 1) {
+      setHandCountInputError('Must play at least 1 hand');
+      onSetSelectedHandCount(1);
+      return;
+    }
+    
+    if (numValue > handCount) {
+      setHandCountInputError(`Maximum ${handCount} hands available`);
+      onSetSelectedHandCount(handCount);
+      return;
+    }
+    
+    if (numValue < 0) {
+      setHandCountInputError('Hand count cannot be negative');
+      return;
+    }
+    
+    onSetSelectedHandCount(numValue);
+  };
 
   return (
-    <div id="preDraw-screen" className="min-h-screen p-6 relative overflow-hidden select-none">
+    <div id="preDraw-screen" className="min-h-screen p-6 relative overflow-hidden select-none" role="main">
       <div className="max-w-7xl mx-auto relative z-0">
         {/* Header */}
         <div className="flex justify-between items-center mb-6">
@@ -55,6 +129,7 @@ export function PreDraw({
             <button
               onClick={() => setShowCheats(true)}
               className="bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-6 rounded-lg transition-colors"
+              aria-label="Open cheats menu"
             >
               Cheats
             </button>
@@ -85,14 +160,18 @@ export function PreDraw({
 
               <div className="space-y-6">
                 {/* Bet Amount */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                <div role="group" aria-labelledby="bet-amount-label">
+                  <label id="bet-amount-label" className="block text-sm font-medium text-gray-700 mb-2">
                     Bet Amount per Hand (Min: {minimumBet})
                   </label>
                   <div className="flex items-center gap-3">
                     <button
-                      onClick={() => onSetBetAmount(Math.max(minimumBet, betAmount - 1))}
+                      onClick={() => {
+                        setBetInputError('');
+                        onSetBetAmount(Math.max(minimumBet, betAmount - 1));
+                      }}
                       className="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-3 px-4 rounded-lg transition-colors text-xl"
+                      aria-label="Decrease bet amount"
                     >
                       ▼
                     </button>
@@ -100,29 +179,54 @@ export function PreDraw({
                       type="number"
                       min={minimumBet}
                       value={betAmount}
-                      onChange={(e) =>
-                        onSetBetAmount(Math.max(minimumBet, parseInt(e.target.value) || minimumBet))
-                      }
-                      className="flex-1 px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-lg"
+                      onChange={(e) => handleBetAmountChange(e.target.value)}
+                      onBlur={() => {
+                        // On blur, ensure valid value
+                        if (betAmount < minimumBet) {
+                          onSetBetAmount(minimumBet);
+                          setBetInputError('');
+                        }
+                      }}
+                      className={`flex-1 px-4 py-3 border-2 rounded-lg focus:ring-2 focus:ring-blue-500 text-lg ${
+                        betInputError
+                          ? 'border-red-300 focus:border-red-500'
+                          : 'border-gray-300 focus:border-blue-500'
+                      }`}
+                      aria-label="Bet amount per hand"
+                      aria-describedby={betInputError ? 'bet-error' : undefined}
+                      aria-invalid={!!betInputError}
                     />
                     <button
-                      onClick={() => onSetBetAmount(betAmount + 1)}
+                      onClick={() => {
+                        setBetInputError('');
+                        onSetBetAmount(betAmount + 1);
+                      }}
                       className="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-3 px-4 rounded-lg transition-colors text-xl"
+                      aria-label="Increase bet amount"
                     >
                       ▲
                     </button>
                   </div>
+                  {betInputError && (
+                    <p id="bet-error" className="text-red-600 text-sm mt-2 font-medium" role="alert">
+                      {betInputError}
+                    </p>
+                  )}
                 </div>
 
                 {/* Hand Count */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                <div role="group" aria-labelledby="hand-count-label">
+                  <label id="hand-count-label" className="block text-sm font-medium text-gray-700 mb-2">
                     Number of Hands to Play (1 to {handCount})
                   </label>
                   <div className="flex items-center gap-3">
                     <button
-                      onClick={() => onSetSelectedHandCount(Math.max(1, selectedHandCount - 1))}
+                      onClick={() => {
+                        setHandCountInputError('');
+                        onSetSelectedHandCount(Math.max(1, selectedHandCount - 1));
+                      }}
                       className="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-3 px-4 rounded-lg transition-colors text-xl"
+                      aria-label="Decrease number of hands"
                     >
                       ▼
                     </button>
@@ -131,28 +235,52 @@ export function PreDraw({
                       min={1}
                       max={handCount}
                       value={selectedHandCount}
-                      onChange={(e) =>
-                        onSetSelectedHandCount(
-                          Math.max(1, Math.min(handCount, parseInt(e.target.value) || 1))
-                        )
-                      }
-                      className="flex-1 px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-lg"
+                      onChange={(e) => handleHandCountChange(e.target.value)}
+                      onBlur={() => {
+                        // On blur, ensure valid value
+                        if (selectedHandCount < 1) {
+                          onSetSelectedHandCount(1);
+                          setHandCountInputError('');
+                        } else if (selectedHandCount > handCount) {
+                          onSetSelectedHandCount(handCount);
+                          setHandCountInputError('');
+                        }
+                      }}
+                      className={`flex-1 px-4 py-3 border-2 rounded-lg focus:ring-2 focus:ring-blue-500 text-lg ${
+                        handCountInputError
+                          ? 'border-red-300 focus:border-red-500'
+                          : 'border-gray-300 focus:border-blue-500'
+                      }`}
+                      aria-label="Number of hands to play"
+                      aria-describedby={handCountInputError ? 'hand-count-error' : undefined}
+                      aria-invalid={!!handCountInputError}
                     />
                     <button
-                      onClick={() =>
-                        onSetSelectedHandCount(Math.min(handCount, selectedHandCount + 1))
-                      }
+                      onClick={() => {
+                        setHandCountInputError('');
+                        onSetSelectedHandCount(Math.min(handCount, selectedHandCount + 1));
+                      }}
                       className="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-3 px-4 rounded-lg transition-colors text-xl"
+                      aria-label="Increase number of hands"
                     >
                       ▲
                     </button>
                     <button
-                      onClick={() => onSetSelectedHandCount(handCount)}
+                      onClick={() => {
+                        setHandCountInputError('');
+                        onSetSelectedHandCount(handCount);
+                      }}
                       className="bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 px-4 rounded-lg transition-colors whitespace-nowrap"
+                      aria-label="Set to maximum number of hands"
                     >
                       Max
                     </button>
                   </div>
+                  {handCountInputError && (
+                    <p id="hand-count-error" className="text-red-600 text-sm mt-2 font-medium" role="alert">
+                      {handCountInputError}
+                    </p>
+                  )}
                 </div>
 
                 {/* Total Cost */}
@@ -181,6 +309,8 @@ export function PreDraw({
                         : 'bg-gray-400 text-gray-600 cursor-not-allowed'
                     }
                   `}
+                  aria-label={gameOver ? 'Cannot play - game over' : `Run round with ${selectedHandCount} hands at ${betAmount} credits per hand`}
+                  aria-disabled={!canPlayRound}
                 >
                   {gameOver ? 'Cannot Play - Game Over' : 'Run Round'}
                 </button>
@@ -189,6 +319,7 @@ export function PreDraw({
                 <button
                   onClick={() => setShowEndRunConfirm(true)}
                   className="w-full px-8 py-4 rounded-lg font-bold text-xl transition-colors bg-red-600 hover:bg-red-700 text-white shadow-lg hover:shadow-xl"
+                  aria-label="End current run and return to main menu"
                 >
                   End Run
                 </button>

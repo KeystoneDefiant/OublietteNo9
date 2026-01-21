@@ -1,4 +1,5 @@
 import { ThemeConfig } from '../types/index';
+import { logger } from './logger';
 
 const THEME_STORAGE_KEY = 'pokerthing-selected-theme';
 const DEFAULT_THEME = 'Classic';
@@ -42,7 +43,7 @@ async function discoverThemes(): Promise<string[]> {
     AVAILABLE_THEMES = themes.length > 0 ? themes : [DEFAULT_THEME];
     return AVAILABLE_THEMES;
   } catch (error) {
-    console.warn('Failed to discover themes:', error);
+    logger.warn(`Failed to discover themes: ${error}`);
     AVAILABLE_THEMES = [DEFAULT_THEME];
     return AVAILABLE_THEMES;
   }
@@ -132,7 +133,7 @@ export async function loadThemeConfig(themeName: string): Promise<ThemeConfig | 
           css: cssModule.default,
         };
       } catch (fileError) {
-        console.warn(`Failed to load background files for ${themeName}:`, fileError);
+        logger.warn(`Failed to load background files for ${themeName}: ${fileError}`);
       }
     }
 
@@ -140,7 +141,7 @@ export async function loadThemeConfig(themeName: string): Promise<ThemeConfig | 
     THEME_CONFIG_CACHE.set(themeName, themeConfig);
     return themeConfig;
   } catch (error) {
-    console.warn(`Failed to load theme config for ${themeName}:`, error);
+    logger.warn(`Failed to load theme config for ${themeName}: ${error}`);
     THEME_CONFIG_CACHE.set(themeName, null);
     return null;
   }
