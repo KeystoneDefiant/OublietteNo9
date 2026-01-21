@@ -62,8 +62,8 @@ export const gameConfig = {
       minimumPairRank: 11, // Minimum rank for a pair to be valid (11 = Jacks or Better)
       // Devil's Deal configuration
       devilsDeal: {
-        baseChance: 10, // Base percentage chance (0-100)
-        baseCostPercent: 5, // Base cost as percentage of potential payout
+        baseChance: 15, // Base percentage chance (0-100)
+        baseCostPercent: 10, // Base cost as percentage of potential payout
         chanceIncreasePerPurchase: 20, // Percentage increase per shop purchase
         maxChancePurchases: 3, // Maximum times chance can be purchased
         costReductionPerPurchase: 6, // Percentage reduction per shop purchase
