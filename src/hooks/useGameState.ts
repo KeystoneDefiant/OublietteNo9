@@ -162,18 +162,20 @@ export function useGameState() {
     }));
   }, []);
 
+  /**
+   * End the current run and show game over summary screen
+   * Preserves stats (round, totalEarnings, credits) for display
+   */
   const endRun = useCallback(() => {
     setState((prev) => ({
       ...prev,
-      screen: 'menu',
+      screen: 'gameOver',
       gamePhase: 'preDraw',
-      gameOver: false,
-      currentRun: prev.currentRun,
-      betAmount: currentMode.startingBet,
-      selectedHandCount: prev.handCount,
-      minimumBet: currentMode.startingBet,
-      round: 1,
-      totalEarnings: 0,
+      gameOver: true,
+      // Preserve stats for game over screen
+      // round: prev.round (kept as is)
+      // totalEarnings: prev.totalEarnings (kept as is)
+      // credits: prev.credits (kept as is)
       playerHand: [],
       heldIndices: [],
       parallelHands: [],
