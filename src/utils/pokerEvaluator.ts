@@ -1,5 +1,5 @@
 import { Card, HandResult } from '../types';
-import { gameConfig } from '../config/gameConfig';
+import { getCurrentGameMode } from '../config/gameConfig';
 
 const RANK_VALUES: { [key: string]: number } = {
   '2': 2,
@@ -151,7 +151,7 @@ export class PokerEvaluator {
     if (pair) {
       const pairRank = parseInt(pair[0]);
       // Only score pairs at or above the minimum pair rank (e.g., Jacks or Better)
-      if (pairRank >= gameConfig.gameRules.minimumPairRank) {
+      if (pairRank >= getCurrentGameMode().minimumPairRank) {
         return {
           rank: 'one-pair',
           multiplier: 0,
@@ -737,7 +737,7 @@ export class PokerEvaluator {
     // Try One Pair (Jacks or better with wilds)
     for (const rank of allRanks) {
       const rankValue = RANK_VALUES[rank];
-      if (rankValue < gameConfig.gameRules.minimumPairRank) continue;
+      if (rankValue < getCurrentGameMode().minimumPairRank) continue;
 
       const count = regularCards.filter((c) => c.rank === rank).length;
       if (count + numWilds >= 2) {

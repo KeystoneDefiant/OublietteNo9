@@ -129,6 +129,28 @@ export function ParallelHandsAnimation({
               <div className="hand-content">
                 <div className="hand-cards">
                   {hand.cards.map((card, cardIndex) => {
+                    if (card.isDead) {
+                      return (
+                        <div
+                          key={cardIndex}
+                          className="hand-card-small"
+                          title="Dead Card"
+                        >
+                          <span className="text-2xl">💀</span>
+                        </div>
+                      );
+                    }
+                    if (card.isWild) {
+                      return (
+                        <div
+                          key={cardIndex}
+                          className="hand-card-small"
+                          title="Wild Card"
+                        >
+                          <span className="text-orange-600 font-bold text-xs">WILD</span>
+                        </div>
+                      );
+                    }
                     const isRedSuit = card.suit === 'hearts' || card.suit === 'diamonds';
                     const suitColorClass = isRedSuit ? 'text-red-600' : 'text-black';
                     return (

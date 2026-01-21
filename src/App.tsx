@@ -122,6 +122,8 @@ function App() {
               gameOver={state.gameOver}
               round={state.round}
               totalEarnings={state.totalEarnings}
+              failureState={state.currentFailureState}
+              gameState={state}
               onSetBetAmount={setBetAmount}
               onSetSelectedHandCount={setSelectedHandCount}
               onDealHand={dealHand}
@@ -147,6 +149,8 @@ function App() {
               totalEarnings={state.totalEarnings}
               firstDrawComplete={state.firstDrawComplete}
               secondDrawAvailable={state.secondDrawAvailable}
+              failureState={state.currentFailureState}
+              gameState={state}
               onToggleHold={toggleHold}
               onDraw={drawParallelHands}
             />
@@ -181,6 +185,8 @@ function App() {
               round={state.round}
               totalEarnings={state.totalEarnings}
               selectedHandCount={state.selectedHandCount}
+              failureState={state.currentFailureState}
+              gameState={state}
               onReturnToPreDraw={returnToPreDraw}
               showShopNextRound={state.showShopNextRound}
             />

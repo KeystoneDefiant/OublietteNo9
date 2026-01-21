@@ -1,4 +1,4 @@
-import { Card as CardType, Hand } from '../types';
+import { Card as CardType, Hand, FailureStateType, GameState } from '../types';
 import { Card } from './Card';
 import { GameHeader } from './GameHeader';
 import { RewardTable } from './RewardTable';
@@ -14,6 +14,8 @@ interface GameTableProps {
   totalEarnings: number;
   firstDrawComplete: boolean;
   secondDrawAvailable: boolean;
+  failureState?: FailureStateType;
+  gameState?: GameState;
   onToggleHold: (index: number) => void;
   onDraw: () => void;
 }
@@ -29,6 +31,8 @@ export function GameTable({
   totalEarnings,
   firstDrawComplete,
   secondDrawAvailable,
+  failureState,
+  gameState,
   onToggleHold,
   onDraw,
 }: GameTableProps) {
@@ -39,7 +43,13 @@ export function GameTable({
     <div id="gameTable-screen" className="min-h-screen p-6 relative overflow-hidden select-none">
       <div className="max-w-7xl mx-auto relative z-0">
         {/* Header */}
-        <GameHeader credits={credits} round={round} efficiency={efficiency} />
+        <GameHeader 
+          credits={credits} 
+          round={round} 
+          efficiency={efficiency}
+          failureState={failureState}
+          gameState={gameState}
+        />
 
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           {/* Main Game Area */}

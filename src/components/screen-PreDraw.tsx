@@ -1,7 +1,9 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { RewardTable } from './RewardTable';
 import { CheatsModal } from './CheatsModal';
 import { GameHeader } from './GameHeader';
+import { FailureStateType, GameState } from '../types';
+import { gameConfig } from '../config/gameConfig';
 
 interface PreDrawProps {
   credits: number;
@@ -13,6 +15,8 @@ interface PreDrawProps {
   gameOver: boolean;
   round: number;
   totalEarnings: number;
+  failureState?: FailureStateType;
+  gameState?: GameState;
   onSetBetAmount: (amount: number) => void;
   onSetSelectedHandCount: (count: number) => void;
   onDealHand: () => void;
@@ -31,6 +35,8 @@ export function PreDraw({
   gameOver,
   round,
   totalEarnings,
+  failureState,
+  gameState,
   onSetBetAmount,
   onSetSelectedHandCount,
   onDealHand,
@@ -42,6 +48,14 @@ export function PreDraw({
   const [showEndRunConfirm, setShowEndRunConfirm] = useState(false);
   const [betInputError, setBetInputError] = useState<string>('');
   const [handCountInputError, setHandCountInputError] = useState<string>('');
+  const [maxBetQuip, setMaxBetQuip] = useState<string>('Max Bet');
+  
+  // Pick a random quip when the PreDraw screen appears
+  useEffect(() => {
+    const quips = gameConfig.quips.maxBet;
+    const randomQuip = quips[Math.floor(Math.random() * quips.length)];
+    setMaxBetQuip(randomQuip);
+  }, []); // Empty dependency array means this runs once when component mounts
   
   // Memoize expensive calculations
   const totalBetCost = useMemo(
@@ -124,7 +138,13 @@ export function PreDraw({
       <div className="max-w-7xl mx-auto relative z-0">
         {/* Header */}
         <div className="flex justify-between items-center mb-6">
-          <GameHeader credits={credits} round={round} efficiency={efficiency} />
+          <GameHeader 
+            credits={credits} 
+            round={round} 
+            efficiency={efficiency}
+            failureState={failureState}
+            gameState={gameState}
+          />
           <div className="flex gap-3">
             <button
               onClick={() => setShowCheats(true)}
@@ -206,6 +226,19 @@ export function PreDraw({
                     >
                       ▲
                     </button>
+                    <button
+                      onClick={() => {
+                        setBetInputError('');
+                        // Calculate maximum bet: credits divided by hand count, but at least minimumBet
+                        const maxBetPerHand = Math.floor(credits / selectedHandCount);
+                        const maxBet = Math.max(minimumBet, maxBetPerHand);
+                        onSetBetAmount(maxBet);
+                      }}
+                      className="bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 px-4 rounded-lg transition-colors whitespace-nowrap"
+                      aria-label="Set bet amount to maximum affordable"
+                    >
+                      Max
+                    </button>
                   </div>
                   {betInputError && (
                     <p id="bet-error" className="text-red-600 text-sm mt-2 font-medium" role="alert">
@@ -268,7 +301,37 @@ export function PreDraw({
                     <button
                       onClick={() => {
                         setHandCountInputError('');
-                        onSetSelectedHandCount(handCount);
+                        setBetInputError('');
+                        
+                        // Step 1: Try to set to maximum hands
+                        let targetHandCount = handCount;
+                        let targetBetAmount = betAmount;
+                        
+                        // Step 2: Check if player can afford max hands at current bet
+                        const totalCost = targetBetAmount * targetHandCount;
+                        
+                        if (credits < totalCost) {
+                          // Step 3: Calculate optimal bet amount for max hands
+                          const optimalBet = Math.floor(credits / targetHandCount);
+                          
+                          if (optimalBet >= minimumBet) {
+                            // Can afford max hands by reducing bet
+                            targetBetAmount = optimalBet;
+                          } else {
+                            // Step 4: Can't afford even at minimum bet, reduce hands
+                            // Find maximum hands where credits >= minimumBet * hands
+                            targetHandCount = Math.floor(credits / minimumBet);
+                            // Ensure at least 1 hand
+                            targetHandCount = Math.max(1, targetHandCount);
+                            // Ensure not more than max available
+                            targetHandCount = Math.min(handCount, targetHandCount);
+                            targetBetAmount = minimumBet;
+                          }
+                        }
+                        
+                        // Apply the calculated values
+                        onSetBetAmount(targetBetAmount);
+                        onSetSelectedHandCount(targetHandCount);
                       }}
                       className="bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 px-4 rounded-lg transition-colors whitespace-nowrap"
                       aria-label="Set to maximum number of hands"
@@ -297,23 +360,90 @@ export function PreDraw({
                   )}
                 </div>
 
-                {/* Run Round Button */}
-                <button
-                  onClick={onDealHand}
-                  disabled={!canPlayRound}
-                  className={`
-                    w-full px-8 py-4 rounded-lg font-bold text-xl transition-colors
-                    ${
-                      canPlayRound
-                        ? 'bg-green-600 hover:bg-green-700 text-white shadow-lg hover:shadow-xl'
-                        : 'bg-gray-400 text-gray-600 cursor-not-allowed'
-                    }
-                  `}
-                  aria-label={gameOver ? 'Cannot play - game over' : `Run round with ${selectedHandCount} hands at ${betAmount} credits per hand`}
-                  aria-disabled={!canPlayRound}
-                >
-                  {gameOver ? 'Cannot Play - Game Over' : 'Run Round'}
-                </button>
+                {/* Run Round and Max Bet Buttons */}
+                <div className="flex gap-3">
+                  <button
+                    onClick={onDealHand}
+                    disabled={!canPlayRound}
+                    className={`
+                      flex-[2] px-8 py-4 rounded-lg font-bold text-xl transition-colors
+                      ${
+                        canPlayRound
+                          ? 'bg-green-600 hover:bg-green-700 text-white shadow-lg hover:shadow-xl'
+                          : 'bg-gray-400 text-gray-600 cursor-not-allowed'
+                      }
+                    `}
+                    aria-label={gameOver ? 'Cannot play - game over' : `Run round with ${selectedHandCount} hands at ${betAmount} credits per hand`}
+                    aria-disabled={!canPlayRound}
+                  >
+                    {gameOver ? 'Cannot Play - Game Over' : 'Run Round'}
+                  </button>
+                  <button
+                    onClick={() => {
+                      setBetInputError('');
+                      setHandCountInputError('');
+                      
+                      // Step 1: Start with maximum hands
+                      let targetHandCount = handCount;
+                      
+                      // Step 2: Calculate maximum bet for max hands
+                      let targetBetAmount = Math.floor(credits / targetHandCount);
+                      
+                      // Step 3: If bet is below minimum, reduce hands until we can afford minimum bet
+                      if (targetBetAmount < minimumBet) {
+                        targetHandCount = Math.floor(credits / minimumBet);
+                        targetHandCount = Math.max(1, targetHandCount);
+                        targetHandCount = Math.min(handCount, targetHandCount);
+                        targetBetAmount = minimumBet;
+                      }
+                      
+                      // Step 4: If bet is 1, reduce hands until we can afford a higher bet (if possible)
+                      // This ensures we don't play with bet of 1 when we can afford a better bet
+                      if (targetBetAmount === 1 && credits > targetHandCount) {
+                        // Try to find a combination where bet > 1 and bet >= minimumBet
+                        // We want to maximize hands while keeping bet > 1
+                        for (let hands = targetHandCount; hands >= 1; hands--) {
+                          const bet = Math.floor(credits / hands);
+                          if (bet > 1 && bet >= minimumBet) {
+                            targetHandCount = hands;
+                            targetBetAmount = bet;
+                            break;
+                          }
+                        }
+                        // If we couldn't find a bet > 1, keep the current values (bet of 1 is acceptable if minimumBet allows it)
+                      }
+                      
+                      // Step 5: Apply the calculated values
+                      onSetBetAmount(targetBetAmount);
+                      onSetSelectedHandCount(targetHandCount);
+                      
+                      // Step 6: Check if we can afford to play, then run the round
+                      const finalCost = targetBetAmount * targetHandCount;
+                      if (!gameOver && credits >= finalCost) {
+                        // Use requestAnimationFrame to ensure state updates are processed before calling onDealHand
+                        // Double RAF ensures we wait for the next frame after state updates are applied
+                        requestAnimationFrame(() => {
+                          requestAnimationFrame(() => {
+                            onDealHand();
+                          });
+                        });
+                      }
+                    }}
+                    disabled={gameOver}
+                    className={`
+                      flex-1 px-4 py-4 rounded-lg font-bold text-lg transition-colors
+                      ${
+                        gameOver
+                          ? 'bg-gray-400 text-gray-600 cursor-not-allowed'
+                          : 'bg-blue-600 hover:bg-blue-700 text-white shadow-lg hover:shadow-xl'
+                      }
+                    `}
+                    aria-label={gameOver ? 'Cannot play - game over' : 'Set maximum hands and bet, then run round'}
+                    aria-disabled={gameOver}
+                  >
+                    {maxBetQuip}
+                  </button>
+                </div>
 
                 {/* End Run Button */}
                 <button

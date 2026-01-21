@@ -83,10 +83,16 @@ export function Card({
         }}
       >
         <div className="flex flex-col items-center justify-center h-full">
-          <div className={`font-bold ${suitColor}`}>{card.rank}</div>
-          <div className={`text-2xl ${suitColor}`}>{suitSymbol}</div>
-          {card.isWild && <div className="text-xs text-orange-600 font-bold mt-1">WILD</div>}
-          {card.isDead && <div className="text-xs text-gray-500 font-bold mt-1">DEAD</div>}
+          {card.isDead ? (
+            <div className="text-4xl">💀</div>
+          ) : card.isWild ? (
+            <div className="text-orange-600 font-bold text-lg">WILD</div>
+          ) : (
+            <>
+              <div className={`font-bold ${suitColor}`}>{card.rank}</div>
+              <div className={`text-2xl ${suitColor}`}>{suitSymbol}</div>
+            </>
+          )}
         </div>
       </div>
 

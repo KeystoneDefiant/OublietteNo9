@@ -5,6 +5,8 @@ import { selectRandomShopOptions } from '../utils/shopSelection';
 import { getCurrentGameMode } from '../config/gameConfig';
 import { useGameActions } from './useGameActions';
 import { useShopActions } from './useShopActions';
+import { checkFailureConditions } from '../utils/failureConditions';
+import { PokerEvaluator } from '../utils/pokerEvaluator';
 
 const currentMode = getCurrentGameMode();
 
@@ -22,6 +24,7 @@ const INITIAL_STATE: GameState = {
   betAmount: currentMode.startingBet,
   selectedHandCount: currentMode.startingHandCount,
   minimumBet: currentMode.startingBet,
+  baseMinimumBet: currentMode.startingBet,
   round: 1,
   totalEarnings: 0,
   deckModifications: {
@@ -38,6 +41,9 @@ const INITIAL_STATE: GameState = {
   gameOver: false,
   showShopNextRound: false,
   selectedShopOptions: [],
+  isEndlessMode: false,
+  currentFailureState: null,
+  winningHandsLastRound: 0,
 };
 
 export function useGameState() {
@@ -83,19 +89,46 @@ export function useGameState() {
 
   const returnToPreDraw = useCallback((payout: number = 0) => {
     setState((prev) => {
+      // Count winning hands from last round (hands with payout > 0)
+      const winningHandsCount = prev.parallelHands.reduce((count, hand) => {
+        const result = PokerEvaluator.evaluate(hand.cards);
+        const withRewards = PokerEvaluator.applyRewards(result, prev.rewardTable);
+        const handPayout = prev.betAmount * withRewards.multiplier;
+        return handPayout > 0 ? count + 1 : count;
+      }, 0);
+
       // Add payout to credits and total earnings
       const newCredits = prev.credits + payout;
       const newTotalEarnings = prev.totalEarnings + payout;
 
-      // Increment round and apply bet increase
+      // Increment round
       const newRound = prev.round + 1;
-      const minBetMultiplier = 1 + currentMode.minimumBetIncreasePercent / 100;
-      const newMinimumBet = Math.floor(prev.minimumBet * minBetMultiplier);
+
+      // Check if we should enter endless mode
+      const endlessConfig = currentMode.endlessMode;
+      const shouldEnterEndlessMode =
+        endlessConfig && newRound > endlessConfig.startRound && !prev.isEndlessMode;
+
+      // Update minimum bet - only increase every X rounds (based on minimumBetIncreaseInterval)
+      let newMinimumBet = prev.minimumBet;
+      let newBaseMinimumBet = prev.baseMinimumBet;
+
+      if (shouldEnterEndlessMode) {
+        // When entering endless mode, set base minimum bet to current minimum bet
+        newBaseMinimumBet = prev.minimumBet;
+      }
+
+      // Only increase minimum bet if it's time (based on interval)
+      if (newRound % currentMode.minimumBetIncreaseInterval === 0) {
+        const minBetMultiplier = 1 + currentMode.minimumBetIncreasePercent / 100;
+        newMinimumBet = Math.floor(prev.minimumBet * minBetMultiplier);
+      }
 
       // Auto-adjust bet and hand count if player can't afford current bet
       let adjustedBet = prev.betAmount;
       let adjustedHandCount = prev.selectedHandCount;
       let gameOver = false;
+      let currentFailureState = prev.currentFailureState;
 
       // First, try to reduce bet to an affordable level
       const maxAffordableBet = Math.floor(newCredits / adjustedHandCount);
@@ -111,6 +144,32 @@ export function useGameState() {
       // If still can't afford, trigger game over
       if (newCredits < adjustedBet * adjustedHandCount) {
         gameOver = true;
+      }
+
+      // Check if we're in endless mode (or should enter it)
+      const isEndlessMode = shouldEnterEndlessMode || prev.isEndlessMode;
+
+      // If in endless mode, check failure conditions
+      if (isEndlessMode && !gameOver) {
+        // Create temporary state for failure condition checking
+        const tempState: GameState = {
+          ...prev,
+          round: newRound,
+          credits: newCredits,
+          totalEarnings: newTotalEarnings,
+          minimumBet: newMinimumBet,
+          baseMinimumBet: newBaseMinimumBet,
+          betAmount: adjustedBet,
+          winningHandsLastRound: winningHandsCount,
+          isEndlessMode: true,
+        };
+
+        currentFailureState = checkFailureConditions(tempState);
+
+        // If a failure condition is active, trigger game over
+        if (currentFailureState !== null) {
+          gameOver = true;
+        }
       }
 
       // Check if shop should appear next round and generate options if so
@@ -129,6 +188,7 @@ export function useGameState() {
         secondDrawAvailable: false,
         round: newRound,
         minimumBet: newMinimumBet,
+        baseMinimumBet: newBaseMinimumBet,
         credits: newCredits,
         totalEarnings: newTotalEarnings,
         betAmount: adjustedBet,
@@ -136,6 +196,9 @@ export function useGameState() {
         gameOver,
         showShopNextRound,
         selectedShopOptions,
+        isEndlessMode,
+        currentFailureState,
+        winningHandsLastRound: winningHandsCount,
       };
     });
   }, []);
@@ -153,12 +216,16 @@ export function useGameState() {
       betAmount: currentMode.startingBet,
       selectedHandCount: prev.handCount,
       minimumBet: currentMode.startingBet,
+      baseMinimumBet: currentMode.startingBet,
       round: 1,
       totalEarnings: 0,
       gameOver: false,
       hasExtraDraw: false,
       showShopNextRound: false,
       selectedShopOptions: [],
+      isEndlessMode: false,
+      currentFailureState: null,
+      winningHandsLastRound: 0,
     }));
   }, []);
 

@@ -266,6 +266,79 @@ describe('PokerEvaluator', () => {
       const result = PokerEvaluator.evaluate(hand);
       expect(result.rank).toBe('one-pair');
     });
+
+    it('should identify pair of queens', () => {
+      const hand: Card[] = [
+        createCard('Q', 'hearts'),
+        createCard('Q', 'diamonds'),
+        createCard('5', 'clubs'),
+        createCard('8', 'spades'),
+        createCard('2', 'hearts'),
+      ];
+      const result = PokerEvaluator.evaluate(hand);
+      expect(result.rank).toBe('one-pair');
+    });
+
+    it('should identify pair of kings', () => {
+      const hand: Card[] = [
+        createCard('K', 'hearts'),
+        createCard('K', 'diamonds'),
+        createCard('5', 'clubs'),
+        createCard('8', 'spades'),
+        createCard('2', 'hearts'),
+      ];
+      const result = PokerEvaluator.evaluate(hand);
+      expect(result.rank).toBe('one-pair');
+    });
+
+    // Tests for "Jacks or Better" rule - pairs below Jacks should be rejected
+    it('should reject pair of 10s (below minimum pair rank)', () => {
+      const hand: Card[] = [
+        createCard('10', 'hearts'),
+        createCard('10', 'diamonds'),
+        createCard('5', 'clubs'),
+        createCard('8', 'spades'),
+        createCard('2', 'hearts'),
+      ];
+      const result = PokerEvaluator.evaluate(hand);
+      expect(result.rank).toBe('high-card');
+    });
+
+    it('should reject pair of 9s (below minimum pair rank)', () => {
+      const hand: Card[] = [
+        createCard('9', 'hearts'),
+        createCard('9', 'diamonds'),
+        createCard('5', 'clubs'),
+        createCard('8', 'spades'),
+        createCard('2', 'hearts'),
+      ];
+      const result = PokerEvaluator.evaluate(hand);
+      expect(result.rank).toBe('high-card');
+    });
+
+    it('should reject pair of 5s (below minimum pair rank)', () => {
+      const hand: Card[] = [
+        createCard('5', 'hearts'),
+        createCard('5', 'diamonds'),
+        createCard('K', 'clubs'),
+        createCard('8', 'spades'),
+        createCard('2', 'hearts'),
+      ];
+      const result = PokerEvaluator.evaluate(hand);
+      expect(result.rank).toBe('high-card');
+    });
+
+    it('should reject pair of 2s (below minimum pair rank)', () => {
+      const hand: Card[] = [
+        createCard('2', 'hearts'),
+        createCard('2', 'diamonds'),
+        createCard('K', 'clubs'),
+        createCard('8', 'spades'),
+        createCard('A', 'hearts'),
+      ];
+      const result = PokerEvaluator.evaluate(hand);
+      expect(result.rank).toBe('high-card');
+    });
   });
 
   describe('High Card', () => {
@@ -354,6 +427,46 @@ describe('PokerEvaluator', () => {
       ];
       const result = PokerEvaluator.evaluate(hand);
       expect(result.rank).toBe('five-of-a-kind');
+    });
+
+    it('should create one pair with wild card (Jacks or better)', () => {
+      const hand: Card[] = [
+        createCard('J', 'hearts'),
+        createCard('5', 'diamonds'),
+        createCard('8', 'clubs'),
+        createCard('2', 'spades'),
+        createCard('A', 'hearts', { isWild: true }),
+      ];
+      const result = PokerEvaluator.evaluate(hand);
+      expect(result.rank).toBe('one-pair');
+    });
+
+    it('should reject pair below minimum with wild card (10s)', () => {
+      const hand: Card[] = [
+        createCard('10', 'hearts'),
+        createCard('5', 'diamonds'),
+        createCard('8', 'clubs'),
+        createCard('2', 'spades'),
+        createCard('A', 'hearts', { isWild: true }),
+      ];
+      const result = PokerEvaluator.evaluate(hand);
+      // Should not be one-pair because 10s are below minimum (Jacks or Better)
+      expect(result.rank).not.toBe('one-pair');
+      // Should fall back to a better hand if possible, or high card
+      expect(['high-card', 'straight', 'flush', 'straight-flush']).toContain(result.rank);
+    });
+
+    it('should reject pair below minimum with wild card (9s)', () => {
+      const hand: Card[] = [
+        createCard('9', 'hearts'),
+        createCard('5', 'diamonds'),
+        createCard('8', 'clubs'),
+        createCard('2', 'spades'),
+        createCard('A', 'hearts', { isWild: true }),
+      ];
+      const result = PokerEvaluator.evaluate(hand);
+      // Should not be one-pair because 9s are below minimum (Jacks or Better)
+      expect(result.rank).not.toBe('one-pair');
     });
   });
 

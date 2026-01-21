@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Card as CardType, Hand } from '../types';
+import { Card as CardType, Hand, FailureStateType, GameState } from '../types';
 import { Card } from './Card';
 import { GameHeader } from './GameHeader';
 import { PokerEvaluator } from '../utils/pokerEvaluator';
@@ -15,6 +15,8 @@ interface ResultsProps {
   round: number;
   totalEarnings: number;
   selectedHandCount: number;
+  failureState?: FailureStateType;
+  gameState?: GameState;
   onReturnToPreDraw: (payout: number) => void;
   showShopNextRound?: boolean;
 }
@@ -29,6 +31,8 @@ export function Results({
   round,
   totalEarnings,
   selectedHandCount,
+  failureState,
+  gameState,
   onReturnToPreDraw,
   showShopNextRound = false,
 }: ResultsProps) {
@@ -53,7 +57,13 @@ export function Results({
     <div id="results-screen" className="min-h-screen p-6 relative overflow-hidden select-none">
       <div className="max-w-7xl mx-auto relative z-0">
         {/* Header */}
-        <GameHeader credits={credits} round={round} efficiency={efficiency} />
+        <GameHeader 
+          credits={credits} 
+          round={round} 
+          efficiency={efficiency}
+          failureState={failureState}
+          gameState={gameState}
+        />
 
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           {/* Main Content */}

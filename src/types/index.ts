@@ -101,6 +101,12 @@ export interface ThemeConfig {
   music?: ThemeMusicConfig; // Optional background music
 }
 
+export type FailureStateType =
+  | 'minimum-bet-multiplier'
+  | 'minimum-credit-efficiency'
+  | 'minimum-winning-hands'
+  | null;
+
 export interface GameState {
   screen: GameScreen;
   gamePhase: GamePhase;
@@ -115,6 +121,7 @@ export interface GameState {
   betAmount: number;
   selectedHandCount: number;
   minimumBet: number;
+  baseMinimumBet: number; // Base minimum bet for endless mode multiplier calculations
   round: number;
   totalEarnings: number;
   deckModifications: DeckModifications;
@@ -126,4 +133,7 @@ export interface GameState {
   gameOver: boolean;
   showShopNextRound: boolean; // Flag to show shop after results
   selectedShopOptions: ShopOptionType[]; // Selected shop options for this round
+  isEndlessMode: boolean; // Whether endless mode is active
+  currentFailureState: FailureStateType; // Current active failure condition
+  winningHandsLastRound: number; // Number of winning hands from last round
 }

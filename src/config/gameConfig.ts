@@ -17,10 +17,25 @@ export const gameConfig = {
     musicVolume: 0.7, // Background music volume multiplier (0.0 to 1.0)
   },
 
-  // Game rules configuration
-  gameRules: {
-    minimumPairRank: 11, // Minimum rank for a pair to be valid (11 = Jacks or Better)
-    bundleHandCount: 10, // Number of hands in a parallel hands bundle
+  // Quips for UI elements
+  quips: {
+    maxBet: [
+      'Max Bet',
+      'All In!',
+      'Go Big!',
+      'YOLO!',
+      'Maximum Power!',
+      'Full Send!',
+      'Bet It All!',
+      'Maximum Overdrive!',
+      'Ride or Die!',
+      'Full Throttle!',
+      'Maximum Effort!',
+      'All or Nothing!',
+      'Bet the Farm!',
+      'Maximum Stakes!',
+      'Fuck it, we ball',
+    ],
   },
 
   // Game modes define starting conditions and scaling rules
@@ -28,11 +43,34 @@ export const gameConfig = {
     normalGame: {
       displayName: 'Normal Game',
       startingCredits: 5000,
-      startingBet: 1,
+      startingBet: 2,
       startingHandCount: 10,
-      minimumBetIncreasePercent: 5,
+      minimumBetIncreasePercent: 95,
+      minimumBetIncreaseInterval: 5, // Increase minimum bet every N rounds (1 = every round)
       shopOptionCount: 3, // Number of options to display in shop
       shopFrequency: 2, // Show shop every N turns
+      minimumPairRank: 11, // Minimum rank for a pair to be valid (11 = Jacks or Better)
+      // Endless mode configuration (starts after endlessModeStartRound)
+      endlessMode: {
+        startRound: 20, // Start endless mode after this round
+        failureConditions: {
+          // Minimum bet multiplier (must bet at least this many times the base minimum bet)
+          minimumBetMultiplier: {
+            enabled: true,
+            value: 2.0, // Must bet at least 2x the base minimum bet
+          },
+          // Minimum credit efficiency (credits earned per round on average)
+          minimumCreditEfficiency: {
+            enabled: true,
+            value: 100, // Must average at least 100 credits per round
+          },
+          // Minimum winning hands per round (hands that pay out > 0)
+          minimumWinningHandsPerRound: {
+            enabled: true,
+            value: 3, // Must win at least 3 hands per round
+          },
+        },
+      },
       shop: {
         deadCard: {
           creditReward: 2000,
