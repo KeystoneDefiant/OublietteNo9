@@ -18,7 +18,7 @@ export function GameHeader({ credits, round, efficiency, failureState, gameState
     <div className="flex justify-between items-center mb-6 flex-wrap gap-4">
       <div className="flex items-center gap-4">
         {/* Logo Area */}
-        <div className="bg-white rounded-lg shadow-lg p-3 h-16 w-24 flex items-center justify-center border-2 border-dashed border-gray-300">
+        <div className="bg-white rounded-lg shadow-lg p-3 h-16 w-24 flex items-center justify-center border-2 border-gray-300">
           <span className="text-gray-400 text-xs">
             <img src="images/logos/number9.png" alt="Logo" />
           </span>

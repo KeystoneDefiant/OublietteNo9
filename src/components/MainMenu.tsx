@@ -15,7 +15,7 @@ export function MainMenu({ onStartRun, onCredits, onRules, onSettings }: MainMen
         <img src="images/logos/number9.png" alt="Logo" />
       </div>
       <div className="bg-white rounded-lg shadow-2xl p-12 max-w-md w-full mx-4">
-        <h1 className="text-4xl font-bold text-center mb-8 text-gray-800">Oubliette No. 9</h1>
+        <h1 className="text-4xl font-bold text-center mb-8 text-gray-800">Oubliette Number 9</h1>
         <div className="space-y-4">
           <button
             onClick={onStartRun}

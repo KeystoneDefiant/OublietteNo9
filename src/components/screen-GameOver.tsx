@@ -85,7 +85,7 @@ export function GameOver({
         <div className="text-center">
           <button
             onClick={onReturnToMenu}
-            className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-lg transition-colors text-lg shadow-lg hover:shadow-xl transform hover:scale-105 transition-all"
+            className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-lg text-lg shadow-lg hover:shadow-xl transform hover:scale-105 transition-all"
             aria-label="Return to main menu"
           >
             Return to Menu

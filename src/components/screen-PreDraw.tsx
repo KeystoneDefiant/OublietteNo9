@@ -57,6 +57,55 @@ export function PreDraw({
     setMaxBetQuip(randomQuip);
   }, []); // Empty dependency array means this runs once when component mounts
   
+  // Auto-adjust bet and hand count when PreDraw screen appears if unaffordable
+  useEffect(() => {
+    // Skip if already in game over state
+    if (gameOver) {
+      return;
+    }
+
+    const totalCost = betAmount * selectedHandCount;
+    
+    // If affordable, no adjustment needed
+    if (credits >= totalCost) {
+      return;
+    }
+
+    // Step 1: Try reducing bet size until affordable (but not below minimum)
+    const maxAffordableBet = Math.floor(credits / selectedHandCount);
+    let adjustedBet = betAmount;
+    let adjustedHandCount = selectedHandCount;
+    
+    if (maxAffordableBet >= minimumBet) {
+      // Can afford by reducing bet (bet will be >= minimum)
+      adjustedBet = maxAffordableBet;
+      if (adjustedBet !== betAmount) {
+        onSetBetAmount(adjustedBet);
+      }
+      return;
+    }
+
+    // Step 2: Bet reached minimum bet, try reducing hand count
+    adjustedBet = minimumBet;
+    adjustedHandCount = Math.max(1, Math.floor(credits / adjustedBet));
+    adjustedHandCount = Math.min(handCount, adjustedHandCount);
+    
+    // Check if we can afford with reduced hand count
+    if (credits >= adjustedBet * adjustedHandCount) {
+      // Can afford with reduced hand count
+      if (adjustedBet !== betAmount) {
+        onSetBetAmount(adjustedBet);
+      }
+      if (adjustedHandCount !== selectedHandCount) {
+        onSetSelectedHandCount(adjustedHandCount);
+      }
+      return;
+    }
+
+    // Step 3: Still can't afford even with minimum bet and reduced hands, go to game over screen
+    onEndRun();
+  }, [credits, betAmount, selectedHandCount, minimumBet, handCount, gameOver, onSetBetAmount, onSetSelectedHandCount, onEndRun]);
+  
   // Memoize expensive calculations
   const totalBetCost = useMemo(
     () => betAmount * selectedHandCount,
