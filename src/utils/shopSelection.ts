@@ -3,14 +3,7 @@
  * Handles weighted random selection of shop options
  */
 
-export type ShopOptionType =
-  | 'hand-count'
-  | 'parallel-hands-bundle'
-  | 'dead-card'
-  | 'wild-card'
-  | 'extra-draw'
-  | 'remove-single-dead-card'
-  | 'remove-all-dead-cards';
+import { ShopOptionType } from '../types';
 
 /**
  * Performs weighted random selection without replacement

@@ -342,45 +342,89 @@ export class PokerEvaluator {
 
   /**
    * Evaluates hand with wild cards by trying to form the best possible hand
+   * Wild cards can be any suit, rank, and face value
    */
   private static evaluateWithWildCards(regularCards: Card[], wildCards: Card[]): HandResult {
     const numWilds = wildCards.length;
     const numRegular = regularCards.length;
+    const allRanks = Object.keys(RANK_VALUES) as Array<keyof typeof RANK_VALUES>;
+    const suits: Array<'hearts' | 'diamonds' | 'clubs' | 'spades'> = [
+      'hearts',
+      'diamonds',
+      'clubs',
+      'spades',
+    ];
 
-    // Try to form the best possible hand
-    // Strategy: Try royal flush, straight flush, four of a kind, etc.
+    // Helper to rank hands - higher score = better hand
+    const scoreHand = (result: HandResult): number => {
+      const rankScore: { [key: string]: number } = {
+        'royal-flush': 10000,
+        'straight-flush': 9000,
+        'five-of-a-kind': 8500,
+        'four-of-a-kind': 8000,
+        'full-house': 7000,
+        flush: 6000,
+        straight: 5000,
+        'three-of-a-kind': 4000,
+        'two-pair': 3000,
+        'one-pair': 2000,
+        'high-card': 1000,
+      };
+      return rankScore[result.rank] || 0;
+    };
 
-    // For simplicity, we'll try a few key patterns
-    // Royal Flush attempt (A, K, Q, J, 10 of same suit)
+    let bestHand: HandResult | null = null;
+
+    // Try 5 of a kind (needs 4 regular cards of same rank)
+    const rankCounts = this.getRankCounts(regularCards);
+    for (const [rank, count] of Object.entries(rankCounts)) {
+      if (count === 4 && numWilds >= 1) {
+        const expanded = [...regularCards];
+        const rankValue = parseInt(rank);
+        const rankStr = allRanks.find((r) => RANK_VALUES[r] === rankValue);
+        if (rankStr) {
+          expanded.push({
+            suit: 'hearts',
+            rank: rankStr,
+            id: `wild-5k`,
+            isWild: true,
+          });
+          const result = this.evaluateRegularHand(expanded);
+          // Mark this as five-of-a-kind since we forced it
+          if (result.rank === 'four-of-a-kind' || result.rank === 'five-of-a-kind') {
+            return {
+              ...result,
+              rank: 'five-of-a-kind',
+              score: 8500,
+            };
+          }
+        }
+      }
+    }
+
+    // Try Royal Flush (10, J, Q, K, A of same suit)
     if (numRegular + numWilds === 5) {
-      const suits: Array<'hearts' | 'diamonds' | 'clubs' | 'spades'> = [
-        'hearts',
-        'diamonds',
-        'clubs',
-        'spades',
-      ];
-      const royalRanks: Array<'10' | 'J' | 'Q' | 'K' | 'A'> = ['10', 'J', 'Q', 'K', 'A'];
-
+      const royalRanks: Array<keyof typeof RANK_VALUES> = ['10', 'J', 'Q', 'K', 'A'];
       for (const suit of suits) {
         const needed = royalRanks.filter(
           (r) => !regularCards.some((c) => c.rank === r && c.suit === suit)
         );
         if (needed.length <= numWilds) {
-          const expanded: Card[] = [...regularCards];
+          const expanded = [...regularCards];
           for (let i = 0; i < needed.length; i++) {
             expanded.push({
               suit,
               rank: needed[i],
-              id: `wild-${i}`,
+              id: `wild-royal-${i}`,
               isWild: true,
             });
           }
-          // Fill remaining wilds with any card
+          // Fill remaining wilds
           for (let i = needed.length; i < numWilds; i++) {
             expanded.push({
               suit,
               rank: 'A',
-              id: `wild-${i}`,
+              id: `wild-royal-fill-${i}`,
               isWild: true,
             });
           }
@@ -392,30 +436,75 @@ export class PokerEvaluator {
       }
     }
 
-    // Try four of a kind
-    if (numRegular > 0) {
-      const rankCounts = this.getRankCounts(regularCards);
-      for (const [rank, count] of Object.entries(rankCounts)) {
-        if (count + numWilds >= 4) {
-          const expanded: Card[] = [...regularCards];
-          const needed = 4 - count;
-          for (let i = 0; i < needed && i < numWilds; i++) {
+    // Try Straight Flush
+    for (const suit of suits) {
+      for (let startRank = 2; startRank <= 10; startRank++) {
+        const needed: Array<keyof typeof RANK_VALUES> = [];
+        for (let i = 0; i < 5; i++) {
+          const rankValue = startRank + i;
+          const rankStr = allRanks.find((r) => RANK_VALUES[r] === rankValue);
+          if (rankStr && !regularCards.some((c) => c.rank === rankStr && c.suit === suit)) {
+            needed.push(rankStr);
+          }
+        }
+        if (needed.length <= numWilds) {
+          const expanded = [...regularCards];
+          for (const rank of needed) {
             expanded.push({
-              suit: 'hearts',
-              rank: Object.keys(RANK_VALUES).find((r) => RANK_VALUES[r] === parseInt(rank)) as any,
-              id: `wild-${i}`,
+              suit,
+              rank,
+              id: `wild-sf-${rank}`,
               isWild: true,
             });
           }
-          // Fill remaining
-          for (let i = needed; i < numWilds; i++) {
+          // Fill remaining wilds
+          for (let i = needed.length; i < numWilds; i++) {
             expanded.push({
-              suit: 'hearts',
+              suit,
               rank: 'A',
-              id: `wild-${i}`,
+              id: `wild-sf-fill-${i}`,
               isWild: true,
             });
           }
+          if (expanded.length === 5) {
+            const result = this.evaluateRegularHand(expanded);
+            if (result.rank === 'straight-flush') {
+              if (!bestHand || scoreHand(result) > scoreHand(bestHand)) {
+                bestHand = result;
+              }
+            }
+          }
+        }
+      }
+    }
+    if (bestHand && bestHand.rank === 'straight-flush') {
+      return bestHand;
+    }
+
+    // Try Four of a Kind
+    for (const rank of allRanks) {
+      const count = regularCards.filter((c) => c.rank === rank).length;
+      if (count + numWilds >= 4) {
+        const needed = Math.max(0, 4 - count);
+        const expanded = [...regularCards];
+        for (let i = 0; i < needed; i++) {
+          expanded.push({
+            suit: 'hearts',
+            rank,
+            id: `wild-4k-${i}`,
+            isWild: true,
+          });
+        }
+        // Fill remaining
+        for (let i = needed; i < numWilds; i++) {
+          expanded.push({
+            suit: 'hearts',
+            rank: 'A',
+            id: `wild-4k-fill-${i}`,
+            isWild: true,
+          });
+        }
+        if (expanded.length === 5) {
           const result = this.evaluateRegularHand(expanded);
           if (result.rank === 'four-of-a-kind') {
             return result;
@@ -424,41 +513,269 @@ export class PokerEvaluator {
       }
     }
 
-    // Try flush
-    const suitCounts = this.getSuitCounts(regularCards);
-    const mostCommonSuit = Object.entries(suitCounts).sort((a, b) => b[1] - a[1])[0];
-    if (mostCommonSuit && mostCommonSuit[1] + numWilds >= 5) {
-      const expanded: Card[] = [...regularCards];
-      const suit = mostCommonSuit[0] as 'hearts' | 'diamonds' | 'clubs' | 'spades';
-      const ranks = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A'] as const;
-      for (let i = 0; i < numWilds; i++) {
-        const availableRank = ranks.find(
-          (r) => !expanded.some((c) => c.rank === r && c.suit === suit)
-        );
-        expanded.push({
-          suit,
-          rank: availableRank || 'A',
-          id: `wild-${i}`,
-          isWild: true,
-        });
-      }
-      const result = this.evaluateRegularHand(expanded);
-      if (
-        result.rank === 'flush' ||
-        result.rank === 'straight-flush' ||
-        result.rank === 'royal-flush'
-      ) {
-        return result;
+    // Try Full House (3 of a kind + pair)
+    for (const rank1 of allRanks) {
+      const count1 = regularCards.filter((c) => c.rank === rank1).length;
+      if (count1 + numWilds >= 3) {
+        const needed1 = Math.max(0, 3 - count1);
+        for (const rank2 of allRanks) {
+          if (rank2 === rank1) continue;
+          const count2 = regularCards.filter((c) => c.rank === rank2).length;
+          const remaining = numWilds - needed1;
+          if (count2 + remaining >= 2) {
+            const needed2 = Math.max(0, 2 - count2);
+            if (needed2 <= remaining) {
+              const expanded = [...regularCards];
+              for (let i = 0; i < needed1; i++) {
+                expanded.push({
+                  suit: 'hearts',
+                  rank: rank1,
+                  id: `wild-fh-3k-${i}`,
+                  isWild: true,
+                });
+              }
+              for (let i = 0; i < needed2; i++) {
+                expanded.push({
+                  suit: 'diamonds',
+                  rank: rank2,
+                  id: `wild-fh-2k-${i}`,
+                  isWild: true,
+                });
+              }
+              // Fill remaining
+              const filled = needed1 + needed2;
+              for (let i = filled; i < numWilds; i++) {
+                expanded.push({
+                  suit: 'clubs',
+                  rank: 'A',
+                  id: `wild-fh-fill-${i}`,
+                  isWild: true,
+                });
+              }
+              if (expanded.length === 5) {
+                const result = this.evaluateRegularHand(expanded);
+                if (result.rank === 'full-house') {
+                  return result;
+                }
+              }
+            }
+          }
+        }
       }
     }
 
-    // Default: use wilds as high cards
+    // Try Flush
+    const suitCounts = this.getSuitCounts(regularCards);
+    for (const suit of suits) {
+      const count = regularCards.filter((c) => c.suit === suit).length;
+      if (count + numWilds >= 5) {
+        const needed = 5 - count;
+        const expanded = regularCards.filter((c) => c.suit === suit);
+        const usedRanks = new Set(expanded.map((c) => c.rank));
+        for (let i = 0; i < needed; i++) {
+          const availableRank = allRanks.find((r) => !usedRanks.has(r));
+          if (availableRank) {
+            expanded.push({
+              suit,
+              rank: availableRank,
+              id: `wild-flush-${i}`,
+              isWild: true,
+            });
+            usedRanks.add(availableRank);
+          }
+        }
+        // Fill remaining
+        const filled = needed;
+        for (let i = filled; i < numWilds; i++) {
+          expanded.push({
+            suit,
+            rank: 'A',
+            id: `wild-flush-fill-${i}`,
+            isWild: true,
+          });
+        }
+        if (expanded.length === 5) {
+          const result = this.evaluateRegularHand(expanded);
+          if (
+            result.rank === 'flush' ||
+            result.rank === 'straight-flush' ||
+            result.rank === 'royal-flush'
+          ) {
+            return result;
+          }
+        }
+      }
+    }
+
+    // Try Straight
+    for (let startRank = 2; startRank <= 10; startRank++) {
+      const needed: Array<keyof typeof RANK_VALUES> = [];
+      for (let i = 0; i < 5; i++) {
+        const rankValue = startRank + i;
+        const rankStr = allRanks.find((r) => RANK_VALUES[r] === rankValue);
+        if (rankStr && !regularCards.some((c) => c.rank === rankStr)) {
+          needed.push(rankStr);
+        }
+      }
+      if (needed.length <= numWilds) {
+        const expanded = [...regularCards];
+        for (const rank of needed) {
+          expanded.push({
+            suit: 'hearts',
+            rank,
+            id: `wild-straight-${rank}`,
+            isWild: true,
+          });
+        }
+        // Fill remaining
+        for (let i = needed.length; i < numWilds; i++) {
+          expanded.push({
+            suit: 'hearts',
+            rank: 'A',
+            id: `wild-straight-fill-${i}`,
+            isWild: true,
+          });
+        }
+        if (expanded.length === 5) {
+          const result = this.evaluateRegularHand(expanded);
+          if (result.rank === 'straight') {
+            if (!bestHand || scoreHand(result) > scoreHand(bestHand)) {
+              bestHand = result;
+            }
+          }
+        }
+      }
+    }
+    if (bestHand && bestHand.rank === 'straight') {
+      return bestHand;
+    }
+
+    // Try Three of a Kind
+    for (const rank of allRanks) {
+      const count = regularCards.filter((c) => c.rank === rank).length;
+      if (count + numWilds >= 3) {
+        const needed = Math.max(0, 3 - count);
+        const expanded = [...regularCards];
+        for (let i = 0; i < needed; i++) {
+          expanded.push({
+            suit: 'hearts',
+            rank,
+            id: `wild-3k-${i}`,
+            isWild: true,
+          });
+        }
+        // Fill remaining
+        for (let i = needed; i < numWilds; i++) {
+          expanded.push({
+            suit: 'hearts',
+            rank: 'A',
+            id: `wild-3k-fill-${i}`,
+            isWild: true,
+          });
+        }
+        if (expanded.length === 5) {
+          const result = this.evaluateRegularHand(expanded);
+          if (result.rank === 'three-of-a-kind') {
+            return result;
+          }
+        }
+      }
+    }
+
+    // Try Two Pair
+    for (let i = 0; i < allRanks.length; i++) {
+      const rank1 = allRanks[i];
+      const count1 = regularCards.filter((c) => c.rank === rank1).length;
+      if (count1 + numWilds < 2) continue;
+
+      const needed1 = Math.max(0, 2 - count1);
+      for (let j = i + 1; j < allRanks.length; j++) {
+        const rank2 = allRanks[j];
+        const count2 = regularCards.filter((c) => c.rank === rank2).length;
+        const remaining = numWilds - needed1;
+        if (count2 + remaining >= 2) {
+          const needed2 = Math.max(0, 2 - count2);
+          if (needed2 <= remaining) {
+            const expanded = [...regularCards];
+            for (let k = 0; k < needed1; k++) {
+              expanded.push({
+                suit: 'hearts',
+                rank: rank1,
+                id: `wild-2p-1-${k}`,
+                isWild: true,
+              });
+            }
+            for (let k = 0; k < needed2; k++) {
+              expanded.push({
+                suit: 'diamonds',
+                rank: rank2,
+                id: `wild-2p-2-${k}`,
+                isWild: true,
+              });
+            }
+            // Fill remaining
+            const filled = needed1 + needed2;
+            for (let k = filled; k < numWilds; k++) {
+              expanded.push({
+                suit: 'clubs',
+                rank: 'A',
+                id: `wild-2p-fill-${k}`,
+                isWild: true,
+              });
+            }
+            if (expanded.length === 5) {
+              const result = this.evaluateRegularHand(expanded);
+              if (result.rank === 'two-pair') {
+                return result;
+              }
+            }
+          }
+        }
+      }
+    }
+
+    // Try One Pair (Jacks or better with wilds)
+    for (const rank of allRanks) {
+      const rankValue = RANK_VALUES[rank];
+      if (rankValue < gameConfig.gameRules.minimumPairRank) continue;
+
+      const count = regularCards.filter((c) => c.rank === rank).length;
+      if (count + numWilds >= 2) {
+        const needed = Math.max(0, 2 - count);
+        const expanded = [...regularCards];
+        for (let i = 0; i < needed; i++) {
+          expanded.push({
+            suit: 'hearts',
+            rank,
+            id: `wild-pair-${i}`,
+            isWild: true,
+          });
+        }
+        // Fill remaining
+        for (let i = needed; i < numWilds; i++) {
+          expanded.push({
+            suit: 'hearts',
+            rank: 'A',
+            id: `wild-pair-fill-${i}`,
+            isWild: true,
+          });
+        }
+        if (expanded.length === 5) {
+          const result = this.evaluateRegularHand(expanded);
+          if (result.rank === 'one-pair') {
+            return result;
+          }
+        }
+      }
+    }
+
+    // Default: use wilds as high cards (Aces)
     const expanded: Card[] = [...regularCards];
     for (let i = 0; i < numWilds; i++) {
       expanded.push({
         suit: 'hearts',
         rank: 'A',
-        id: `wild-${i}`,
+        id: `wild-default-${i}`,
         isWild: true,
       });
     }

@@ -32,13 +32,3 @@ export function calculateRewardUpgradeCost(currentLevel: number): number {
   const multiplier = 1 + currentMode.shop.rewardUpgrade.increasePercent / 100;
   return Math.floor(baseCost * Math.pow(multiplier, currentLevel));
 }
-
-export function calculateHandCountCost(handCount: number): number {
-  return handCount * currentMode.shop.handCount.baseCost;
-}
-
-export function calculateParallelHandsBundleCost(baseHandCount: number): number {
-  // Cost of adding bundled hands = bundleHandCount * cost of one hand
-  const bundleSize = gameConfig.gameRules.bundleHandCount;
-  return calculateHandCountCost(baseHandCount + bundleSize) - calculateHandCountCost(baseHandCount);
-}

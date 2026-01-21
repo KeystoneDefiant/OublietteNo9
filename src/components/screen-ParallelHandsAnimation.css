@@ -26,37 +26,42 @@
   width: 100%;
   height: 100vh;
   display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 60px;
+  align-items: flex-end;
+  justify-content: center;
   padding-bottom: 60px;
   z-index: 12;
 }
 
 .floating-hand {
-  position: relative;
-  animation: floatUp calc(var(--animation-duration, 2s)) ease-out forwards;
-  animation-delay: calc((var(--animation-index) / var(--total-hands)) * 0.15s);
-  /* Distribute hands vertically with spacing */
+  position: absolute;
+  bottom: 60px;
+  left: var(--start-x, 50%);
+  animation: floatUp var(--hand-duration, 2.5s) ease-out forwards;
   max-width: 280px;
+  width: 280px;
 }
 
 @keyframes floatUp {
   0% {
+    opacity: 0;
+    transform: translateX(-50%) translateY(0) scale(0.8);
+  }
+
+  5% {
+    /* Quickly fade in at the start */
     opacity: 1;
-    transform: translateY(0) scale(0.8);
+    transform: translateX(-50%) translateY(0) scale(0.8);
   }
 
   50% {
     /* Pulse and scale at 50% of animation */
     opacity: 1;
-    transform: translateY(-30vh) scale(1.15);
+    transform: translateX(-50%) translateY(-30vh) scale(1.15);
   }
 
   100% {
     opacity: 0;
-    transform: translateY(-100vh) scale(1);
+    transform: translateX(-50%) translateY(-100vh) scale(1);
   }
 }
 
@@ -82,7 +87,7 @@
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
   backdrop-filter: blur(10px);
   border: 2px solid rgba(102, 126, 234, 0.3);
-  animation: handPulse calc(var(--animation-duration, 2s)) ease-in-out;
+  animation: handPulse var(--hand-duration, 2.5s) ease-in-out;
 }
 
 .hand-cards {

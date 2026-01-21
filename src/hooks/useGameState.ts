@@ -7,7 +7,6 @@ import {
   calculateWildCardCost,
   calculateSingleDeadCardRemovalCost,
   calculateAllDeadCardsRemovalCost,
-  calculateParallelHandsBundleCost,
 } from '../utils/config';
 import { gameConfig, getCurrentGameMode } from '../config/gameConfig';
 
@@ -197,19 +196,6 @@ export function useGameState() {
     }));
   }, []);
 
-  const upgradeHandCount = useCallback((cost: number) => {
-    setState((prev) => {
-      if (prev.credits < cost) {
-        return prev;
-      }
-      return {
-        ...prev,
-        handCount: prev.handCount + 1,
-        credits: prev.credits - cost,
-      };
-    });
-  }, []);
-
   const upgradeRewardTable = useCallback((rank: HandRank, cost: number) => {
     setState((prev) => {
       if (prev.credits < cost) {
@@ -241,8 +227,26 @@ export function useGameState() {
       const minBetMultiplier = 1 + currentMode.minimumBetIncreasePercent / 100;
       const newMinimumBet = Math.floor(prev.minimumBet * minBetMultiplier);
 
-      // Check if player can still play after bet increase
-      const gameOver = newCredits < newMinimumBet * prev.selectedHandCount;
+      // Auto-adjust bet and hand count if player can't afford current bet
+      let adjustedBet = prev.betAmount;
+      let adjustedHandCount = prev.selectedHandCount;
+      let gameOver = false;
+
+      // First, try to reduce bet to an affordable level
+      const maxAffordableBet = Math.floor(newCredits / adjustedHandCount);
+      if (maxAffordableBet < adjustedBet) {
+        adjustedBet = Math.max(newMinimumBet, maxAffordableBet);
+      }
+
+      // If still can't afford with minimum bet, reduce hand count
+      if (newCredits < adjustedBet * adjustedHandCount) {
+        adjustedHandCount = Math.max(1, Math.floor(newCredits / adjustedBet));
+      }
+
+      // If still can't afford, trigger game over
+      if (newCredits < adjustedBet * adjustedHandCount) {
+        gameOver = true;
+      }
 
       // Check if shop should appear next round and generate options if so
       const showShopNextRound = newRound % currentMode.shopFrequency === 0;
@@ -262,6 +266,8 @@ export function useGameState() {
         minimumBet: newMinimumBet,
         credits: newCredits,
         totalEarnings: newTotalEarnings,
+        betAmount: adjustedBet,
+        selectedHandCount: adjustedHandCount,
         gameOver,
         showShopNextRound,
         selectedShopOptions,
@@ -285,6 +291,28 @@ export function useGameState() {
       round: 1,
       totalEarnings: 0,
       gameOver: false,
+      hasExtraDraw: false,
+      showShopNextRound: false,
+      selectedShopOptions: [],
+    }));
+  }, []);
+
+  const endRun = useCallback(() => {
+    setState((prev) => ({
+      ...prev,
+      screen: 'menu',
+      gamePhase: 'preDraw',
+      gameOver: false,
+      currentRun: prev.currentRun,
+      betAmount: currentMode.startingBet,
+      selectedHandCount: prev.handCount,
+      minimumBet: currentMode.startingBet,
+      round: 1,
+      totalEarnings: 0,
+      playerHand: [],
+      heldIndices: [],
+      parallelHands: [],
+      additionalHandsBought: 0,
       hasExtraDraw: false,
       showShopNextRound: false,
       selectedShopOptions: [],
@@ -508,15 +536,16 @@ export function useGameState() {
     });
   }, []);
 
-  const addParallelHandsBundle = useCallback(() => {
+  const addParallelHandsBundle = useCallback((bundleSize: number) => {
     setState((prev) => {
-      const cost = calculateParallelHandsBundleCost(prev.handCount);
+      const basePricePerHand = currentMode.shop.parallelHandsBundles.basePricePerHand;
+      const cost = bundleSize * basePricePerHand;
       if (prev.credits < cost) {
         return prev;
       }
       return {
         ...prev,
-        handCount: prev.handCount + 10,
+        handCount: prev.handCount + bundleSize,
         credits: prev.credits - cost,
       };
     });
@@ -542,6 +571,7 @@ export function useGameState() {
         screen: 'game',
         gamePhase: 'preDraw',
         showShopNextRound: false,
+        selectedShopOptions: [],
       };
     });
   }, []);
@@ -568,11 +598,11 @@ export function useGameState() {
     drawParallelHands,
     openShop,
     closeShop,
-    upgradeHandCount,
     upgradeRewardTable,
     returnToMenu,
     returnToPreDraw,
     startNewRun,
+    endRun,
     buyAnotherHand,
     setBetAmount,
     setSelectedHandCount,

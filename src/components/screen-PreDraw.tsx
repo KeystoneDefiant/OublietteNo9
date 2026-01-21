@@ -16,6 +16,7 @@ interface PreDrawProps {
   onSetBetAmount: (amount: number) => void;
   onSetSelectedHandCount: (count: number) => void;
   onDealHand: () => void;
+  onEndRun: () => void;
   onCheatAddCredits: (amount: number) => void;
   onCheatAddHands: (amount: number) => void;
 }
@@ -33,10 +34,12 @@ export function PreDraw({
   onSetBetAmount,
   onSetSelectedHandCount,
   onDealHand,
+  onEndRun,
   onCheatAddCredits,
   onCheatAddHands,
 }: PreDrawProps) {
   const [showCheats, setShowCheats] = useState(false);
+  const [showEndRunConfirm, setShowEndRunConfirm] = useState(false);
   const totalBetCost = betAmount * selectedHandCount;
   const canAffordBet = credits >= totalBetCost;
   const canPlayRound = !gameOver && canAffordBet;
@@ -181,6 +184,14 @@ export function PreDraw({
                 >
                   {gameOver ? 'Cannot Play - Game Over' : 'Run Round'}
                 </button>
+
+                {/* End Run Button */}
+                <button
+                  onClick={() => setShowEndRunConfirm(true)}
+                  className="w-full px-8 py-4 rounded-lg font-bold text-xl transition-colors bg-red-600 hover:bg-red-700 text-white shadow-lg hover:shadow-xl"
+                >
+                  End Run
+                </button>
               </div>
             </div>
           </div>
@@ -199,6 +210,35 @@ export function PreDraw({
           onAddCredits={onCheatAddCredits}
           onAddHands={onCheatAddHands}
         />
+      )}
+
+      {/* End Run Confirmation Modal */}
+      {showEndRunConfirm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 select-none">
+          <div className="bg-white rounded-lg shadow-2xl p-8 max-w-md mx-auto">
+            <h2 className="text-2xl font-bold text-gray-800 mb-4">End Run?</h2>
+            <p className="text-gray-600 mb-6">
+              Are you sure you want to end your run? You will return to the main menu.
+            </p>
+            <div className="flex gap-4">
+              <button
+                onClick={() => setShowEndRunConfirm(false)}
+                className="flex-1 px-4 py-3 rounded-lg font-bold transition-colors bg-gray-600 hover:bg-gray-700 text-white"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  setShowEndRunConfirm(false);
+                  onEndRun();
+                }}
+                className="flex-1 px-4 py-3 rounded-lg font-bold transition-colors bg-red-600 hover:bg-red-700 text-white"
+              >
+                Confirm End Run
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

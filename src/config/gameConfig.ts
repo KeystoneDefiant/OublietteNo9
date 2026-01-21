@@ -47,10 +47,11 @@ export const gameConfig = {
           increasePercent: 10,
         },
         handCount: {
-          baseCost: 100,
+          basePricePerHand: 100,
         },
-        parallelHandsBundle: {
-          handCount: 10, // Number of hands added in bundle (can be overridden per mode)
+        parallelHandsBundles: {
+          basePricePerHand: 10,
+          bundles: [5, 10, 25, 50],
         },
         rewardUpgrade: {
           baseCost: 400,
@@ -63,6 +64,7 @@ export const gameConfig = {
       rewards: {
         'royal-flush': 250,
         'straight-flush': 50,
+        'five-of-a-kind': 100,
         'four-of-a-kind': 25,
         'full-house': 9,
         flush: 6,
@@ -76,7 +78,10 @@ export const gameConfig = {
         'dead-card': 20,
         'single-dead-card-removal': 15,
         'all-dead-cards-removal': 15,
-        'parallel-hands-bundle': 25,
+        'parallel-hands-bundle-5': 10,
+        'parallel-hands-bundle-10': 15,
+        'parallel-hands-bundle-25': 12,
+        'parallel-hands-bundle-50': 8,
         'wild-card': 15,
         'reward-upgrade': 10,
       },

@@ -50,6 +50,7 @@ function App() {
     returnToMenu,
     returnToPreDraw,
     startNewRun,
+    endRun,
     setBetAmount,
     setSelectedHandCount,
     addDeadCard,
@@ -104,6 +105,7 @@ function App() {
             onSetBetAmount={setBetAmount}
             onSetSelectedHandCount={setSelectedHandCount}
             onDealHand={dealHand}
+            onEndRun={endRun}
             onCheatAddCredits={cheatAddCredits}
             onCheatAddHands={cheatAddHands}
           />
@@ -135,6 +137,7 @@ function App() {
             parallelHands={state.parallelHands}
             rewardTable={state.rewardTable}
             selectedHandCount={state.selectedHandCount}
+            betAmount={state.betAmount}
             onAnimationComplete={moveToNextScreen}
           />
         </div>
@@ -168,7 +171,7 @@ function App() {
             wildCards={state.deckModifications.wildCards}
             wildCardCount={state.wildCardCount}
             extraDrawPurchased={state.extraDrawPurchased}
-            onUpgradeHandCount={upgradeHandCount}
+            selectedShopOptions={state.selectedShopOptions}
             onAddDeadCard={addDeadCard}
             onRemoveSingleDeadCard={removeSingleDeadCard}
             onRemoveAllDeadCards={removeAllDeadCards}

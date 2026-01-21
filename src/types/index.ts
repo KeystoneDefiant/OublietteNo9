@@ -17,6 +17,7 @@ export interface Hand {
 export type HandRank =
   | 'royal-flush'
   | 'straight-flush'
+  | 'five-of-a-kind'
   | 'four-of-a-kind'
   | 'full-house'
   | 'flush'
@@ -47,8 +48,10 @@ export type GameScreen =
   | 'rules';
 
 export type ShopOptionType =
-  | 'hand-count'
-  | 'parallel-hands-bundle'
+  | 'parallel-hands-bundle-5'
+  | 'parallel-hands-bundle-10'
+  | 'parallel-hands-bundle-25'
+  | 'parallel-hands-bundle-50'
   | 'dead-card'
   | 'wild-card'
   | 'extra-draw'
