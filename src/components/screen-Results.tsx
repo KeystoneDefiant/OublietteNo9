@@ -163,7 +163,7 @@ export function Results({
                         {betAmount * selectedHandCount} credits
                       </span>
                     </div>
-                    {gameState?.devilsDealCost && gameState?.devilsDealHeld && (
+                    {gameState?.devilsDealCard && gameState?.devilsDealHeld && gameState?.devilsDealCost > 0 && (
                       <div className="flex justify-between items-center">
                         <span className="text-lg font-semibold text-gray-700">Devil's Deal:</span>
                         <span className="text-2xl font-bold text-red-600">
