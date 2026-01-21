@@ -60,6 +60,9 @@ export function Rules({ onClose }: RulesProps) {
                 <strong>Extra Draw:</strong> Gives you one additional draw per round to improve your
                 hand.
               </li>
+              <li>
+                <strong>Devil's Deal:</strong> A card that will give you the best possible hand is offered to you as a deal. The cost is how much that hand would be worth after all parallel hands would be played with it, plus a little 'house edge'. Be careful when choosing this! It can be very useful, but can also be used extremely wrong!
+              </li>
             </ul>
           </div>
         </div>

@@ -3,6 +3,8 @@ import {
   calculateWildCardCost,
   calculateSingleDeadCardRemovalCost,
   calculateAllDeadCardsRemovalCost,
+  calculateDevilsDealChanceCost,
+  calculateDevilsDealCostReductionCost,
 } from '../utils/config';
 import { gameConfig, getCurrentGameMode } from '../config/gameConfig';
 import { ShopOptionType } from '../types';
@@ -22,6 +24,10 @@ interface ShopProps {
   onAddWildCard: () => void;
   onPurchaseExtraDraw: () => void;
   onAddParallelHandsBundle: (bundleSize: number) => void;
+  onPurchaseDevilsDealChance: () => void;
+  onPurchaseDevilsDealCostReduction: () => void;
+  devilsDealChancePurchases: number;
+  devilsDealCostReductionPurchases: number;
   onClose: () => void;
 }
 
@@ -39,6 +45,10 @@ export function Shop({
   onAddWildCard,
   onPurchaseExtraDraw,
   onAddParallelHandsBundle,
+  onPurchaseDevilsDealChance,
+  onPurchaseDevilsDealCostReduction,
+  devilsDealChancePurchases,
+  devilsDealCostReductionPurchases,
   onClose,
 }: ShopProps) {
   const currentMode = getCurrentGameMode();
@@ -69,11 +79,26 @@ export function Shop({
     deadCards.length
   );
   const wildCardCost = calculateWildCardCost(wildCardCount);
+  const devilsDealChanceCost = calculateDevilsDealChanceCost(devilsDealChancePurchases);
+  const devilsDealCostReductionCost = calculateDevilsDealCostReductionCost(devilsDealCostReductionPurchases);
 
   // Helper function to check if an option should be shown
   const isOptionAvailable = (optionType: ShopOptionType): boolean => {
     return selectedShopOptions.includes(optionType);
   };
+
+  const devilsDealConfig = currentMode.devilsDeal;
+  const effectiveChance = devilsDealConfig
+    ? devilsDealConfig.baseChance +
+      devilsDealChancePurchases * devilsDealConfig.chanceIncreasePerPurchase
+    : 0;
+  const effectiveCostPercent = devilsDealConfig
+    ? Math.max(
+        1,
+        devilsDealConfig.baseCostPercent -
+          devilsDealCostReductionPurchases * devilsDealConfig.costReductionPerPurchase
+      )
+    : 0;
 
   return (
     <div className="min-h-screen p-6">
@@ -360,6 +385,96 @@ export function Shop({
                 `}
               >
                 {isPurchased('remove-all-dead-cards') ? 'Already Purchased' : `${allDeadCardsRemovalCost} Credits`}
+              </button>
+            </div>
+          )}
+
+          {/* Increase Devil's Deal Chance */}
+          {devilsDealConfig && isOptionAvailable('devils-deal-chance') && (
+            <div className="border-2 border-white rounded-lg p-6 bg-purple-800 bg-opacity-50 hover:bg-opacity-70 transition-all">
+              <div className="flex justify-between items-center mb-3">
+                <h3 className="text-xl font-bold text-white">Increase Devil's Deal Chance</h3>
+                <span className="text-purple-200">
+                  {devilsDealChancePurchases}/{devilsDealConfig.maxChancePurchases}
+                </span>
+              </div>
+              <p className="text-purple-100 mb-2">
+                Increase chance by {devilsDealConfig.chanceIncreasePerPurchase}% per purchase
+              </p>
+              <p className="text-purple-200 text-sm mb-4">
+                Current chance: {effectiveChance}%
+              </p>
+              <button
+                onClick={() => {
+                  onPurchaseDevilsDealChance();
+                  markPurchased('devils-deal-chance');
+                }}
+                disabled={
+                  credits < devilsDealChanceCost ||
+                  devilsDealChancePurchases >= devilsDealConfig.maxChancePurchases ||
+                  isPurchased('devils-deal-chance')
+                }
+                className={`
+                  w-full py-3 px-4 rounded-lg font-bold transition-colors
+                  ${
+                    credits >= devilsDealChanceCost &&
+                    devilsDealChancePurchases < devilsDealConfig.maxChancePurchases &&
+                    !isPurchased('devils-deal-chance')
+                      ? 'bg-purple-600 hover:bg-purple-700 text-white'
+                      : 'bg-gray-600 text-gray-400 cursor-not-allowed'
+                  }
+                `}
+              >
+                {isPurchased('devils-deal-chance')
+                  ? 'Already Purchased'
+                  : devilsDealChancePurchases >= devilsDealConfig.maxChancePurchases
+                  ? 'Maximum Purchases Reached'
+                  : `${devilsDealChanceCost} Credits`}
+              </button>
+            </div>
+          )}
+
+          {/* Reduce Devil's Deal Cost */}
+          {devilsDealConfig && isOptionAvailable('devils-deal-cost-reduction') && (
+            <div className="border-2 border-white rounded-lg p-6 bg-purple-800 bg-opacity-50 hover:bg-opacity-70 transition-all">
+              <div className="flex justify-between items-center mb-3">
+                <h3 className="text-xl font-bold text-white">Reduce Devil's Deal Cost</h3>
+                <span className="text-purple-200">
+                  {devilsDealCostReductionPurchases}/{devilsDealConfig.maxCostReductionPurchases}
+                </span>
+              </div>
+              <p className="text-purple-100 mb-2">
+                Reduce cost by {devilsDealConfig.costReductionPerPurchase}% per purchase
+              </p>
+              <p className="text-purple-200 text-sm mb-4">
+                Current cost: {effectiveCostPercent}% of payout
+              </p>
+              <button
+                onClick={() => {
+                  onPurchaseDevilsDealCostReduction();
+                  markPurchased('devils-deal-cost-reduction');
+                }}
+                disabled={
+                  credits < devilsDealCostReductionCost ||
+                  devilsDealCostReductionPurchases >= devilsDealConfig.maxCostReductionPurchases ||
+                  isPurchased('devils-deal-cost-reduction')
+                }
+                className={`
+                  w-full py-3 px-4 rounded-lg font-bold transition-colors
+                  ${
+                    credits >= devilsDealCostReductionCost &&
+                    devilsDealCostReductionPurchases < devilsDealConfig.maxCostReductionPurchases &&
+                    !isPurchased('devils-deal-cost-reduction')
+                      ? 'bg-purple-600 hover:bg-purple-700 text-white'
+                      : 'bg-gray-600 text-gray-400 cursor-not-allowed'
+                  }
+                `}
+              >
+                {isPurchased('devils-deal-cost-reduction')
+                  ? 'Already Purchased'
+                  : devilsDealCostReductionPurchases >= devilsDealConfig.maxCostReductionPurchases
+                  ? 'Maximum Purchases Reached'
+                  : `${devilsDealCostReductionCost} Credits`}
               </button>
             </div>
           )}

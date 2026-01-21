@@ -56,7 +56,9 @@ export type ShopOptionType =
   | 'wild-card'
   | 'extra-draw'
   | 'remove-single-dead-card'
-  | 'remove-all-dead-cards';
+  | 'remove-all-dead-cards'
+  | 'devils-deal-chance'
+  | 'devils-deal-cost-reduction';
 
 export type GamePhase = 'preDraw' | 'playing' | 'parallelHandsAnimation' | 'results';
 
@@ -136,4 +138,9 @@ export interface GameState {
   isEndlessMode: boolean; // Whether endless mode is active
   currentFailureState: FailureStateType; // Current active failure condition
   winningHandsLastRound: number; // Number of winning hands from last round
+  devilsDealCard: Card | null; // The offered card (null if no deal)
+  devilsDealCost: number; // Calculated cost for this deal
+  devilsDealHeld: boolean; // Whether the deal card is currently held
+  devilsDealChancePurchases: number; // Number of chance upgrades purchased
+  devilsDealCostReductionPurchases: number; // Number of cost reduction upgrades purchased
 }

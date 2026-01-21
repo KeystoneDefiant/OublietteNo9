@@ -5,6 +5,7 @@ interface RewardTableProps {
   rewardTable: RewardTableType;
   highlightedRank?: HandRank | null;
   payoutAmount?: number;
+  wildCardCount?: number;
 }
 
 const RANK_LABELS: { [key in HandRank]: string } = {
@@ -35,7 +36,7 @@ const RANK_ORDER: HandRank[] = [
   'high-card',
 ];
 
-export function RewardTable({ rewardTable, highlightedRank, payoutAmount }: RewardTableProps) {
+export function RewardTable({ rewardTable, highlightedRank, payoutAmount, wildCardCount = 0 }: RewardTableProps) {
   const [showPopup, setShowPopup] = useState(false);
   const highlightRef = useRef<HTMLDivElement>(null);
 
@@ -47,11 +48,16 @@ export function RewardTable({ rewardTable, highlightedRank, payoutAmount }: Rewa
     }
   }, [highlightedRank, payoutAmount]);
 
+  // Filter ranks: only show five-of-a-kind if player has wild cards
+  const visibleRanks = wildCardCount > 0 
+    ? RANK_ORDER 
+    : RANK_ORDER.filter(rank => rank !== 'five-of-a-kind');
+
   return (
     <div className="bg-white rounded-lg shadow-lg p-6 h-full overflow-y-auto relative">
       <h2 className="text-2xl font-bold mb-4 text-gray-800">Payout Table</h2>
       <div className="space-y-2">
-        {RANK_ORDER.map((rank) => {
+        {visibleRanks.map((rank) => {
           const multiplier = rewardTable[rank] || 0;
           const isHighlighted = highlightedRank === rank;
           return (

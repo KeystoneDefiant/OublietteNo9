@@ -163,6 +163,14 @@ export function Results({
                         {betAmount * selectedHandCount} credits
                       </span>
                     </div>
+                    {gameState?.devilsDealCost && gameState?.devilsDealHeld && (
+                      <div className="flex justify-between items-center">
+                        <span className="text-lg font-semibold text-gray-700">Devil's Deal:</span>
+                        <span className="text-2xl font-bold text-red-600">
+                          -{Math.abs(gameState.devilsDealCost)} credits
+                        </span>
+                      </div>
+                    )}
                     <div className="flex justify-between items-center">
                       <span className="text-lg font-semibold text-gray-700">Total Payout:</span>
                       <span className="text-2xl font-bold text-green-600">
@@ -172,10 +180,27 @@ export function Results({
                     <div className="flex justify-between items-center">
                       <span className="text-xl font-bold text-gray-800">Profit:</span>
                       <span
-                        className={`text-3xl font-bold ${totalPayout >= betAmount * selectedHandCount ? 'text-green-600' : 'text-red-600'}`}
+                        className={`text-3xl font-bold ${
+                          totalPayout - betAmount * selectedHandCount - (gameState?.devilsDealHeld && gameState?.devilsDealCost ? Math.abs(gameState.devilsDealCost) : 0) >= 0
+                            ? 'text-green-600'
+                            : 'text-red-600'
+                        }`}
                       >
-                        {totalPayout - betAmount * selectedHandCount} credit
-                        {totalPayout - betAmount * selectedHandCount !== 1 ? 's' : ''}
+                        {totalPayout -
+                          betAmount * selectedHandCount -
+                          (gameState?.devilsDealHeld && gameState?.devilsDealCost
+                            ? Math.abs(gameState.devilsDealCost)
+                            : 0)}{' '}
+                        credit
+                        {Math.abs(
+                          totalPayout -
+                            betAmount * selectedHandCount -
+                            (gameState?.devilsDealHeld && gameState?.devilsDealCost
+                              ? Math.abs(gameState.devilsDealCost)
+                              : 0)
+                        ) !== 1
+                          ? 's'
+                          : ''}
                       </span>
                     </div>
                   </div>
@@ -199,7 +224,7 @@ export function Results({
 
           {/* Reward Table Sidebar */}
           <div className="lg:col-span-1">
-            <RewardTable rewardTable={rewardTable} />
+            <RewardTable rewardTable={rewardTable} wildCardCount={gameState?.wildCardCount || 0} />
           </div>
         </div>
       </div>

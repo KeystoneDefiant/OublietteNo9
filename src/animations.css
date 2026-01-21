@@ -68,3 +68,20 @@
     opacity: 1;
   }
 }
+
+@keyframes devilsDealBob {
+  0%, 100% { transform: translate(0, 0); }
+  25% { transform: translate(8px, -6px); }
+  50% { transform: translate(-6px, 8px); }
+  75% { transform: translate(-8px, -4px); }
+}
+
+@keyframes devilsDealOpacity {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 0.75; }
+}
+
+.devil-deal-container {
+  animation: devilsDealBob 4s ease-in-out infinite,
+             devilsDealOpacity 3s ease-in-out infinite;
+}

@@ -75,6 +75,10 @@ function App() {
     proceedFromResults,
     cheatAddCredits,
     cheatAddHands,
+    cheatSetDevilsDeal,
+    toggleDevilsDealHold,
+    purchaseDevilsDealChance,
+    purchaseDevilsDealCostReduction,
   } = useGameState();
 
   // Show loading spinner while theme is loading
@@ -130,6 +134,7 @@ function App() {
               onEndRun={endRun}
               onCheatAddCredits={cheatAddCredits}
               onCheatAddHands={cheatAddHands}
+              onCheatSetDevilsDeal={cheatSetDevilsDeal}
             />
           </div>
         </ErrorBoundary>
@@ -152,6 +157,7 @@ function App() {
               failureState={state.currentFailureState}
               gameState={state}
               onToggleHold={toggleHold}
+              onToggleDevilsDealHold={toggleDevilsDealHold}
               onDraw={drawParallelHands}
             />
           </div>
@@ -212,6 +218,10 @@ function App() {
               onAddWildCard={addWildCard}
               onPurchaseExtraDraw={purchaseExtraDraw}
               onAddParallelHandsBundle={addParallelHandsBundle}
+              onPurchaseDevilsDealChance={purchaseDevilsDealChance}
+              onPurchaseDevilsDealCostReduction={purchaseDevilsDealCostReduction}
+              devilsDealChancePurchases={state.devilsDealChancePurchases}
+              devilsDealCostReductionPurchases={state.devilsDealCostReductionPurchases}
               onClose={proceedFromResults}
             />
           </div>

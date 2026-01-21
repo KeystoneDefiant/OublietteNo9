@@ -44,6 +44,11 @@ const INITIAL_STATE: GameState = {
   isEndlessMode: false,
   currentFailureState: null,
   winningHandsLastRound: 0,
+  devilsDealCard: null,
+  devilsDealCost: 0,
+  devilsDealHeld: false,
+  devilsDealChancePurchases: 0,
+  devilsDealCostReductionPurchases: 0,
 };
 
 export function useGameState() {
@@ -188,6 +193,9 @@ export function useGameState() {
         parallelHands: [],
         firstDrawComplete: false,
         secondDrawAvailable: false,
+        devilsDealCard: null,
+        devilsDealCost: 0,
+        devilsDealHeld: false,
         round: newRound,
         minimumBet: newMinimumBet,
         baseMinimumBet: newBaseMinimumBet,
@@ -228,6 +236,11 @@ export function useGameState() {
       isEndlessMode: false,
       currentFailureState: null,
       winningHandsLastRound: 0,
+      devilsDealCard: null,
+      devilsDealCost: 0,
+      devilsDealHeld: false,
+      devilsDealChancePurchases: 0,
+      devilsDealCostReductionPurchases: 0,
     }));
   }, []);
 
@@ -397,6 +410,27 @@ export function useGameState() {
     }));
   }, []);
 
+  const cheatSetDevilsDeal = useCallback(() => {
+    setState((prev) => ({
+      ...prev,
+      devilsDealChancePurchases: 19, // 5% * 19 = 95%, base 5% = 100%
+      devilsDealCostReductionPurchases: 15, // 6% * 15 = 90%, base 10% - 90% = 1%
+    }));
+  }, []);
+
+  const toggleDevilsDealHold = useCallback(() => {
+    setState((prev) => {
+      // Can't hold if all 5 regular cards are held
+      if (prev.heldIndices.length === 5 && !prev.devilsDealHeld) {
+        return prev;
+      }
+      return {
+        ...prev,
+        devilsDealHeld: !prev.devilsDealHeld,
+      };
+    });
+  }, []);
+
   return {
     state,
     // Game actions
@@ -418,5 +452,7 @@ export function useGameState() {
     proceedFromResults,
     cheatAddCredits,
     cheatAddHands,
+    cheatSetDevilsDeal,
+    toggleDevilsDealHold,
   };
 }

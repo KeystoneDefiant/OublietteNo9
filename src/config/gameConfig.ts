@@ -36,6 +36,16 @@ export const gameConfig = {
       'Maximum Stakes!',
       'Fuck it, we ball',
     ],
+    devilsDeal: [
+      'Can I offer you a deal?',
+      'Make a deal with me?',
+      'Interested in a proposition?',
+      'Care to make a deal?',
+      'What say you to a bargain?',
+      'A tempting offer awaits...',
+      'Shall we make a deal?',
+      'An opportunity presents itself...',
+    ],
   },
 
   // Game modes define starting conditions and scaling rules
@@ -50,6 +60,15 @@ export const gameConfig = {
       shopOptionCount: 3, // Number of options to display in shop
       shopFrequency: 2, // Show shop every N turns
       minimumPairRank: 11, // Minimum rank for a pair to be valid (11 = Jacks or Better)
+      // Devil's Deal configuration
+      devilsDeal: {
+        baseChance: 10, // Base percentage chance (0-100)
+        baseCostPercent: 5, // Base cost as percentage of potential payout
+        chanceIncreasePerPurchase: 20, // Percentage increase per shop purchase
+        maxChancePurchases: 3, // Maximum times chance can be purchased
+        costReductionPerPurchase: 6, // Percentage reduction per shop purchase
+        maxCostReductionPurchases: 5, // Maximum times cost can be reduced
+      },
       // Endless mode configuration (starts after endlessModeStartRound)
       endlessMode: {
         startRound: 20, // Start endless mode after this round
@@ -98,6 +117,14 @@ export const gameConfig = {
         extraDraw: {
           cost: 5000,
         },
+        devilsDealChance: {
+          baseCost: 3000, // Configurable per game mode
+          increasePercent: 50, // Configurable per game mode
+        },
+        devilsDealCostReduction: {
+          baseCost: 10000, // Configurable per game mode
+          increasePercent: 25, // Configurable per game mode
+        },
       },
       rewards: {
         'royal-flush': 250,
@@ -122,6 +149,8 @@ export const gameConfig = {
         'parallel-hands-bundle-50': 8,
         'wild-card': 15,
         'reward-upgrade': 10,
+        'devils-deal-chance': 8,
+        'devils-deal-cost-reduction': 8,
       },
     },
   },

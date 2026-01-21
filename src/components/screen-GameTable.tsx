@@ -1,7 +1,10 @@
+import { useState, useEffect } from 'react';
 import { Card as CardType, Hand, FailureStateType, GameState } from '../types';
 import { Card } from './Card';
 import { GameHeader } from './GameHeader';
 import { RewardTable } from './RewardTable';
+import { DevilsDealCard } from './DevilsDealCard';
+import { gameConfig } from '../config/gameConfig';
 
 interface GameTableProps {
   playerHand: CardType[];
@@ -17,6 +20,7 @@ interface GameTableProps {
   failureState?: FailureStateType;
   gameState?: GameState;
   onToggleHold: (index: number) => void;
+  onToggleDevilsDealHold: () => void;
   onDraw: () => void;
 }
 
@@ -34,10 +38,21 @@ export function GameTable({
   failureState,
   gameState,
   onToggleHold,
+  onToggleDevilsDealHold,
   onDraw,
 }: GameTableProps) {
   const canDraw = playerHand.length === 5 && parallelHands.length === 0;
   const efficiency = round > 0 ? (totalEarnings / round).toFixed(2) : '0.00';
+  
+  // Get random quip for Devil's Deal
+  const [devilsDealQuip, setDevilsDealQuip] = useState<string>('');
+  useEffect(() => {
+    if (gameState?.devilsDealCard) {
+      const quips = gameConfig.quips.devilsDeal;
+      const randomQuip = quips[Math.floor(Math.random() * quips.length)];
+      setDevilsDealQuip(randomQuip);
+    }
+  }, [gameState?.devilsDealCard]);
 
   return (
     <div id="gameTable-screen" className="min-h-screen p-6 relative overflow-hidden select-none">
@@ -57,7 +72,7 @@ export function GameTable({
             {/* Player Hand - Card Selection Screen */}
             <div className="bg-white rounded-lg shadow-lg p-6">
               <h2 className="text-2xl font-bold mb-4 text-gray-800">Your Hand</h2>
-              <div className="flex gap-4 justify-center flex-wrap">
+              <div className="flex gap-4 justify-center flex-wrap relative">
                 {playerHand.map((card, index) => (
                   <Card
                     key={card.id}
@@ -69,6 +84,16 @@ export function GameTable({
                     flipDelay={index * 100}
                   />
                 ))}
+                {gameState?.devilsDealCard && (
+                  <DevilsDealCard
+                    card={gameState.devilsDealCard}
+                    cost={gameState.devilsDealCost}
+                    quip={devilsDealQuip}
+                    isHeld={gameState.devilsDealHeld}
+                    isDisabled={heldIndices.length === 5 && !gameState.devilsDealHeld}
+                    onHold={onToggleDevilsDealHold}
+                  />
+                )}
               </div>
               {playerHand.length === 5 && (
                 <div className="mt-4 text-center">
@@ -114,7 +139,7 @@ export function GameTable({
 
           {/* Reward Table Sidebar */}
           <div className="lg:col-span-1">
-            <RewardTable rewardTable={rewardTable} />
+            <RewardTable rewardTable={rewardTable} wildCardCount={gameState?.wildCardCount || 0} />
           </div>
         </div>
       </div>

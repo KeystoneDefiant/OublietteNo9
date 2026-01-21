@@ -23,6 +23,7 @@ interface PreDrawProps {
   onEndRun: () => void;
   onCheatAddCredits: (amount: number) => void;
   onCheatAddHands: (amount: number) => void;
+  onCheatSetDevilsDeal?: () => void;
 }
 
 export function PreDraw({
@@ -43,6 +44,7 @@ export function PreDraw({
   onEndRun,
   onCheatAddCredits,
   onCheatAddHands,
+  onCheatSetDevilsDeal,
 }: PreDrawProps) {
   const [showCheats, setShowCheats] = useState(false);
   const [showEndRunConfirm, setShowEndRunConfirm] = useState(false);
@@ -508,7 +510,7 @@ export function PreDraw({
 
           {/* Reward Table Sidebar */}
           <div className="lg:col-span-1">
-            <RewardTable rewardTable={rewardTable} />
+            <RewardTable rewardTable={rewardTable} wildCardCount={gameState?.wildCardCount || 0} />
           </div>
         </div>
       </div>
@@ -519,6 +521,7 @@ export function PreDraw({
           onClose={() => setShowCheats(false)}
           onAddCredits={onCheatAddCredits}
           onAddHands={onCheatAddHands}
+          onSetDevilsDealCheat={onCheatSetDevilsDeal}
         />
       )}
 

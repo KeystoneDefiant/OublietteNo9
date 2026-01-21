@@ -5,6 +5,8 @@ import {
   calculateWildCardCost,
   calculateSingleDeadCardRemovalCost,
   calculateAllDeadCardsRemovalCost,
+  calculateDevilsDealChanceCost,
+  calculateDevilsDealCostReductionCost,
 } from '../utils/config';
 
 const currentMode = getCurrentGameMode();
@@ -198,6 +200,56 @@ export function useShopActions(
     [setState]
   );
 
+  const purchaseDevilsDealChance = useCallback(() => {
+    setState((prev) => {
+      const devilsDealConfig = currentMode.devilsDeal;
+      if (!devilsDealConfig) {
+        return prev;
+      }
+
+      // Check if max purchases reached
+      if (prev.devilsDealChancePurchases >= devilsDealConfig.maxChancePurchases) {
+        return prev;
+      }
+
+      const cost = calculateDevilsDealChanceCost(prev.devilsDealChancePurchases);
+      if (prev.credits < cost) {
+        return prev;
+      }
+
+      return {
+        ...prev,
+        credits: prev.credits - cost,
+        devilsDealChancePurchases: prev.devilsDealChancePurchases + 1,
+      };
+    });
+  }, [setState]);
+
+  const purchaseDevilsDealCostReduction = useCallback(() => {
+    setState((prev) => {
+      const devilsDealConfig = currentMode.devilsDeal;
+      if (!devilsDealConfig) {
+        return prev;
+      }
+
+      // Check if max purchases reached
+      if (prev.devilsDealCostReductionPurchases >= devilsDealConfig.maxCostReductionPurchases) {
+        return prev;
+      }
+
+      const cost = calculateDevilsDealCostReductionCost(prev.devilsDealCostReductionPurchases);
+      if (prev.credits < cost) {
+        return prev;
+      }
+
+      return {
+        ...prev,
+        credits: prev.credits - cost,
+        devilsDealCostReductionPurchases: prev.devilsDealCostReductionPurchases + 1,
+      };
+    });
+  }, [setState]);
+
   return {
     addDeadCard,
     removeSingleDeadCard,
@@ -205,5 +257,7 @@ export function useShopActions(
     addWildCard,
     purchaseExtraDraw,
     addParallelHandsBundle,
+    purchaseDevilsDealChance,
+    purchaseDevilsDealCostReduction,
   };
 }

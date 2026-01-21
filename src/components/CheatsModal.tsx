@@ -2,9 +2,10 @@ interface CheatsModalProps {
   onClose: () => void;
   onAddCredits: (amount: number) => void;
   onAddHands: (amount: number) => void;
+  onSetDevilsDealCheat?: () => void;
 }
 
-export function CheatsModal({ onClose, onAddCredits, onAddHands }: CheatsModalProps) {
+export function CheatsModal({ onClose, onAddCredits, onAddHands, onSetDevilsDealCheat }: CheatsModalProps) {
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-white rounded-lg shadow-2xl p-8 max-w-md w-full mx-4 relative">
@@ -53,6 +54,17 @@ export function CheatsModal({ onClose, onAddCredits, onAddHands }: CheatsModalPr
           >
             Add 50 Parallel Hands
           </button>
+          {onSetDevilsDealCheat && (
+            <button
+              onClick={() => {
+                onSetDevilsDealCheat();
+                onClose();
+              }}
+              className="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-4 rounded-lg transition-colors"
+            >
+              Devil's Deal: 100% Chance, 1% Cost
+            </button>
+          )}
         </div>
 
         <button
