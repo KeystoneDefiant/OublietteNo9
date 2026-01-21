@@ -135,17 +135,24 @@ export function useGameState() {
       let gameOver = false;
       let currentFailureState = prev.currentFailureState;
 
-      // Auto-adjust bet and hand count if player can't afford current bet
-      // Step 1: Try reducing bet size until affordable (but not below minimum)
-      const maxAffordableBet = Math.floor(newCredits / adjustedHandCount);
-      if (maxAffordableBet >= newMinimumBet) {
-        // Can afford by reducing bet (bet will be >= minimum)
-        adjustedBet = maxAffordableBet;
-      } else {
-        // Step 2: Bet reached minimum bet, try reducing hand count
-        adjustedBet = newMinimumBet;
-        adjustedHandCount = Math.max(1, Math.floor(newCredits / adjustedBet));
-        adjustedHandCount = Math.min(prev.handCount, adjustedHandCount);
+      // Check if player can still afford their previous bet/hand count
+      const previousTotalCost = adjustedBet * adjustedHandCount;
+      const canAffordPrevious = newCredits >= previousTotalCost;
+
+      // Only adjust if player can't afford their previous bet/hand count
+      if (!canAffordPrevious) {
+        // Auto-adjust bet and hand count if player can't afford current bet
+        // Step 1: Try reducing bet size until affordable (but not below minimum)
+        const maxAffordableBet = Math.floor(newCredits / adjustedHandCount);
+        if (maxAffordableBet >= newMinimumBet) {
+          // Can afford by reducing bet (bet will be >= minimum)
+          adjustedBet = maxAffordableBet;
+        } else {
+          // Step 2: Bet reached minimum bet, try reducing hand count
+          adjustedBet = newMinimumBet;
+          adjustedHandCount = Math.max(1, Math.floor(newCredits / adjustedBet));
+          adjustedHandCount = Math.min(prev.handCount, adjustedHandCount);
+        }
       }
 
       // Step 3: If still can't afford, trigger game over
