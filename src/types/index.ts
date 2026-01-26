@@ -112,6 +112,7 @@ export type FailureStateType =
 export interface GameState {
   screen: GameScreen;
   gamePhase: GamePhase;
+  isGeneratingHands: boolean; // Loading state for parallel hands generation
   playerHand: Card[];
   heldIndices: number[];
   parallelHands: Hand[];

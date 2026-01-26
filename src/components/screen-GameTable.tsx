@@ -6,24 +6,66 @@ import { RewardTable } from './RewardTable';
 import { DevilsDealCard } from './DevilsDealCard';
 import { gameConfig } from '../config/gameConfig';
 
+/**
+ * GameTable screen component props
+ * 
+ * Main gameplay screen where players view their dealt hand, select cards
+ * to hold, and draw parallel hands.
+ */
 interface GameTableProps {
+  /** The player's current 5-card hand */
   playerHand: CardType[];
+  /** Array of indices (0-4) representing which cards are held */
   heldIndices: number[];
+  /** Array of parallel hands after drawing */
   parallelHands: Hand[];
+  /** Payout multipliers for each hand rank */
   rewardTable: { [key: string]: number };
+  /** Current player credits */
   credits: number;
+  /** Number of parallel hands selected */
   selectedHandCount: number;
+  /** Current round number */
   round: number;
+  /** Total earnings across all rounds */
   totalEarnings: number;
+  /** Whether initial cards have been revealed */
   firstDrawComplete: boolean;
+  /** Whether second draw ability is available */
   secondDrawAvailable: boolean;
+  /** Failure state for endless mode */
   failureState?: FailureStateType;
+  /** Complete game state for Devil's Deal and other features */
   gameState?: GameState;
+  /** Callback to toggle hold state for a card */
   onToggleHold: (index: number) => void;
+  /** Callback to toggle Devil's Deal card hold state */
   onToggleDevilsDealHold: () => void;
+  /** Callback to draw parallel hands */
   onDraw: () => void;
 }
 
+/**
+ * GameTable screen component
+ * 
+ * Core gameplay screen where players:
+ * - View their dealt 5-card hand
+ * - Click cards to hold/unhold (max 5 total including Devil's Deal)
+ * - View Devil's Deal offer if triggered
+ * - Draw parallel hands when ready
+ * 
+ * Handles card flip animations, Devil's Deal interactions, and
+ * enforces 5-card hold limit across regular and Devil's Deal cards.
+ * 
+ * @example
+ * <GameTable
+ *   playerHand={[card1, card2, card3, card4, card5]}
+ *   heldIndices={[0, 2, 4]}
+ *   onToggleHold={(index) => toggleHold(index)}
+ *   onDraw={drawHands}
+ *   {...otherProps}
+ * />
+ */
 export function GameTable({
   playerHand,
   heldIndices,

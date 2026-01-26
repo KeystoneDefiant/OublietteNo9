@@ -468,6 +468,120 @@ describe('PokerEvaluator', () => {
       // Should not be one-pair because 9s are below minimum (Jacks or Better)
       expect(result.rank).not.toBe('one-pair');
     });
+
+    describe('Multiple Wild Cards Verification', () => {
+      it('should create royal flush with J, K, A same suit + 2 wilds (TODO verification)', () => {
+        const hand: Card[] = [
+          createCard('J', 'hearts'),
+          createCard('K', 'hearts'),
+          createCard('A', 'hearts'),
+          createCard('2', 'spades', { isWild: true }),
+          createCard('3', 'clubs', { isWild: true }),
+        ];
+        const result = PokerEvaluator.evaluate(hand);
+        expect(result.rank).toBe('royal-flush');
+        expect(result.score).toBeGreaterThan(9000); // Royal flush has high score
+      });
+
+      it('should create royal flush with Q, K + 3 wilds', () => {
+        const hand: Card[] = [
+          createCard('Q', 'diamonds'),
+          createCard('K', 'diamonds'),
+          createCard('2', 'spades', { isWild: true }),
+          createCard('3', 'clubs', { isWild: true }),
+          createCard('4', 'hearts', { isWild: true }),
+        ];
+        const result = PokerEvaluator.evaluate(hand);
+        expect(result.rank).toBe('royal-flush');
+      });
+
+      it('should create royal flush with 10, J same suit + 3 wilds', () => {
+        const hand: Card[] = [
+          createCard('10', 'spades'),
+          createCard('J', 'spades'),
+          createCard('2', 'hearts', { isWild: true }),
+          createCard('3', 'clubs', { isWild: true }),
+          createCard('4', 'diamonds', { isWild: true }),
+        ];
+        const result = PokerEvaluator.evaluate(hand);
+        expect(result.rank).toBe('royal-flush');
+      });
+
+      it('should create straight flush with 2 wilds', () => {
+        const hand: Card[] = [
+          createCard('5', 'clubs'),
+          createCard('6', 'clubs'),
+          createCard('7', 'clubs'),
+          createCard('2', 'spades', { isWild: true }),
+          createCard('3', 'hearts', { isWild: true }),
+        ];
+        const result = PokerEvaluator.evaluate(hand);
+        expect(result.rank).toBe('straight-flush');
+      });
+
+      it('should create straight flush with 3 wilds', () => {
+        const hand: Card[] = [
+          createCard('8', 'spades'),
+          createCard('9', 'spades'),
+          createCard('2', 'hearts', { isWild: true }),
+          createCard('3', 'clubs', { isWild: true }),
+          createCard('4', 'diamonds', { isWild: true }),
+        ];
+        const result = PokerEvaluator.evaluate(hand);
+        expect(result.rank).toBe('straight-flush');
+      });
+
+      it('should create four of a kind with 2 wilds', () => {
+        const hand: Card[] = [
+          createCard('10', 'hearts'),
+          createCard('10', 'diamonds'),
+          createCard('5', 'clubs'),
+          createCard('2', 'spades', { isWild: true }),
+          createCard('3', 'hearts', { isWild: true }),
+        ];
+        const result = PokerEvaluator.evaluate(hand);
+        expect(result.rank).toBe('four-of-a-kind');
+      });
+
+      it('should create optimal hand with 2 pair + 2 wilds', () => {
+        const hand: Card[] = [
+          createCard('K', 'hearts'),
+          createCard('K', 'diamonds'),
+          createCard('J', 'clubs'),
+          createCard('2', 'spades', { isWild: true }),
+          createCard('3', 'hearts', { isWild: true }),
+        ];
+        const result = PokerEvaluator.evaluate(hand);
+        // With 2 pair cards and 2 wilds, should make four of a kind (better than full house)
+        expect(result.rank).toBe('four-of-a-kind');
+      });
+
+      it('should handle 4 wilds optimally', () => {
+        const hand: Card[] = [
+          createCard('A', 'hearts'),
+          createCard('2', 'spades', { isWild: true }),
+          createCard('3', 'clubs', { isWild: true }),
+          createCard('4', 'diamonds', { isWild: true }),
+          createCard('5', 'hearts', { isWild: true }),
+        ];
+        const result = PokerEvaluator.evaluate(hand);
+        // With 1 Ace and 4 wilds, should make royal flush (best possible hand)
+        expect(result.rank).toBe('royal-flush');
+      });
+
+      it('should handle all 5 wilds', () => {
+        const hand: Card[] = [
+          createCard('2', 'spades', { isWild: true }),
+          createCard('3', 'clubs', { isWild: true }),
+          createCard('4', 'diamonds', { isWild: true }),
+          createCard('5', 'hearts', { isWild: true }),
+          createCard('6', 'spades', { isWild: true }),
+        ];
+        const result = PokerEvaluator.evaluate(hand);
+        // All wilds should make royal flush (best possible hand)
+        expect(result.rank).toBe('royal-flush');
+      });
+    });
   });
 
   describe('Dead Cards', () => {

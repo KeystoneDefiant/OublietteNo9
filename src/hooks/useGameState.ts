@@ -13,6 +13,7 @@ const currentMode = getCurrentGameMode();
 const INITIAL_STATE: GameState = {
   screen: 'menu',
   gamePhase: 'preDraw',
+  isGeneratingHands: false,
   playerHand: [],
   heldIndices: [],
   parallelHands: [],

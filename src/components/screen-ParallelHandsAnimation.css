@@ -9,6 +9,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  overflow: hidden;
 }
 
 .animation-background {
@@ -21,58 +22,116 @@
   z-index: 11;
 }
 
-.hands-animation-area {
+.hands-grid-viewport {
   position: absolute;
-  width: 100%;
-  height: 100vh;
-  display: flex;
-  align-items: flex-end;
-  justify-content: center;
-  padding-bottom: 60px;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
   z-index: 12;
+  overflow: hidden;
+  padding: 20px;
+  padding-bottom: 80px; /* Extra space at bottom to prevent cut-off */
 }
 
-.floating-hand {
-  position: absolute;
-  bottom: 60px;
-  left: var(--start-x, 50%);
-  animation: floatUp var(--hand-duration, 2.5s) ease-out forwards;
+.hands-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  width: 100%;
+  max-width: 1400px;
+  margin: 0 auto;
+  justify-content: center; /* Center all items, including incomplete rows */
+  align-items: flex-start;
+}
+
+/* Tighter spacing for 4-column layouts (51-100 hands) */
+.hands-grid[data-columns="4"] {
+  gap: 12px;
+}
+
+.hands-grid[data-columns="4"] .grid-hand-card {
+  width: 200px;
+  min-width: 200px;
+  max-width: 200px;
+}
+
+.hands-grid[data-columns="4"] .hand-content {
+  padding: 14px 16px;
+  gap: 8px;
+}
+
+.hands-grid[data-columns="4"] .hand-card-small {
+  width: 28px;
+  height: 42px;
+  font-size: 10px;
+}
+
+.hands-grid[data-columns="4"] .hand-card-small .suit {
+  font-size: 12px;
+}
+
+.hands-grid[data-columns="4"] .score-text {
+  font-size: 11px;
+  letter-spacing: 0.3px;
+}
+
+.hands-grid[data-columns="4"] .score-value {
+  font-size: 20px;
+}
+
+/* Even tighter for 8-column layouts (101+ hands) */
+.hands-grid[data-columns="8"] {
+  gap: 8px;
+}
+
+.hands-grid[data-columns="8"] .grid-hand-card {
+  width: 160px;
+  min-width: 160px;
+  max-width: 160px;
+}
+
+.hands-grid[data-columns="8"] .hand-content {
+  padding: 10px 12px;
+  gap: 6px;
+}
+
+.hands-grid[data-columns="8"] .hand-card-small {
+  width: 24px;
+  height: 36px;
+  font-size: 9px;
+}
+
+.hands-grid[data-columns="8"] .hand-card-small .suit {
+  font-size: 11px;
+}
+
+.hands-grid[data-columns="8"] .score-text {
+  font-size: 10px;
+  letter-spacing: 0.2px;
+}
+
+.hands-grid[data-columns="8"] .score-value {
+  font-size: 18px;
+}
+
+.grid-hand-card {
+  width: 280px; /* Fixed width for consistent sizing */
+  min-width: 280px;
   max-width: 280px;
-  width: 280px;
+  animation: handFadeIn 0.3s ease-out forwards;
+  opacity: 0;
+  flex-shrink: 0; /* Prevent shrinking */
 }
 
-@keyframes floatUp {
-  0% {
+@keyframes handFadeIn {
+  from {
     opacity: 0;
-    transform: translateX(-50%) translateY(0) scale(0.8);
+    transform: scale(0.9);
   }
-
-  5% {
-    /* Quickly fade in at the start */
+  to {
     opacity: 1;
-    transform: translateX(-50%) translateY(0) scale(0.8);
-  }
-
-  50% {
-    /* Pulse and scale at 50% of animation */
-    opacity: 1;
-    transform: translateX(-50%) translateY(-30vh) scale(1.15);
-  }
-
-  100% {
-    opacity: 0;
-    transform: translateX(-50%) translateY(-100vh) scale(1);
-  }
-}
-
-/* Pulse effect for the hand content at 50% */
-@keyframes handPulse {
-  0%,
-  100% {
     transform: scale(1);
-  }
-  50% {
-    transform: scale(1.1);
   }
 }
 
@@ -87,15 +146,15 @@
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
   backdrop-filter: blur(10px);
   border: 2px solid rgba(102, 126, 234, 0.3);
-  animation: handPulse var(--hand-duration, 2.5s) ease-in-out;
+  width: 100%;
 }
 
 .hand-cards {
   display: flex;
   gap: 6px;
-  flex-wrap: wrap;
+  flex-wrap: nowrap; /* Keep cards on single line */
   justify-content: center;
-  max-width: 220px;
+  width: 100%;
 }
 
 .hand-card-small {
@@ -133,6 +192,7 @@
   color: #333;
   text-transform: uppercase;
   letter-spacing: 0.5px;
+  white-space: nowrap; /* Prevent hand name wrapping */
 }
 
 .score-value {
@@ -140,4 +200,172 @@
   font-weight: bold;
   color: #667eea;
   text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Responsive adjustments - Mobile */
+@media (max-width: 768px) {
+  .hands-grid-viewport {
+    padding: 10px;
+    padding-bottom: 60px;
+  }
+
+  .hands-grid {
+    gap: 8px;
+  }
+
+  /* Force 2 columns max on mobile for 4+ column layouts */
+  .hands-grid[data-columns="4"],
+  .hands-grid[data-columns="8"] {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+
+  /* Base sizing for 1-2 columns on mobile */
+  .grid-hand-card {
+    width: 160px;
+    min-width: 160px;
+    max-width: 160px;
+  }
+
+  .hand-content {
+    padding: 10px 12px;
+    gap: 6px;
+  }
+
+  .hand-card-small {
+    width: 24px;
+    height: 36px;
+    font-size: 9px;
+    gap: 4px;
+  }
+
+  .hand-card-small .suit {
+    font-size: 11px;
+  }
+
+  .score-text {
+    font-size: 10px;
+    letter-spacing: 0.2px;
+  }
+
+  .score-value {
+    font-size: 18px;
+  }
+
+  /* Even smaller for mobile 2-column override (was 4 or 8 columns) */
+  .hands-grid[data-columns="4"] .grid-hand-card,
+  .hands-grid[data-columns="8"] .grid-hand-card {
+    width: 150px;
+    min-width: 150px;
+    max-width: 150px;
+  }
+
+  .hands-grid[data-columns="4"] .hand-content,
+  .hands-grid[data-columns="8"] .hand-content {
+    padding: 8px 10px;
+    gap: 4px;
+  }
+
+  .hands-grid[data-columns="4"] .hand-card-small,
+  .hands-grid[data-columns="8"] .hand-card-small {
+    width: 22px;
+    height: 32px;
+    font-size: 8px;
+    border-width: 1px;
+  }
+
+  .hands-grid[data-columns="4"] .hand-card-small .suit,
+  .hands-grid[data-columns="8"] .hand-card-small .suit {
+    font-size: 10px;
+  }
+
+  .hands-grid[data-columns="4"] .score-text,
+  .hands-grid[data-columns="8"] .score-text {
+    font-size: 9px;
+    letter-spacing: 0.1px;
+  }
+
+  .hands-grid[data-columns="4"] .score-value,
+  .hands-grid[data-columns="8"] .score-value {
+    font-size: 16px;
+  }
+}
+
+/* Extra small mobile devices */
+@media (max-width: 480px) {
+  .hands-grid-viewport {
+    padding: 8px;
+    padding-bottom: 50px;
+  }
+
+  .hands-grid {
+    gap: 6px;
+  }
+
+  .grid-hand-card {
+    width: 140px;
+    min-width: 140px;
+    max-width: 140px;
+  }
+
+  .hand-content {
+    padding: 8px 10px;
+    gap: 4px;
+  }
+
+  .hand-card-small {
+    width: 20px;
+    height: 30px;
+    font-size: 8px;
+    border-width: 1px;
+  }
+
+  .hand-card-small .suit {
+    font-size: 10px;
+  }
+
+  .score-text {
+    font-size: 9px;
+    letter-spacing: 0.1px;
+  }
+
+  .score-value {
+    font-size: 16px;
+  }
+
+  /* Smallest size for high-density on tiny screens */
+  .hands-grid[data-columns="4"] .grid-hand-card,
+  .hands-grid[data-columns="8"] .grid-hand-card {
+    width: 130px;
+    min-width: 130px;
+    max-width: 130px;
+  }
+
+  .hands-grid[data-columns="4"] .hand-content,
+  .hands-grid[data-columns="8"] .hand-content {
+    padding: 6px 8px;
+    gap: 3px;
+  }
+
+  .hands-grid[data-columns="4"] .hand-card-small,
+  .hands-grid[data-columns="8"] .hand-card-small {
+    width: 18px;
+    height: 28px;
+    font-size: 7px;
+  }
+
+  .hands-grid[data-columns="4"] .hand-card-small .suit,
+  .hands-grid[data-columns="8"] .hand-card-small .suit {
+    font-size: 9px;
+  }
+
+  .hands-grid[data-columns="4"] .score-text,
+  .hands-grid[data-columns="8"] .score-text {
+    font-size: 8px;
+    letter-spacing: 0px;
+  }
+
+  .hands-grid[data-columns="4"] .score-value,
+  .hands-grid[data-columns="8"] .score-value {
+    font-size: 14px;
+  }
 }

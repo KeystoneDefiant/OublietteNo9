@@ -5,27 +5,75 @@ import { GameHeader } from './GameHeader';
 import { FailureStateType, GameState } from '../types';
 import { gameConfig } from '../config/gameConfig';
 
+/**
+ * PreDraw screen component props
+ * 
+ * Screen where players configure their bet amount and number of parallel hands
+ * before dealing. Includes validation, affordability checks, and bet efficiency
+ * calculations.
+ */
 interface PreDrawProps {
+  /** Current player credits */
   credits: number;
+  /** Maximum hand count available */
   handCount: number;
+  /** Currently selected number of hands */
   selectedHandCount: number;
+  /** Bet amount per hand */
   betAmount: number;
+  /** Minimum bet required for current round */
   minimumBet: number;
+  /** Payout multipliers for each hand rank */
   rewardTable: { [key: string]: number };
+  /** Whether game is in game over state */
   gameOver: boolean;
+  /** Current round number */
   round: number;
+  /** Total earnings across all rounds */
   totalEarnings: number;
+  /** Failure state information for endless mode */
   failureState?: FailureStateType;
+  /** Complete game state for additional context */
   gameState?: GameState;
+  /** Callback to update bet amount */
   onSetBetAmount: (amount: number) => void;
+  /** Callback to update selected hand count */
   onSetSelectedHandCount: (count: number) => void;
+  /** Callback to deal initial hand */
   onDealHand: () => void;
+  /** Callback to end current run */
   onEndRun: () => void;
+  /** Cheat callback to add credits */
   onCheatAddCredits: (amount: number) => void;
+  /** Cheat callback to add hands */
   onCheatAddHands: (amount: number) => void;
+  /** Cheat callback to trigger Devil's Deal */
   onCheatSetDevilsDeal?: () => void;
 }
 
+/**
+ * PreDraw screen component
+ * 
+ * Primary configuration screen before dealing a hand. Allows players to:
+ * - Adjust bet amount (with min/max validation)
+ * - Select number of parallel hands (up to available)
+ * - View bet efficiency and total cost
+ * - Access reward table and game information
+ * - Deal hand when ready or end current run
+ * 
+ * Includes comprehensive input validation with visual feedback and
+ * auto-adjustment if previous bet becomes unaffordable in new round.
+ * 
+ * @example
+ * <PreDraw
+ *   credits={5000}
+ *   betAmount={10}
+ *   selectedHandCount={20}
+ *   minimumBet={5}
+ *   onDealHand={handleDeal}
+ *   {...otherProps}
+ * />
+ */
 export function PreDraw({
   credits,
   handCount,

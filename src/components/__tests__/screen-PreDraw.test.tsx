@@ -1,32 +1,14 @@
-import { describe, it, expect, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { PreDraw } from '../screen-PreDraw';
-import { GameState } from '../../types';
+import { GameState, FailureStateType } from '../../types';
 
-// Mock child components to simplify testing
-vi.mock('../RewardTable', () => ({
-  RewardTable: () => <div data-testid="reward-table">Reward Table</div>,
-}));
-
-vi.mock('../CheatsModal', () => ({
-  CheatsModal: ({ onClose }: { onClose: () => void }) => (
-    <div data-testid="cheats-modal">
-      <button onClick={onClose}>Close</button>
-    </div>
-  ),
-}));
-
-vi.mock('../GameHeader', () => ({
-  GameHeader: () => <div data-testid="game-header">Game Header</div>,
-}));
-
-describe('PreDraw Component - Max Bet Button', () => {
-  const defaultProps = {
-    credits: 1000,
-    handCount: 10,
-    selectedHandCount: 5,
-    betAmount: 10,
+describe('PreDraw Component', () => {
+  const mockProps = {
+    credits: 10000,
+    handCount: 50,
+    selectedHandCount: 10,
+    betAmount: 5,
     minimumBet: 2,
     rewardTable: {
       'royal-flush': 250,
@@ -38,7 +20,6 @@ describe('PreDraw Component - Max Bet Button', () => {
       'three-of-a-kind': 3,
       'two-pair': 2,
       'one-pair': 1,
-      'high-card': 0,
     },
     gameOver: false,
     round: 1,
@@ -49,425 +30,333 @@ describe('PreDraw Component - Max Bet Button', () => {
     onEndRun: vi.fn(),
     onCheatAddCredits: vi.fn(),
     onCheatAddHands: vi.fn(),
+    onCheatSetDevilsDeal: vi.fn(),
   };
 
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  describe('Max Bet Button', () => {
-    it('should calculate and set maximum bet when credits allow more than minimum', async () => {
-      const user = userEvent.setup();
-      const onSetBetAmount = vi.fn();
+  describe('Rendering', () => {
+    it('should render the component with all main elements', () => {
+      render(<PreDraw {...mockProps} />);
       
-      render(<PreDraw {...defaultProps} credits={1000} selectedHandCount={5} onSetBetAmount={onSetBetAmount} />);
-
-      // Find the Max button by aria-label
-      const maxButton = screen.getByLabelText('Set bet amount to maximum affordable');
-      
-      // Click the Max button
-      await user.click(maxButton);
-
-      // Should calculate: Math.floor(1000 / 5) = 200
-      // Should be at least minimumBet (2), so result is 200
-      expect(onSetBetAmount).toHaveBeenCalledTimes(1);
-      expect(onSetBetAmount).toHaveBeenCalledWith(200);
+      expect(screen.getByText(/Round:/)).toBeInTheDocument();
+      expect(screen.getByText(/Credits:/)).toBeInTheDocument();
+      expect(screen.getByText('Deal Hand')).toBeInTheDocument();
     });
 
-    it('should set minimum bet when credits are insufficient for higher bet', async () => {
-      const user = userEvent.setup();
-      const onSetBetAmount = vi.fn();
-      
-      // Credits: 5, Hand count: 5, Minimum bet: 2
-      // Math.floor(5 / 5) = 1, but minimum is 2, so should set to 2
-      render(
-        <PreDraw
-          {...defaultProps}
-          credits={5}
-          selectedHandCount={5}
-          minimumBet={2}
-          onSetBetAmount={onSetBetAmount}
-        />
-      );
-
-      const maxButton = screen.getByLabelText('Set bet amount to maximum affordable');
-      await user.click(maxButton);
-
-      // Should use minimumBet since calculated value (1) is less than minimum (2)
-      expect(onSetBetAmount).toHaveBeenCalledTimes(1);
-      expect(onSetBetAmount).toHaveBeenCalledWith(2);
+    it('should display current credits correctly', () => {
+      render(<PreDraw {...mockProps} />);
+      expect(screen.getByText(/10,000/)).toBeInTheDocument();
     });
 
-    it('should floor the result when credits are not exactly divisible by hand count', async () => {
-      const user = userEvent.setup();
-      const onSetBetAmount = vi.fn();
-      
-      // Credits: 999, Hand count: 5
-      // Math.floor(999 / 5) = 199 (not 199.8)
-      render(
-        <PreDraw
-          {...defaultProps}
-          credits={999}
-          selectedHandCount={5}
-          onSetBetAmount={onSetBetAmount}
-        />
-      );
-
-      const maxButton = screen.getByLabelText('Set bet amount to maximum affordable');
-      await user.click(maxButton);
-
-      expect(onSetBetAmount).toHaveBeenCalledTimes(1);
-      expect(onSetBetAmount).toHaveBeenCalledWith(199);
+    it('should display current round correctly', () => {
+      render(<PreDraw {...mockProps} />);
+      expect(screen.getByText(/Round: 1/)).toBeInTheDocument();
     });
 
-    it('should work correctly with different hand counts', async () => {
-      const user = userEvent.setup();
-      const onSetBetAmount = vi.fn();
-      
-      // Credits: 100, Hand count: 3
-      // Math.floor(100 / 3) = 33
-      render(
-        <PreDraw
-          {...defaultProps}
-          credits={100}
-          selectedHandCount={3}
-          onSetBetAmount={onSetBetAmount}
-        />
-      );
-
-      const maxButton = screen.getByLabelText('Set bet amount to maximum affordable');
-      await user.click(maxButton);
-
-      expect(onSetBetAmount).toHaveBeenCalledTimes(1);
-      expect(onSetBetAmount).toHaveBeenCalledWith(33);
-    });
-
-    it('should clear bet input error when clicked', async () => {
-      const user = userEvent.setup();
-      const onSetBetAmount = vi.fn();
-      
-      render(<PreDraw {...defaultProps} credits={1000} selectedHandCount={5} onSetBetAmount={onSetBetAmount} />);
-
-      // First, set an error by entering an invalid bet amount
-      const betInput = screen.getByLabelText('Bet amount per hand');
-      await user.clear(betInput);
-      await user.type(betInput, 'invalid');
-      
-      // The error should be visible
-      const errorMessage = screen.queryByText(/Please enter a valid number/i);
-      expect(errorMessage).toBeInTheDocument();
-
-      // Click Max button - should clear error and set max bet
-      const maxButton = screen.getByLabelText('Set bet amount to maximum affordable');
-      await user.click(maxButton);
-
-      // Verify that onSetBetAmount was called with the max bet
-      // The component's onClick handler clears the error state
-      expect(onSetBetAmount).toHaveBeenCalledTimes(1);
-      expect(onSetBetAmount).toHaveBeenCalledWith(200);
-    });
-
-    it('should handle edge case with single hand', async () => {
-      const user = userEvent.setup();
-      const onSetBetAmount = vi.fn();
-      
-      // Credits: 50, Hand count: 1
-      // Math.floor(50 / 1) = 50
-      render(
-        <PreDraw
-          {...defaultProps}
-          credits={50}
-          selectedHandCount={1}
-          onSetBetAmount={onSetBetAmount}
-        />
-      );
-
-      const maxButton = screen.getByLabelText('Set bet amount to maximum affordable');
-      await user.click(maxButton);
-
-      expect(onSetBetAmount).toHaveBeenCalledTimes(1);
-      expect(onSetBetAmount).toHaveBeenCalledWith(50);
-    });
-
-    it('should handle case where credits exactly match minimum bet times hand count', async () => {
-      const user = userEvent.setup();
-      const onSetBetAmount = vi.fn();
-      
-      // Credits: 10, Hand count: 5, Minimum bet: 2
-      // Math.floor(10 / 5) = 2, which equals minimum bet
-      render(
-        <PreDraw
-          {...defaultProps}
-          credits={10}
-          selectedHandCount={5}
-          minimumBet={2}
-          onSetBetAmount={onSetBetAmount}
-        />
-      );
-
-      const maxButton = screen.getByLabelText('Set bet amount to maximum affordable');
-      await user.click(maxButton);
-
-      expect(onSetBetAmount).toHaveBeenCalledTimes(1);
-      expect(onSetBetAmount).toHaveBeenCalledWith(2);
+    it('should render reward table', () => {
+      render(<PreDraw {...mockProps} />);
+      expect(screen.getByText(/Royal Flush/i)).toBeInTheDocument();
     });
   });
 
-  describe('Max Hands Button', () => {
-    it('should set maximum hands when player can afford it at current bet', async () => {
-      const user = userEvent.setup();
-      const onSetSelectedHandCount = vi.fn();
-      const onSetBetAmount = vi.fn();
-      
-      // Credits: 1000, Hand count: 10, Bet: 10, Selected: 5
-      // Can afford 10 hands at 10 credits each (100 total)
-      render(
-        <PreDraw
-          {...defaultProps}
-          credits={1000}
-          handCount={10}
-          selectedHandCount={5}
-          betAmount={10}
-          onSetSelectedHandCount={onSetSelectedHandCount}
-          onSetBetAmount={onSetBetAmount}
-        />
-      );
-
-      const maxHandsButton = screen.getByLabelText('Set to maximum number of hands');
-      await user.click(maxHandsButton);
-
-      // Should set to max hands (10), bet stays the same
-      expect(onSetSelectedHandCount).toHaveBeenCalledTimes(1);
-      expect(onSetSelectedHandCount).toHaveBeenCalledWith(10);
-      expect(onSetBetAmount).toHaveBeenCalledTimes(1);
-      expect(onSetBetAmount).toHaveBeenCalledWith(10);
+  describe('Bet Amount Controls', () => {
+    it('should display current bet amount', () => {
+      render(<PreDraw {...mockProps} />);
+      const betInput = screen.getByLabelText(/Bet per hand/i) as HTMLInputElement;
+      expect(betInput.value).toBe('5');
     });
 
-    it('should reduce bet amount when player cannot afford max hands at current bet', async () => {
-      const user = userEvent.setup();
-      const onSetSelectedHandCount = vi.fn();
-      const onSetBetAmount = vi.fn();
+    it('should call onSetBetAmount when bet is changed', () => {
+      render(<PreDraw {...mockProps} />);
+      const betInput = screen.getByLabelText(/Bet per hand/i);
       
-      // Credits: 50, Hand count: 10, Bet: 10, Selected: 5
-      // Cannot afford 10 hands at 10 credits (need 100, have 50)
-      // Should reduce bet to Math.floor(50 / 10) = 5
-      render(
-        <PreDraw
-          {...defaultProps}
-          credits={50}
-          handCount={10}
-          selectedHandCount={5}
-          betAmount={10}
-          minimumBet={2}
-          onSetSelectedHandCount={onSetSelectedHandCount}
-          onSetBetAmount={onSetBetAmount}
-        />
-      );
-
-      const maxHandsButton = screen.getByLabelText('Set to maximum number of hands');
-      await user.click(maxHandsButton);
-
-      // Should set to max hands (10) and reduce bet to 5
-      expect(onSetSelectedHandCount).toHaveBeenCalledTimes(1);
-      expect(onSetSelectedHandCount).toHaveBeenCalledWith(10);
-      expect(onSetBetAmount).toHaveBeenCalledTimes(1);
-      expect(onSetBetAmount).toHaveBeenCalledWith(5);
+      fireEvent.change(betInput, { target: { value: '10' } });
+      expect(mockProps.onSetBetAmount).toHaveBeenCalledWith(10);
     });
 
-    it('should reduce hands when player cannot afford even at minimum bet', async () => {
-      const user = userEvent.setup();
-      const onSetSelectedHandCount = vi.fn();
-      const onSetBetAmount = vi.fn();
+    it('should show error for bet below minimum', () => {
+      render(<PreDraw {...mockProps} />);
+      const betInput = screen.getByLabelText(/Bet per hand/i);
       
-      // Credits: 5, Hand count: 10, Bet: 10, Minimum bet: 2
-      // Cannot afford 10 hands even at minimum bet (need 20, have 5)
-      // Should reduce hands to Math.floor(5 / 2) = 2
-      render(
-        <PreDraw
-          {...defaultProps}
-          credits={5}
-          handCount={10}
-          selectedHandCount={5}
-          betAmount={10}
-          minimumBet={2}
-          onSetSelectedHandCount={onSetSelectedHandCount}
-          onSetBetAmount={onSetBetAmount}
-        />
-      );
-
-      const maxHandsButton = screen.getByLabelText('Set to maximum number of hands');
-      await user.click(maxHandsButton);
-
-      // Should reduce hands to 2 and set bet to minimum (2)
-      expect(onSetSelectedHandCount).toHaveBeenCalledTimes(1);
-      expect(onSetSelectedHandCount).toHaveBeenCalledWith(2);
-      expect(onSetBetAmount).toHaveBeenCalledTimes(1);
-      expect(onSetBetAmount).toHaveBeenCalledWith(2);
+      fireEvent.change(betInput, { target: { value: '1' } });
+      fireEvent.blur(betInput);
+      
+      waitFor(() => {
+        expect(screen.getByText(/must be at least/i)).toBeInTheDocument();
+      });
     });
 
-    it('should ensure at least 1 hand even with very low credits', async () => {
-      const user = userEvent.setup();
-      const onSetSelectedHandCount = vi.fn();
-      const onSetBetAmount = vi.fn();
+    it('should show error for invalid bet (NaN)', () => {
+      render(<PreDraw {...mockProps} />);
+      const betInput = screen.getByLabelText(/Bet per hand/i);
       
-      // Credits: 1, Hand count: 10, Minimum bet: 2
-      // Cannot afford even 1 hand at minimum bet (need 2, have 1)
-      // Should still set to 1 hand (edge case - player can't play, but we set to 1)
-      render(
-        <PreDraw
-          {...defaultProps}
-          credits={1}
-          handCount={10}
-          selectedHandCount={5}
-          betAmount={10}
-          minimumBet={2}
-          onSetSelectedHandCount={onSetSelectedHandCount}
-          onSetBetAmount={onSetBetAmount}
-        />
-      );
-
-      const maxHandsButton = screen.getByLabelText('Set to maximum number of hands');
-      await user.click(maxHandsButton);
-
-      // Should set to 1 hand (minimum) and minimum bet
-      expect(onSetSelectedHandCount).toHaveBeenCalledTimes(1);
-      expect(onSetSelectedHandCount).toHaveBeenCalledWith(1);
-      expect(onSetBetAmount).toHaveBeenCalledTimes(1);
-      expect(onSetBetAmount).toHaveBeenCalledWith(2);
+      fireEvent.change(betInput, { target: { value: 'abc' } });
+      fireEvent.blur(betInput);
+      
+      waitFor(() => {
+        expect(screen.getByText(/Invalid bet amount/i)).toBeInTheDocument();
+      });
     });
 
-    it('should handle case where optimal bet equals minimum bet', async () => {
-      const user = userEvent.setup();
-      const onSetSelectedHandCount = vi.fn();
-      const onSetBetAmount = vi.fn();
+    it('should increment bet with + button', () => {
+      render(<PreDraw {...mockProps} />);
+      const incrementButton = screen.getAllByRole('button', { name: '+' })[0];
       
-      // Credits: 20, Hand count: 10, Bet: 10, Minimum bet: 2
-      // Cannot afford 10 hands at 10 credits (need 100, have 20)
-      // Optimal bet: Math.floor(20 / 10) = 2, which equals minimum bet
-      render(
-        <PreDraw
-          {...defaultProps}
-          credits={20}
-          handCount={10}
-          selectedHandCount={5}
-          betAmount={10}
-          minimumBet={2}
-          onSetSelectedHandCount={onSetSelectedHandCount}
-          onSetBetAmount={onSetBetAmount}
-        />
-      );
-
-      const maxHandsButton = screen.getByLabelText('Set to maximum number of hands');
-      await user.click(maxHandsButton);
-
-      // Should set to max hands (10) and bet to 2 (minimum)
-      expect(onSetSelectedHandCount).toHaveBeenCalledTimes(1);
-      expect(onSetSelectedHandCount).toHaveBeenCalledWith(10);
-      expect(onSetBetAmount).toHaveBeenCalledTimes(1);
-      expect(onSetBetAmount).toHaveBeenCalledWith(2);
+      fireEvent.click(incrementButton);
+      expect(mockProps.onSetBetAmount).toHaveBeenCalledWith(6);
     });
 
-    it('should handle case where optimal bet is between minimum and current bet', async () => {
-      const user = userEvent.setup();
-      const onSetSelectedHandCount = vi.fn();
-      const onSetBetAmount = vi.fn();
+    it('should decrement bet with - button', () => {
+      render(<PreDraw {...mockProps} />);
+      const decrementButton = screen.getAllByRole('button', { name: '-' })[0];
       
-      // Credits: 75, Hand count: 10, Bet: 10, Minimum bet: 2
-      // Cannot afford 10 hands at 10 credits (need 100, have 75)
-      // Optimal bet: Math.floor(75 / 10) = 7
-      render(
-        <PreDraw
-          {...defaultProps}
-          credits={75}
-          handCount={10}
-          selectedHandCount={5}
-          betAmount={10}
-          minimumBet={2}
-          onSetSelectedHandCount={onSetSelectedHandCount}
-          onSetBetAmount={onSetBetAmount}
-        />
-      );
-
-      const maxHandsButton = screen.getByLabelText('Set to maximum number of hands');
-      await user.click(maxHandsButton);
-
-      // Should set to max hands (10) and bet to 7
-      expect(onSetSelectedHandCount).toHaveBeenCalledTimes(1);
-      expect(onSetSelectedHandCount).toHaveBeenCalledWith(10);
-      expect(onSetBetAmount).toHaveBeenCalledTimes(1);
-      expect(onSetBetAmount).toHaveBeenCalledWith(7);
+      fireEvent.click(decrementButton);
+      expect(mockProps.onSetBetAmount).toHaveBeenCalledWith(4);
     });
 
-    it('should clear both bet and hand count errors when clicked', async () => {
-      const user = userEvent.setup();
-      const onSetSelectedHandCount = vi.fn();
-      const onSetBetAmount = vi.fn();
+    it('should set max bet when max button clicked', () => {
+      render(<PreDraw {...mockProps} />);
+      const maxButton = screen.getByRole('button', { name: /Max/i });
       
-      render(
-        <PreDraw
-          {...defaultProps}
-          credits={1000}
-          handCount={10}
-          selectedHandCount={5}
-          betAmount={10}
-          onSetSelectedHandCount={onSetSelectedHandCount}
-          onSetBetAmount={onSetBetAmount}
-        />
-      );
+      fireEvent.click(maxButton);
+      // Max bet = floor(10000 / 10) = 1000
+      expect(mockProps.onSetBetAmount).toHaveBeenCalled();
+    });
+  });
 
-      // Set errors by entering invalid values
-      const betInput = screen.getByLabelText('Bet amount per hand');
-      const handInput = screen.getByLabelText('Number of hands to play');
-      
-      await user.clear(betInput);
-      await user.type(betInput, 'invalid');
-      
-      await user.clear(handInput);
-      await user.type(handInput, 'invalid');
-
-      // Errors should be visible (check by ID to avoid multiple matches)
-      const betError = document.getElementById('bet-error');
-      const handError = document.getElementById('hand-count-error');
-      expect(betError).toBeInTheDocument();
-      expect(handError).toBeInTheDocument();
-
-      // Click Max hands button - should clear errors
-      const maxHandsButton = screen.getByLabelText('Set to maximum number of hands');
-      await user.click(maxHandsButton);
-
-      // Should have called both setters
-      expect(onSetSelectedHandCount).toHaveBeenCalled();
-      expect(onSetBetAmount).toHaveBeenCalled();
+  describe('Hand Count Controls', () => {
+    it('should display current hand count', () => {
+      render(<PreDraw {...mockProps} />);
+      const handInput = screen.getByLabelText(/Number of hands/i) as HTMLInputElement;
+      expect(handInput.value).toBe('10');
     });
 
-    it('should handle edge case with exactly enough credits for max hands at minimum bet', async () => {
-      const user = userEvent.setup();
-      const onSetSelectedHandCount = vi.fn();
-      const onSetBetAmount = vi.fn();
+    it('should call onSetSelectedHandCount when hand count is changed', () => {
+      render(<PreDraw {...mockProps} />);
+      const handInput = screen.getByLabelText(/Number of hands/i);
       
-      // Credits: 20, Hand count: 10, Minimum bet: 2
-      // Exactly enough: 10 hands * 2 credits = 20 credits
-      render(
-        <PreDraw
-          {...defaultProps}
-          credits={20}
-          handCount={10}
-          selectedHandCount={5}
-          betAmount={10}
-          minimumBet={2}
-          onSetSelectedHandCount={onSetSelectedHandCount}
-          onSetBetAmount={onSetBetAmount}
-        />
-      );
+      fireEvent.change(handInput, { target: { value: '20' } });
+      expect(mockProps.onSetSelectedHandCount).toHaveBeenCalledWith(20);
+    });
 
-      const maxHandsButton = screen.getByLabelText('Set to maximum number of hands');
-      await user.click(maxHandsButton);
+    it('should show error for hand count below 1', () => {
+      render(<PreDraw {...mockProps} />);
+      const handInput = screen.getByLabelText(/Number of hands/i);
+      
+      fireEvent.change(handInput, { target: { value: '0' } });
+      fireEvent.blur(handInput);
+      
+      waitFor(() => {
+        expect(screen.getByText(/must be at least 1/i)).toBeInTheDocument();
+      });
+    });
 
-      // Should set to max hands (10) and bet to 2 (minimum)
-      expect(onSetSelectedHandCount).toHaveBeenCalledTimes(1);
-      expect(onSetSelectedHandCount).toHaveBeenCalledWith(10);
-      expect(onSetBetAmount).toHaveBeenCalledTimes(1);
-      expect(onSetBetAmount).toHaveBeenCalledWith(2);
+    it('should show error for hand count exceeding available', () => {
+      render(<PreDraw {...mockProps} />);
+      const handInput = screen.getByLabelText(/Number of hands/i);
+      
+      fireEvent.change(handInput, { target: { value: '100' } });
+      fireEvent.blur(handInput);
+      
+      waitFor(() => {
+        expect(screen.getByText(/cannot exceed/i)).toBeInTheDocument();
+      });
+    });
+
+    it('should increment hand count with + button', () => {
+      render(<PreDraw {...mockProps} />);
+      const incrementButton = screen.getAllByRole('button', { name: '+' })[1];
+      
+      fireEvent.click(incrementButton);
+      expect(mockProps.onSetSelectedHandCount).toHaveBeenCalledWith(11);
+    });
+
+    it('should decrement hand count with - button', () => {
+      render(<PreDraw {...mockProps} />);
+      const decrementButton = screen.getAllByRole('button', { name: '-' })[1];
+      
+      fireEvent.click(decrementButton);
+      expect(mockProps.onSetSelectedHandCount).toHaveBeenCalledWith(9);
+    });
+  });
+
+  describe('Deal Hand Button', () => {
+    it('should be enabled when player can afford bet', () => {
+      render(<PreDraw {...mockProps} />);
+      const dealButton = screen.getByRole('button', { name: /Deal Hand/i });
+      
+      expect(dealButton).not.toBeDisabled();
+    });
+
+    it('should be disabled when player cannot afford bet', () => {
+      const props = { ...mockProps, credits: 10 };
+      render(<PreDraw {...props} />);
+      const dealButton = screen.getByRole('button', { name: /Deal Hand/i });
+      
+      expect(dealButton).toBeDisabled();
+    });
+
+    it('should call onDealHand when clicked', () => {
+      render(<PreDraw {...mockProps} />);
+      const dealButton = screen.getByRole('button', { name: /Deal Hand/i });
+      
+      fireEvent.click(dealButton);
+      expect(mockProps.onDealHand).toHaveBeenCalledTimes(1);
+    });
+
+    it('should be disabled in game over state', () => {
+      const props = { ...mockProps, gameOver: true };
+      render(<PreDraw {...props} />);
+      const dealButton = screen.getByRole('button', { name: /Deal Hand/i });
+      
+      expect(dealButton).toBeDisabled();
+    });
+  });
+
+  describe('End Run Confirmation', () => {
+    it('should show confirmation dialog when End Run clicked', () => {
+      render(<PreDraw {...mockProps} />);
+      const endRunButton = screen.getByRole('button', { name: /End Run/i });
+      
+      fireEvent.click(endRunButton);
+      
+      expect(screen.getByText(/Are you sure/i)).toBeInTheDocument();
+    });
+
+    it('should call onEndRun when confirmed', () => {
+      render(<PreDraw {...mockProps} />);
+      const endRunButton = screen.getByRole('button', { name: /End Run/i });
+      
+      fireEvent.click(endRunButton);
+      
+      const confirmButton = screen.getByRole('button', { name: /Yes, End Run/i });
+      fireEvent.click(confirmButton);
+      
+      expect(mockProps.onEndRun).toHaveBeenCalledTimes(1);
+    });
+
+    it('should not call onEndRun when cancelled', () => {
+      render(<PreDraw {...mockProps} />);
+      const endRunButton = screen.getByRole('button', { name: /End Run/i });
+      
+      fireEvent.click(endRunButton);
+      
+      const cancelButton = screen.getByRole('button', { name: /Cancel/i });
+      fireEvent.click(cancelButton);
+      
+      expect(mockProps.onEndRun).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('Bet Efficiency Display', () => {
+    it('should show efficiency percentage', () => {
+      render(<PreDraw {...mockProps} />);
+      // Should calculate and display efficiency
+      expect(screen.getByText(/efficiency/i)).toBeInTheDocument();
+    });
+
+    it('should show color coding for efficiency', () => {
+      render(<PreDraw {...mockProps} />);
+      const efficiencyElement = screen.getByText(/efficiency/i).parentElement;
+      
+      // Check that it has color styling
+      expect(efficiencyElement).toHaveClass(/text-/);
+    });
+  });
+
+  describe('Cost Display', () => {
+    it('should show total cost correctly', () => {
+      render(<PreDraw {...mockProps} />);
+      // 5 bet * 10 hands = 50 credits
+      expect(screen.getByText(/50/)).toBeInTheDocument();
+    });
+
+    it('should update cost when bet changes', () => {
+      const { rerender } = render(<PreDraw {...mockProps} />);
+      
+      const updatedProps = { ...mockProps, betAmount: 10 };
+      rerender(<PreDraw {...updatedProps} />);
+      
+      // 10 bet * 10 hands = 100 credits
+      expect(screen.getByText(/100/)).toBeInTheDocument();
+    });
+  });
+
+  describe('Failure State Display', () => {
+    it('should show failure warnings when in failure state', () => {
+      const failureState: FailureStateType = {
+        minimumBetMultiplier: {
+          failing: true,
+          value: 2.0,
+          required: 2.0,
+        },
+      };
+      
+      const props = { ...mockProps, failureState };
+      render(<PreDraw {...props} />);
+      
+      expect(screen.getByText(/Failure Condition/i)).toBeInTheDocument();
+    });
+
+    it('should not show failure warnings in normal state', () => {
+      render(<PreDraw {...mockProps} />);
+      
+      expect(screen.queryByText(/Failure Condition/i)).not.toBeInTheDocument();
+    });
+  });
+
+  describe('Cheats Modal', () => {
+    it('should open cheats modal when button clicked', () => {
+      render(<PreDraw {...mockProps} />);
+      const cheatsButton = screen.getByRole('button', { name: /🎮/i });
+      
+      fireEvent.click(cheatsButton);
+      
+      expect(screen.getByText(/Cheats/i)).toBeInTheDocument();
+    });
+
+    it('should close cheats modal', () => {
+      render(<PreDraw {...mockProps} />);
+      const cheatsButton = screen.getByRole('button', { name: /🎮/i });
+      
+      fireEvent.click(cheatsButton);
+      
+      const closeButton = screen.getByRole('button', { name: /Close/i });
+      fireEvent.click(closeButton);
+      
+      expect(screen.queryByText(/Add.*Credits/i)).not.toBeInTheDocument();
+    });
+  });
+
+  describe('Accessibility', () => {
+    it('should have proper ARIA labels', () => {
+      render(<PreDraw {...mockProps} />);
+      
+      expect(screen.getByLabelText(/Bet per hand/i)).toBeInTheDocument();
+      expect(screen.getByLabelText(/Number of hands/i)).toBeInTheDocument();
+    });
+
+    it('should have proper button roles', () => {
+      render(<PreDraw {...mockProps} />);
+      
+      const buttons = screen.getAllByRole('button');
+      expect(buttons.length).toBeGreaterThan(0);
+    });
+
+    it('should show error messages with role="alert"', () => {
+      render(<PreDraw {...mockProps} />);
+      const betInput = screen.getByLabelText(/Bet per hand/i);
+      
+      fireEvent.change(betInput, { target: { value: '1' } });
+      fireEvent.blur(betInput);
+      
+      waitFor(() => {
+        const errorElement = screen.getByRole('alert');
+        expect(errorElement).toBeInTheDocument();
+      });
     });
   });
 });

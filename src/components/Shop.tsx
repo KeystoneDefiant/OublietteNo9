@@ -9,28 +9,71 @@ import {
 import { gameConfig, getCurrentGameMode } from '../config/gameConfig';
 import { ShopOptionType } from '../types';
 
+/**
+ * Shop component props
+ * 
+ * Displays available upgrades and modifications for the player to purchase
+ * between rounds. Upgrades include dead cards, wild cards, parallel hands,
+ * extra draws, and Devil's Deal improvements.
+ */
 interface ShopProps {
+  /** Current player credits */
   credits: number;
+  /** Total hand count (maximum parallel hands available) */
   handCount: number;
+  /** Array of dead cards currently in deck */
   deadCards: { id: string }[];
+  /** Number of times dead cards have been removed */
   deadCardRemovalCount: number;
+  /** Array of wild cards currently in deck */
   wildCards: { id: string }[];
+  /** Total count of wild cards */
   wildCardCount: number;
+  /** Whether extra draw has been purchased */
   extraDrawPurchased: boolean;
+  /** Array of shop options to display */
   selectedShopOptions: ShopOptionType[];
+  /** Callback to add a dead card */
   onAddDeadCard: () => void;
+  /** Callback to remove a single dead card */
   onRemoveSingleDeadCard: () => void;
+  /** Callback to remove all dead cards */
   onRemoveAllDeadCards: () => void;
+  /** Callback to add a wild card */
   onAddWildCard: () => void;
+  /** Callback to purchase extra draw ability */
   onPurchaseExtraDraw: () => void;
+  /** Callback to add parallel hands bundle */
   onAddParallelHandsBundle: (bundleSize: number) => void;
+  /** Callback to increase Devil's Deal chance */
   onPurchaseDevilsDealChance: () => void;
+  /** Callback to reduce Devil's Deal cost */
   onPurchaseDevilsDealCostReduction: () => void;
+  /** Number of Devil's Deal chance upgrades purchased */
   devilsDealChancePurchases: number;
+  /** Number of Devil's Deal cost reduction upgrades purchased */
   devilsDealCostReductionPurchases: number;
+  /** Callback to close shop and continue */
   onClose: () => void;
 }
 
+/**
+ * Shop component for purchasing game upgrades
+ * 
+ * Displays available shop options based on current game state and allows
+ * players to purchase upgrades between rounds. Handles affordability checks,
+ * cost calculations, and disabled states for maxed-out upgrades.
+ * 
+ * @example
+ * <Shop
+ *   credits={5000}
+ *   handCount={50}
+ *   selectedShopOptions={['dead-card', 'wild-card']}
+ *   onAddDeadCard={handleAddDeadCard}
+ *   onClose={handleCloseShop}
+ *   {...otherProps}
+ * />
+ */
 export function Shop({
   credits,
   handCount,

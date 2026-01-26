@@ -1,21 +1,22 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import { useGameState } from './hooks/useGameState';
 import { useThemeBackgroundAnimation } from './hooks/useThemeBackgroundAnimation';
-import { MainMenu } from './components/MainMenu';
-import { PreDraw } from './components/screen-PreDraw';
-import { GameTable } from './components/screen-GameTable';
-import { Results } from './components/screen-Results';
-import { ParallelHandsAnimation } from './components/screen-ParallelHandsAnimation';
-import { Shop } from './components/Shop';
-import { GameOver } from './components/screen-GameOver';
-import { Credits } from './components/Credits';
-import { Rules } from './components/Rules';
-import { Settings } from './components/Settings';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { LoadingSpinner } from './components/LoadingSpinner';
 import { initializeTheme, getSelectedTheme, loadThemeConfig } from './utils/themeManager';
 import { ThemeConfig } from './types/index';
-import './styles/screen-transitions.css';
+
+// Code splitting: Lazy load screen components for better performance
+const MainMenu = lazy(() => import('./components/MainMenu').then(m => ({ default: m.MainMenu })));
+const PreDraw = lazy(() => import('./components/screen-PreDraw').then(m => ({ default: m.PreDraw })));
+const GameTable = lazy(() => import('./components/screen-GameTable').then(m => ({ default: m.GameTable })));
+const Results = lazy(() => import('./components/screen-Results').then(m => ({ default: m.Results })));
+const ParallelHandsAnimation = lazy(() => import('./components/screen-ParallelHandsAnimation').then(m => ({ default: m.ParallelHandsAnimation })));
+const Shop = lazy(() => import('./components/Shop').then(m => ({ default: m.Shop })));
+const GameOver = lazy(() => import('./components/screen-GameOver').then(m => ({ default: m.GameOver })));
+const Credits = lazy(() => import('./components/Credits').then(m => ({ default: m.Credits })));
+const Rules = lazy(() => import('./components/Rules').then(m => ({ default: m.Rules })));
+const Settings = lazy(() => import('./components/Settings').then(m => ({ default: m.Settings })));
 
 function App() {
   const [showCredits, setShowCredits] = useState(false);
@@ -32,7 +33,18 @@ function App() {
 
         // Load the initial theme config for background animation
         const theme = getSelectedTheme();
-        const config = await loadThemeConfig(theme);
+        let config = await loadThemeConfig(theme);
+
+        // Fallback to Classic theme if selected theme fails to load
+        if (!config && theme !== 'Classic') {
+          console.warn(`Failed to load theme "${theme}", falling back to Classic theme`);
+          config = await loadThemeConfig('Classic');
+          if (config) {
+            // Update saved theme to Classic since original failed
+            initializeTheme(); // Apply Classic theme to body
+          }
+        }
+
         setThemeConfig(config);
 
         // Set theme transition duration as CSS custom property
@@ -43,6 +55,7 @@ function App() {
         );
       } catch (error) {
         console.error('Failed to load theme:', error);
+        // Continue with null theme config - app will still function
       } finally {
         setIsThemeLoading(false);
       }
@@ -102,21 +115,26 @@ function App() {
       )}
 
       {showCredits && (
-        <div className="modal-enter">
-          <Credits onClose={() => setShowCredits(false)} />
-        </div>
+        <Suspense fallback={<LoadingSpinner />}>
+          <div className="modal-enter">
+            <Credits onClose={() => setShowCredits(false)} />
+          </div>
+        </Suspense>
       )}
 
       {showRules && (
-        <div className="modal-enter">
-          <Rules onClose={() => setShowRules(false)} />
-        </div>
+        <Suspense fallback={<LoadingSpinner />}>
+          <div className="modal-enter">
+            <Rules onClose={() => setShowRules(false)} />
+          </div>
+        </Suspense>
       )}
 
       {state.screen === 'game' && state.gamePhase === 'preDraw' && !state.showShopNextRound && (
         <ErrorBoundary>
-          <div key="preDraw" className="screen-enter">
-            <PreDraw
+          <Suspense fallback={<LoadingSpinner />}>
+            <div key="preDraw" className="screen-enter">
+              <PreDraw
               credits={state.credits}
               handCount={state.handCount}
               selectedHandCount={state.selectedHandCount}
@@ -137,13 +155,15 @@ function App() {
               onCheatSetDevilsDeal={cheatSetDevilsDeal}
             />
           </div>
+          </Suspense>
         </ErrorBoundary>
       )}
 
       {state.screen === 'game' && state.gamePhase === 'playing' && (
         <ErrorBoundary>
-          <div key="gameTable" className="screen-enter">
-            <GameTable
+          <Suspense fallback={<LoadingSpinner />}>
+            <div key="gameTable" className="screen-enter">
+              <GameTable
               playerHand={state.playerHand}
               heldIndices={state.heldIndices}
               parallelHands={state.parallelHands}
@@ -161,13 +181,15 @@ function App() {
               onDraw={drawParallelHands}
             />
           </div>
+          </Suspense>
         </ErrorBoundary>
       )}
 
       {state.screen === 'game' && state.gamePhase === 'parallelHandsAnimation' && (
         <ErrorBoundary>
-          <div key="animation" className="screen-enter">
-            <ParallelHandsAnimation
+          <Suspense fallback={<LoadingSpinner />}>
+            <div key="animation" className="screen-enter">
+              <ParallelHandsAnimation
               parallelHands={state.parallelHands}
               rewardTable={state.rewardTable}
               selectedHandCount={state.selectedHandCount}
@@ -175,35 +197,39 @@ function App() {
               onAnimationComplete={moveToNextScreen}
             />
           </div>
+          </Suspense>
         </ErrorBoundary>
       )}
 
       {state.screen === 'game' && state.gamePhase === 'results' && (
         <ErrorBoundary>
-          <div key="results" className="screen-enter">
-            <Results
-              playerHand={state.playerHand}
-              heldIndices={state.heldIndices}
-              parallelHands={state.parallelHands}
-              rewardTable={state.rewardTable}
-              betAmount={state.betAmount}
-              credits={state.credits}
-              round={state.round}
-              totalEarnings={state.totalEarnings}
-              selectedHandCount={state.selectedHandCount}
-              failureState={state.currentFailureState}
-              gameState={state}
-              onReturnToPreDraw={returnToPreDraw}
-              showShopNextRound={state.showShopNextRound}
-            />
-          </div>
+          <Suspense fallback={<LoadingSpinner />}>
+            <div key="results" className="screen-enter">
+              <Results
+                playerHand={state.playerHand}
+                heldIndices={state.heldIndices}
+                parallelHands={state.parallelHands}
+                rewardTable={state.rewardTable}
+                betAmount={state.betAmount}
+                credits={state.credits}
+                round={state.round}
+                totalEarnings={state.totalEarnings}
+                selectedHandCount={state.selectedHandCount}
+                failureState={state.currentFailureState}
+                gameState={state}
+                onReturnToPreDraw={returnToPreDraw}
+                showShopNextRound={state.showShopNextRound}
+              />
+            </div>
+          </Suspense>
         </ErrorBoundary>
       )}
 
       {state.screen === 'game' && state.showShopNextRound && (
         <ErrorBoundary>
-          <div key="shop" className="screen-enter">
-            <Shop
+          <Suspense fallback={<LoadingSpinner />}>
+            <div key="shop" className="screen-enter">
+              <Shop
               credits={state.credits}
               handCount={state.handCount}
               deadCards={state.deckModifications.deadCards}
@@ -225,26 +251,31 @@ function App() {
               onClose={proceedFromResults}
             />
           </div>
+          </Suspense>
         </ErrorBoundary>
       )}
 
       {state.screen === 'gameOver' && (
         <ErrorBoundary>
-          <div key="gameOver" className="screen-enter">
-            <GameOver
+          <Suspense fallback={<LoadingSpinner />}>
+            <div key="gameOver" className="screen-enter">
+              <GameOver
               round={state.round}
               totalEarnings={state.totalEarnings}
               credits={state.credits}
               onReturnToMenu={returnToMenu}
             />
           </div>
+          </Suspense>
         </ErrorBoundary>
       )}
 
       {showSettings && (
-        <div className="modal-enter">
-          <Settings onClose={() => setShowSettings(false)} />
-        </div>
+        <Suspense fallback={<LoadingSpinner />}>
+          <div className="modal-enter">
+            <Settings onClose={() => setShowSettings(false)} />
+          </div>
+        </Suspense>
       )}
     </div>
   );

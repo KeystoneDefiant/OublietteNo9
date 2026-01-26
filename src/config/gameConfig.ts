@@ -10,6 +10,20 @@ export const gameConfig = {
     parallelHandsFloat: 2000, // Parallel hands floating animation duration (increased from 1250ms for slower animation)
     cardFlip: 500, // Card flip animation delay
     payoutPopup: 2000, // Payout popup display duration
+    // Parallel hands animation (grid-based)
+    parallelHandsAnimation: {
+      revealInterval: 100, // ms between hand reveals
+      scrollDuration: 300, // ms for scroll transition
+      completionDelay: 1000, // ms before moving to results
+    },
+  },
+
+  // Parallel hands grid thresholds
+  parallelHandsGrid: {
+    singleColumn: { max: 20 },
+    twoColumn: { min: 21, max: 50 },
+    fourColumn: { min: 51, max: 100 },
+    eightColumn: { min: 101 },
   },
 
   // Audio configuration

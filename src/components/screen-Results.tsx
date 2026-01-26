@@ -5,22 +5,65 @@ import { GameHeader } from './GameHeader';
 import { PokerEvaluator } from '../utils/pokerEvaluator';
 import { RewardTable } from './RewardTable';
 
+/**
+ * Results screen component props
+ * 
+ * Displays outcomes of all parallel hands including payouts, hand counts,
+ * profit/loss calculations, and Devil's Deal costs if applicable.
+ */
 interface ResultsProps {
+  /** The player's original hand */
   playerHand: CardType[];
+  /** Indices of cards that were held */
   heldIndices: number[];
+  /** Array of all parallel hands drawn */
   parallelHands: Hand[];
+  /** Payout multipliers for each hand rank */
   rewardTable: { [key: string]: number };
+  /** Bet amount per hand */
   betAmount: number;
+  /** Current player credits */
   credits: number;
+  /** Current round number */
   round: number;
+  /** Total earnings across all rounds */
   totalEarnings: number;
+  /** Number of parallel hands that were drawn */
   selectedHandCount: number;
+  /** Failure state for endless mode */
   failureState?: FailureStateType;
+  /** Complete game state for Devil's Deal display */
   gameState?: GameState;
+  /** Callback to return to PreDraw with payout amount */
   onReturnToPreDraw: (payout: number) => void;
+  /** Whether shop will appear next round */
   showShopNextRound?: boolean;
 }
 
+/**
+ * Results screen component
+ * 
+ * Displays comprehensive results after drawing parallel hands:
+ * - Total payout across all hands
+ * - Bet cost calculation
+ * - Devil's Deal cost (if taken)
+ * - Final profit/loss
+ * - Hand counts by rank
+ * - Held cards summary
+ * - Best hand display
+ * 
+ * Calculates and displays profit with color coding (green for profit, red for loss)
+ * and properly accounts for Devil's Deal cost deductions.
+ * 
+ * @example
+ * <Results
+ *   parallelHands={hands}
+ *   betAmount={10}
+ *   selectedHandCount={20}
+ *   onReturnToPreDraw={(payout) => handleContinue(payout)}
+ *   {...otherProps}
+ * />
+ */
 export function Results({
   playerHand,
   heldIndices,

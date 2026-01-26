@@ -1,6 +1,5 @@
 import { Card as CardType } from '../types';
 import { Card } from './Card';
-import '../animations.css';
 
 interface DevilsDealCardProps {
   card: CardType;

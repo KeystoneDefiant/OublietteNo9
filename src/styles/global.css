@@ -1,0 +1,225 @@
+/* ============================================
+   Global Styles - Base Game CSS
+   ============================================ */
+
+/* Tailwind CSS */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ============================================
+   CSS Reset & Base Styles
+   ============================================ */
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+code {
+  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New', monospace;
+}
+
+#root {
+  width: 100%;
+  min-height: 100vh;
+}
+
+/* ============================================
+   Layout Utilities
+   ============================================ */
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 1rem;
+}
+
+.flex-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.grid-center {
+  display: grid;
+  place-items: center;
+}
+
+.card-container {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+#theme-bg-container {
+  position: fixed;
+  inset: 0;
+  z-index: -10;
+  overflow: hidden;
+  width: 100vw;
+  height: 100vh;
+}
+
+/* ============================================
+   Shared Keyframe Animations
+   ============================================ */
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes fadeOut {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes gradientShift {
+  0%,
+  100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+@keyframes patternMove {
+  0% {
+    transform: translateX(0) translateY(0);
+  }
+  100% {
+    transform: translateX(20px) translateY(20px);
+  }
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 0.1;
+  }
+  50% {
+    opacity: 0.2;
+  }
+}
+
+@keyframes slideInFromRight {
+  from {
+    opacity: 0;
+    transform: translateX(100px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideLeftAndFade {
+  0% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(-200px);
+  }
+}
+
+@keyframes floatUpAndFade {
+  0% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-60px);
+  }
+}
+
+/* Devil's Deal Component Animations */
+@keyframes devilsDealBob {
+  0%, 100% { 
+    transform: translate(0, 0); 
+  }
+  25% { 
+    transform: translate(8px, -6px); 
+  }
+  50% { 
+    transform: translate(-6px, 8px); 
+  }
+  75% { 
+    transform: translate(-8px, -4px); 
+  }
+}
+
+@keyframes devilsDealOpacity {
+  0%, 100% { 
+    opacity: 0.5; 
+  }
+  50% { 
+    opacity: 0.75; 
+  }
+}
+
+.devil-deal-container {
+  animation: devilsDealBob 4s ease-in-out infinite,
+             devilsDealOpacity 3s ease-in-out infinite;
+}
+
+/* ============================================
+   Screen Transitions
+   ============================================ */
+
+.screen-enter {
+  animation: fadeIn var(--transition-duration, 300ms) ease-in-out forwards;
+}
+
+.screen-exit {
+  animation: fadeOut var(--transition-duration, 300ms) ease-in-out forwards;
+}
+
+.screen-content {
+  transition: opacity var(--transition-duration, 300ms) ease-in-out;
+}
+
+.modal-enter {
+  animation: fadeIn var(--transition-duration, 300ms) ease-in-out forwards;
+}
+
+.modal-exit {
+  animation: fadeOut var(--transition-duration, 300ms) ease-in-out forwards;
+}
+
+.overlay-backdrop {
+  animation: fadeIn var(--transition-duration, 300ms) ease-in-out forwards;
+}
+
+.overlay-backdrop.exiting {
+  animation: fadeOut var(--transition-duration, 300ms) ease-in-out forwards;
+}
+
+/* ============================================
+   Responsive Breakpoints
+   ============================================ */
+
+@media (max-width: 768px) {
+  .container {
+    padding: 0 0.5rem;
+  }
+}
