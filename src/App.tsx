@@ -92,6 +92,7 @@ function App() {
     toggleDevilsDealHold,
     purchaseDevilsDealChance,
     purchaseDevilsDealCostReduction,
+    updateStreakCounter,
   } = useGameState();
 
   // Show loading spinner while theme is loading
@@ -194,9 +195,13 @@ function App() {
               rewardTable={state.rewardTable}
               selectedHandCount={state.selectedHandCount}
               betAmount={state.betAmount}
-              onAnimationComplete={moveToNextScreen}
+              initialStreakCounter={state.streakCounter}
+              onAnimationComplete={(finalStreakCount: number) => {
+                updateStreakCounter(finalStreakCount);
+                moveToNextScreen();
+              }}
             />
-          </div>
+            </div>
           </Suspense>
         </ErrorBoundary>
       )}

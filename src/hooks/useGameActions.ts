@@ -101,17 +101,17 @@ export function useGameActions(
             // Formula: multiplier * betAmount
             const bestPossibleHandPayoutPerHand = bestMultiplier * currentBetAmount;
 
-            // Calculate cost: ((best possible hand's payout * selectedHandCount) * number of hands) * percentage
-            // Formula: ((multiplier * betAmount * selectedHandCount) * selectedHandCount) * (costPercent / 100)
+            // Calculate cost: (best possible hand's payout * total number of hands) * percentage
+            // Formula: (multiplier * betAmount * selectedHandCount) * (costPercent / 100)
             const costPercent =
               devilsDealConfig.baseCostPercent -
               prev.devilsDealCostReductionPurchases * devilsDealConfig.costReductionPerPurchase;
             // Ensure cost is always positive (minimum 1%)
             const finalCostPercent = Math.max(1, costPercent);
-            // Cost = ((best possible hand's payout * selectedHandCount) * number of hands) * percentage
+            // Cost = (best possible hand's payout per hand * number of hands) * percentage
             // Round to avoid decimals
             devilsDealCost = Math.round(
-              ((bestPossibleHandPayoutPerHand * prev.selectedHandCount) * prev.selectedHandCount * finalCostPercent) / 100
+              (bestPossibleHandPayoutPerHand * prev.selectedHandCount * finalCostPercent) / 100
             );
             devilsDealCard = selectedCard;
           }

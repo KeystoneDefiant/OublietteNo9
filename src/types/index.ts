@@ -144,4 +144,6 @@ export interface GameState {
   devilsDealHeld: boolean; // Whether the deal card is currently held
   devilsDealChancePurchases: number; // Number of chance upgrades purchased
   devilsDealCostReductionPurchases: number; // Number of cost reduction upgrades purchased
+  streakCounter: number; // Current streak count (+1 for scoring hand, -1 for non-scoring, min 0)
+  currentStreakMultiplier: number; // Current active streak multiplier (1.0, 1.5, 2.0, etc.)
 }

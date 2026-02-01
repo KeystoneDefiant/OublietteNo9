@@ -1,9 +1,15 @@
 import { describe, it, expect } from 'vitest';
 import { GameState } from '../../types';
-import { getCurrentGameMode } from '../../config/gameConfig';
+import { gameConfig, getCurrentGameMode } from '../../config/gameConfig';
 import { checkFailureConditions } from '../failureConditions';
 import { PokerEvaluator } from '../pokerEvaluator';
 import { Card, Hand } from '../../types';
+
+// Get config values
+const mode = gameConfig.gameModes.normalGame;
+const betMultiplier = mode.endlessMode?.failureConditions.minimumBetMultiplier?.value || 2.0;
+const minEfficiency = mode.endlessMode?.failureConditions.minimumCreditEfficiency?.value || 100;
+const minWinningHands = mode.endlessMode?.failureConditions.minimumWinningHandsPerRound?.value || 20;
 
 // Helper to create a minimal game state
 function createGameState(overrides: Partial<GameState> = {}): GameState {
@@ -92,7 +98,7 @@ describe('Game State Logic - Minimum Bet Increase Intervals', () => {
 
   it('should not increase minimum bet on non-interval rounds', () => {
     const interval = mode.minimumBetIncreaseInterval;
-    let state = createGameState({ minimumBet: 10, round: 1 });
+    const state = createGameState({ minimumBet: 10, round: 1 });
 
     // Check rounds that are NOT multiples of interval
     for (let round = 2; round <= 10; round++) {
@@ -291,13 +297,15 @@ describe('Game State Logic - Winning Hands Counting', () => {
 
 describe('Game State Logic - Failure Condition Integration', () => {
   it('should trigger game over when failure condition is detected', () => {
+    const baseMinBet = 10;
+    const requiredBet = Math.ceil(baseMinBet * betMultiplier);
     const state = createGameState({
       isEndlessMode: true,
-      baseMinimumBet: 10,
-      betAmount: 15, // Fails minimum bet multiplier
+      baseMinimumBet: baseMinBet,
+      betAmount: requiredBet - 5, // Fails minimum bet multiplier
       round: 10,
-      totalEarnings: 1000,
-      winningHandsLastRound: 3,
+      totalEarnings: minEfficiency * 10,
+      winningHandsLastRound: minWinningHands / 2,
     });
 
     const failureState = checkFailureConditions(state);
@@ -309,13 +317,15 @@ describe('Game State Logic - Failure Condition Integration', () => {
   });
 
   it('should not trigger game over when no failure conditions', () => {
+    const baseMinBet = 10;
+    const requiredBet = Math.ceil(baseMinBet * betMultiplier);
     const state = createGameState({
       isEndlessMode: true,
-      baseMinimumBet: 10,
-      betAmount: 20, // Passes
+      baseMinimumBet: baseMinBet,
+      betAmount: requiredBet, // Passes
       round: 10,
-      totalEarnings: 1000, // Passes
-      winningHandsLastRound: 3, // Passes
+      totalEarnings: minEfficiency * 10, // Passes
+      winningHandsLastRound: minWinningHands, // Passes
     });
 
     const failureState = checkFailureConditions(state);
@@ -326,13 +336,15 @@ describe('Game State Logic - Failure Condition Integration', () => {
   });
 
   it('should update currentFailureState when condition fails', () => {
+    const baseMinBet = 10;
+    const requiredBet = Math.ceil(baseMinBet * betMultiplier);
     const state = createGameState({
       isEndlessMode: true,
-      baseMinimumBet: 10,
-      betAmount: 15,
+      baseMinimumBet: baseMinBet,
+      betAmount: requiredBet - 5,
       round: 10,
-      totalEarnings: 1000,
-      winningHandsLastRound: 3,
+      totalEarnings: minEfficiency * 10,
+      winningHandsLastRound: minWinningHands / 2,
     });
 
     const failureState = checkFailureConditions(state);
@@ -342,25 +354,27 @@ describe('Game State Logic - Failure Condition Integration', () => {
   });
 
   it('should clear currentFailureState when conditions pass', () => {
-    // First, failing state
-    const failingState = createGameState({
+    const baseMinBet = 10;
+    const requiredBet = Math.ceil(baseMinBet * betMultiplier);
+    // Create state with failure condition
+    createGameState({
       isEndlessMode: true,
-      baseMinimumBet: 10,
-      betAmount: 15,
+      baseMinimumBet: baseMinBet,
+      betAmount: requiredBet - 5,
       round: 10,
-      totalEarnings: 1000,
-      winningHandsLastRound: 3,
+      totalEarnings: minEfficiency * 10,
+      winningHandsLastRound: minWinningHands,
       currentFailureState: 'minimum-bet-multiplier',
     });
 
     // Then, passing state
     const passingState = createGameState({
       isEndlessMode: true,
-      baseMinimumBet: 10,
-      betAmount: 20, // Now passes
+      baseMinimumBet: baseMinBet,
+      betAmount: requiredBet, // Now passes
       round: 10,
-      totalEarnings: 1000,
-      winningHandsLastRound: 3,
+      totalEarnings: minEfficiency * 10,
+      winningHandsLastRound: minWinningHands, // Passes
     });
 
     const failureState = checkFailureConditions(passingState);

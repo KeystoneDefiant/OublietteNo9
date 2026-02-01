@@ -142,8 +142,7 @@ export function GameTable({
                   {!firstDrawComplete && (
                     <>
                       <p className="text-gray-600 mb-2">
-                        Click cards to hold them, then draw {selectedHandCount} parallel hand
-                        {selectedHandCount !== 1 ? 's' : ''}
+                        Click cards to hold them.
                       </p>
                       <button
                         onClick={onDraw}
@@ -157,7 +156,7 @@ export function GameTable({
                           }
                         `}
                       >
-                        Draw Parallel Hands
+                        Play {selectedHandCount} Parallel Hands
                       </button>
                     </>
                   )}

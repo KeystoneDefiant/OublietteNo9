@@ -29,9 +29,22 @@
   right: 0;
   bottom: 0;
   z-index: 12;
-  overflow: hidden;
+  overflow-y: auto; /* Allow scrolling if content still exceeds viewport */
+  overflow-x: hidden;
   padding: 20px;
   padding-bottom: 80px; /* Extra space at bottom to prevent cut-off */
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  
+  /* Hide scrollbar for all browsers */
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
+}
+
+/* Hide scrollbar for Chrome, Safari and Opera */
+.hands-grid-viewport::-webkit-scrollbar {
+  display: none;
 }
 
 .hands-grid {
@@ -43,6 +56,13 @@
   margin: 0 auto;
   justify-content: center; /* Center all items, including incomplete rows */
   align-items: flex-start;
+  transition: transform 0.3s ease-out; /* Smooth scaling */
+  padding-top: 40px; /* Space from top when scaled */
+}
+
+/* Scroll-off animation applied when all hands are revealed */
+.hands-grid.scroll-off {
+  transition: transform 1s ease-in-out; /* Smooth 1-second upward scroll */
 }
 
 /* Tighter spacing for 4-column layouts (51-100 hands) */
@@ -195,8 +215,70 @@
   white-space: nowrap; /* Prevent hand name wrapping */
 }
 
+.score-breakdown {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  width: 100%;
+}
+
+.base-payout {
+  font-size: 11px;
+  color: #666;
+  font-weight: 500;
+}
+
+.streak-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 700;
+  margin: 2px 0;
+  animation: streakPulse 0.5s ease-out;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.streak-badge.streak-gray {
+  background: linear-gradient(135deg, #e5e7eb 0%, #d1d5db 100%);
+  color: #6b7280;
+  font-weight: 600;
+  animation: none; /* No pulse animation for base multiplier */
+  opacity: 0.8;
+}
+
+.streak-badge.streak-gold {
+  background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+  color: #78350f;
+}
+
+.streak-badge.streak-orange {
+  background: linear-gradient(135deg, #fb923c 0%, #f97316 100%);
+  color: white;
+}
+
+.streak-badge.streak-red {
+  background: linear-gradient(135deg, #f87171 0%, #ef4444 100%);
+  color: white;
+}
+
+@keyframes streakPulse {
+  0% {
+    transform: scale(0.9);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.05);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
 .score-value {
-  font-size: 24px;
+  font-size: 20px;
   font-weight: bold;
   color: #667eea;
   text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);

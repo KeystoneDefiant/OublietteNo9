@@ -126,14 +126,14 @@ describe('GameTable Component', () => {
     };
 
     it('should render Devil\'s Deal card when offered', () => {
-      render(<GameTable {...devilsDealProps as any} />);
+      render(<GameTable {...devilsDealProps} />);
       
       expect(screen.getByText(/offer/i)).toBeInTheDocument();
       expect(screen.getByText(/100.*credits/i)).toBeInTheDocument();
     });
 
     it('should call onToggleDevilsDealHold when Devil\'s Deal card clicked', () => {
-      render(<GameTable {...devilsDealProps as any} />);
+      render(<GameTable {...devilsDealProps} />);
       
       const devilsDealContainer = screen.getByText(/offer/i).closest('.devil-deal-container');
       if (devilsDealContainer) {
@@ -148,7 +148,7 @@ describe('GameTable Component', () => {
         heldIndices: [0, 1, 2, 3, 4],
       };
       
-      const { container } = render(<GameTable {...props as any} />);
+      const { container } = render(<GameTable {...props} />);
       const devilsDealCard = container.querySelector('.devil-deal-container');
       
       expect(devilsDealCard).toHaveClass(/opacity-30/);
@@ -163,8 +163,7 @@ describe('GameTable Component', () => {
         },
       };
       
-      render(<GameTable {...props as any} />);
-      const { container } = render(<GameTable {...props as any} />);
+      const { container } = render(<GameTable {...props} />);
       
       // Check for held styling on Devil's Deal card
       const devilsDealCard = container.querySelector('.devil-deal-container');

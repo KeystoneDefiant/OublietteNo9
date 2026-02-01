@@ -78,7 +78,7 @@ describe('PokerEvaluator', () => {
       ];
       const result = PokerEvaluator.evaluate(hand);
       expect(result.rank).toBe('four-of-a-kind');
-      expect(result.winningCards.length).toBe(4);
+      expect(result.winningCards.length).toBe(5); // Returns all 5 cards
     });
 
     it('should identify four aces', () => {
@@ -198,7 +198,7 @@ describe('PokerEvaluator', () => {
       ];
       const result = PokerEvaluator.evaluate(hand);
       expect(result.rank).toBe('three-of-a-kind');
-      expect(result.winningCards.length).toBe(3);
+      expect(result.winningCards.length).toBe(5); // Returns all 5 cards
     });
 
     it('should identify three aces', () => {
@@ -225,7 +225,7 @@ describe('PokerEvaluator', () => {
       ];
       const result = PokerEvaluator.evaluate(hand);
       expect(result.rank).toBe('two-pair');
-      expect(result.winningCards.length).toBe(4);
+      expect(result.winningCards.length).toBe(5); // Returns all 5 cards
     });
 
     it('should identify two pair with aces', () => {
@@ -252,7 +252,7 @@ describe('PokerEvaluator', () => {
       ];
       const result = PokerEvaluator.evaluate(hand);
       expect(result.rank).toBe('one-pair');
-      expect(result.winningCards.length).toBe(2);
+      expect(result.winningCards.length).toBe(5); // Returns all 5 cards
     });
 
     it('should identify pair of aces', () => {

@@ -27,12 +27,6 @@ export function calculateAllDeadCardsRemovalCost(
   return singleCardCost * deadCardCount;
 }
 
-export function calculateRewardUpgradeCost(currentLevel: number): number {
-  const baseCost = currentMode.shop.rewardUpgrade.baseCost;
-  const multiplier = 1 + currentMode.shop.rewardUpgrade.increasePercent / 100;
-  return Math.floor(baseCost * Math.pow(multiplier, currentLevel));
-}
-
 export function calculateDevilsDealChanceCost(purchaseCount: number): number {
   const baseCost = currentMode.shop.devilsDealChance.baseCost;
   const multiplier = 1 + currentMode.shop.devilsDealChance.increasePercent / 100;

@@ -166,7 +166,7 @@ describe('Devil\'s Deal Cost Calculation', () => {
         { rank: 'high-card', multiplier: 0 },
       ];
 
-      multipliers.forEach(({ rank, multiplier }) => {
+      multipliers.forEach(({ multiplier }) => {
         const cost = Math.round(
           ((multiplier * betAmount * selectedHandCount) * selectedHandCount * costPercent) / 100
         );

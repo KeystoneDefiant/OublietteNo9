@@ -165,7 +165,7 @@ describe('generateParallelHands', () => {
         createCard('3', 'diamonds', { isDead: true }),
       ];
       
-      const result = generateParallelHands(baseHand, [], 10, deadCards);
+      const result = generateParallelHands(baseHand, [], 30, deadCards);
       
       // Check that some hands contain dead cards
       let hasDeadCard = false;
@@ -177,7 +177,7 @@ describe('generateParallelHands', () => {
         });
       });
       
-      // With 10 hands and 2 dead cards, we should very likely see at least one
+      // With 30 hands and 2 dead cards, we should very likely see at least one
       expect(hasDeadCard).toBe(true);
     });
 

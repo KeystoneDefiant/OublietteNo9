@@ -81,6 +81,18 @@ export class PokerEvaluator {
       };
     }
 
+    // Five of a Kind (only possible with wild cards)
+    const fiveKind = Object.entries(rankCounts).find(([, count]) => count === 5);
+    if (fiveKind) {
+      const quintRank = parseInt(fiveKind[0]);
+      return {
+        rank: 'five-of-a-kind',
+        multiplier: 0,
+        score: 8500 + quintRank,
+        winningCards: sortedHand,
+      };
+    }
+
     // Four of a Kind
     const fourKind = Object.entries(rankCounts).find(([, count]) => count === 4);
     if (fourKind) {
@@ -201,6 +213,18 @@ export class PokerEvaluator {
         rank: 'straight-flush',
         multiplier: 0,
         score: 9000 + ranks[4],
+        winningCards: sortedHand,
+      };
+    }
+
+    // Five of a Kind (only possible with wild cards)
+    const fiveKind = Object.entries(rankCounts).find(([, count]) => count === 5);
+    if (fiveKind) {
+      const quintRank = parseInt(fiveKind[0]);
+      return {
+        rank: 'five-of-a-kind',
+        multiplier: 0,
+        score: 8500 + quintRank,
         winningCards: sortedHand,
       };
     }
@@ -664,16 +688,17 @@ export class PokerEvaluator {
             isWild: true,
           });
         }
-        // Fill remaining
-        for (let i = needed; i < numWilds; i++) {
+        // Fill remaining wilds to reach 5 cards if possible
+        while (expanded.length < 5 && expanded.length - regularCards.length < numWilds) {
           expanded.push({
             suit: 'hearts',
             rank: 'A',
-            id: `wild-3k-fill-${i}`,
+            id: `wild-3k-fill-${expanded.length}`,
             isWild: true,
           });
         }
-        if (expanded.length === 5) {
+        // Evaluate if we have at least 3 cards
+        if (expanded.length >= 3) {
           const result = this.evaluateRegularHand(expanded);
           if (result.rank === 'three-of-a-kind') {
             return result;
@@ -713,17 +738,17 @@ export class PokerEvaluator {
                 isWild: true,
               });
             }
-            // Fill remaining
-            const filled = needed1 + needed2;
-            for (let k = filled; k < numWilds; k++) {
+            // Fill remaining wilds to reach 5 cards if possible
+            while (expanded.length < 5 && expanded.length - regularCards.length < numWilds) {
               expanded.push({
                 suit: 'clubs',
                 rank: 'A',
-                id: `wild-2p-fill-${k}`,
+                id: `wild-2p-fill-${expanded.length}`,
                 isWild: true,
               });
             }
-            if (expanded.length === 5) {
+            // Evaluate if we have at least 4 cards (two pairs)
+            if (expanded.length >= 4) {
               const result = this.evaluateRegularHand(expanded);
               if (result.rank === 'two-pair') {
                 return result;
@@ -751,16 +776,17 @@ export class PokerEvaluator {
             isWild: true,
           });
         }
-        // Fill remaining
-        for (let i = needed; i < numWilds; i++) {
+        // Fill remaining wilds to reach 5 cards if possible
+        while (expanded.length < 5 && expanded.length - regularCards.length < numWilds) {
           expanded.push({
             suit: 'hearts',
             rank: 'A',
-            id: `wild-pair-fill-${i}`,
+            id: `wild-pair-fill-${expanded.length}`,
             isWild: true,
           });
         }
-        if (expanded.length === 5) {
+        // Evaluate if we have at least 2 cards (one pair)
+        if (expanded.length >= 2) {
           const result = this.evaluateRegularHand(expanded);
           if (result.rank === 'one-pair') {
             return result;

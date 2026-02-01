@@ -42,7 +42,7 @@ describe('Results Component', () => {
       'royal-flush': 250,
       'straight-flush': 50,
     },
-    onContinue: vi.fn(),
+    onReturnToPreDraw: vi.fn(),
   };
 
   beforeEach(() => {
@@ -92,7 +92,7 @@ describe('Results Component', () => {
     });
 
     it('should show positive profit in green', () => {
-      const { container } = render(<Results {...mockProps} />);
+      render(<Results {...mockProps} />);
       
       const profitElement = screen.getByText(/7,470/).parentElement;
       expect(profitElement).toHaveClass(/text-green/);
@@ -120,10 +120,10 @@ describe('Results Component', () => {
           devilsDealCard: createMockCard('A', 'spades', 'as'),
           devilsDealCost: 100,
           devilsDealHeld: true,
-        },
+        } as const,
       };
       
-      render(<Results {...props as any} />);
+      render(<Results {...props} />);
       
       expect(screen.getByText(/Devil's Deal/i)).toBeInTheDocument();
       expect(screen.getByText(/100.*credits/i)).toBeInTheDocument();
@@ -142,10 +142,10 @@ describe('Results Component', () => {
           devilsDealCard: createMockCard('A', 'spades', 'as'),
           devilsDealCost: 100,
           devilsDealHeld: true,
-        },
+        } as const,
       };
       
-      render(<Results {...props as any} />);
+      render(<Results {...props} />);
       
       // 7500 payout - 30 bet - 100 devil's deal = 7370 profit
       expect(screen.getByText(/7,370/)).toBeInTheDocument();
@@ -234,12 +234,12 @@ describe('Results Component', () => {
       expect(screen.getByRole('button', { name: /Continue/i })).toBeInTheDocument();
     });
 
-    it('should call onContinue when clicked', () => {
+    it('should call onReturnToPreDraw when clicked', () => {
       render(<Results {...mockProps} />);
       const continueButton = screen.getByRole('button', { name: /Continue/i });
       
       fireEvent.click(continueButton);
-      expect(mockProps.onContinue).toHaveBeenCalledTimes(1);
+      expect(mockProps.onReturnToPreDraw).toHaveBeenCalledTimes(1);
     });
 
     it('should be enabled', () => {

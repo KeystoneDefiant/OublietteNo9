@@ -4,6 +4,8 @@ import { Card } from './Card';
 import { GameHeader } from './GameHeader';
 import { PokerEvaluator } from '../utils/pokerEvaluator';
 import { RewardTable } from './RewardTable';
+import { calculateStreakMultiplier } from '../utils/streakCalculator';
+import { gameConfig } from '../config/gameConfig';
 
 /**
  * Results screen component props
@@ -82,11 +84,28 @@ export function Results({
   const [showSummary, setShowSummary] = useState(false);
   const efficiency = round > 0 ? (totalEarnings / round).toFixed(2) : '0.00';
 
-  // Calculate total payouts
-  const handPayouts = parallelHands.map((hand) => {
+  // Calculate total payouts WITH STREAK MULTIPLIERS
+  // This must match the calculation in ParallelHandsAnimation
+  const handPayouts = parallelHands.map((hand, index) => {
+    // Calculate streak multiplier at the time this hand was evaluated
+    let streakForThisHand = 0; // Rounds always start with streak = 0
+    
+    // Apply streak changes from all PREVIOUS hands
+    for (let i = 0; i < index; i++) {
+      const prevHand = parallelHands[i];
+      const prevResult = PokerEvaluator.evaluate(prevHand.cards);
+      const prevWithRewards = PokerEvaluator.applyRewards(prevResult, rewardTable);
+      const prevScored = prevWithRewards.multiplier > 0;
+      streakForThisHand = prevScored ? streakForThisHand + 1 : Math.max(0, streakForThisHand - 1);
+    }
+    
+    // Calculate multiplier for THIS hand (before evaluating it)
+    const streakMultiplier = calculateStreakMultiplier(streakForThisHand, gameConfig.streakMultiplier);
+    
+    // Evaluate this hand and apply rewards + streak
     const result = PokerEvaluator.evaluate(hand.cards);
     const withRewards = PokerEvaluator.applyRewards(result, rewardTable);
-    return betAmount * withRewards.multiplier;
+    return Math.round(betAmount * withRewards.multiplier * streakMultiplier);
   });
 
   const totalPayout = handPayouts.reduce((sum, payout) => sum + payout, 0);
@@ -157,40 +176,53 @@ export function Results({
 
                 <div className="space-y-4 mb-8">
                   {(() => {
-                    // Group hands by rank and count occurrences
-                    const rankCounts = new Map<
+                    // Calculate payouts for each hand WITH streak multipliers
+                    // Group by rank and accumulate actual payouts
+                    const rankData = new Map<
                       string,
-                      { rank: string; multiplier: number; count: number }
+                      { rank: string; totalPayout: number; count: number }
                     >();
 
-                    parallelHands.forEach((hand) => {
+                    parallelHands.forEach((hand, index) => {
+                      // Calculate streak for this hand (same logic as above)
+                      let streakForThisHand = 0;
+                      for (let i = 0; i < index; i++) {
+                        const prevHand = parallelHands[i];
+                        const prevResult = PokerEvaluator.evaluate(prevHand.cards);
+                        const prevWithRewards = PokerEvaluator.applyRewards(prevResult, rewardTable);
+                        const prevScored = prevWithRewards.multiplier > 0;
+                        streakForThisHand = prevScored ? streakForThisHand + 1 : Math.max(0, streakForThisHand - 1);
+                      }
+                      
+                      const streakMultiplier = calculateStreakMultiplier(streakForThisHand, gameConfig.streakMultiplier);
                       const result = PokerEvaluator.evaluate(hand.cards);
                       const withRewards = PokerEvaluator.applyRewards(result, rewardTable);
+                      const handPayout = Math.round(betAmount * withRewards.multiplier * streakMultiplier);
                       const rankKey = result.rank;
 
-                      if (rankCounts.has(rankKey)) {
-                        const existing = rankCounts.get(rankKey)!;
+                      if (rankData.has(rankKey)) {
+                        const existing = rankData.get(rankKey)!;
+                        existing.totalPayout += handPayout;
                         existing.count += 1;
                       } else {
-                        rankCounts.set(rankKey, {
+                        rankData.set(rankKey, {
                           rank: result.rank,
-                          multiplier: withRewards.multiplier,
+                          totalPayout: handPayout,
                           count: 1,
                         });
                       }
                     });
 
-                    return Array.from(rankCounts.values()).map((item) => {
-                      const payout = betAmount * item.multiplier * item.count;
+                    return Array.from(rankData.values()).map((item) => {
                       return (
                         <div key={item.rank} className="flex justify-between items-center text-lg">
                           <span className="text-gray-700 capitalize font-medium">
                             {item.rank.replace(/-/g, ' ')} ×{item.count}
                           </span>
                           <span
-                            className={`font-bold ${payout > 0 ? 'text-green-600' : 'text-gray-500'}`}
+                            className={`font-bold ${item.totalPayout > 0 ? 'text-green-600' : 'text-gray-500'}`}
                           >
-                            = {payout} credit{payout !== 1 ? 's' : ''}
+                            = {Math.round(item.totalPayout)} credit{Math.round(item.totalPayout) !== 1 ? 's' : ''}
                           </span>
                         </div>
                       );

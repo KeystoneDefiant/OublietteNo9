@@ -50,6 +50,8 @@ const INITIAL_STATE: GameState = {
   devilsDealHeld: false,
   devilsDealChancePurchases: 0,
   devilsDealCostReductionPurchases: 0,
+  streakCounter: 0,
+  currentStreakMultiplier: 1.0,
 };
 
 export function useGameState() {
@@ -217,6 +219,8 @@ export function useGameState() {
         isEndlessMode,
         currentFailureState,
         winningHandsLastRound: winningHandsCount,
+        streakCounter: 0, // Reset streak counter at the start of each round
+        currentStreakMultiplier: 1.0, // Reset multiplier at the start of each round
       };
     });
   }, []);
@@ -426,6 +430,13 @@ export function useGameState() {
     }));
   }, []);
 
+  const updateStreakCounter = useCallback((newStreakCount: number) => {
+    setState((prev) => ({
+      ...prev,
+      streakCounter: newStreakCount,
+    }));
+  }, []);
+
   const toggleDevilsDealHold = useCallback(() => {
     setState((prev) => {
       // Can't hold if all 5 regular cards are held
@@ -462,5 +473,6 @@ export function useGameState() {
     cheatAddHands,
     cheatSetDevilsDeal,
     toggleDevilsDealHold,
+    updateStreakCounter,
   };
 }

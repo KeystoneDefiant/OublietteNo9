@@ -1,21 +1,11 @@
 export const gameConfig = {
   // Global configuration
   deadCardLimit: 10,
-  shopFrequency: 5, // Show shop every N turns
   shopOptionCount: 3, // Number of options to display in shop
-  defaultTransitionDuration: 300, // Default screen transition duration in milliseconds
 
   // Animation timing configuration (in milliseconds)
   animation: {
-    parallelHandsFloat: 2000, // Parallel hands floating animation duration (increased from 1250ms for slower animation)
     cardFlip: 500, // Card flip animation delay
-    payoutPopup: 2000, // Payout popup display duration
-    // Parallel hands animation (grid-based)
-    parallelHandsAnimation: {
-      revealInterval: 100, // ms between hand reveals
-      scrollDuration: 300, // ms for scroll transition
-      completionDelay: 1000, // ms before moving to results
-    },
   },
 
   // Parallel hands grid thresholds
@@ -29,6 +19,16 @@ export const gameConfig = {
   // Audio configuration
   audio: {
     musicVolume: 0.7, // Background music volume multiplier (0.0 to 1.0)
+  },
+
+  // Streak multiplier configuration
+  streakMultiplier: {
+    enabled: true,
+    baseThreshold: 5, // First bonus at 5 streak
+    thresholdIncrement: 5, // Base increment value
+    exponentialGrowth: 1.3, // Exponential growth factor (1.0 = linear, >1.0 = exponential)
+    baseMultiplier: 1.5, // 1.5x at first tier
+    multiplierIncrement: 0.5, // +0.5x per tier (2.0x, 2.5x, 3.0x, etc.)
   },
 
   // Quips for UI elements
@@ -85,31 +85,31 @@ export const gameConfig = {
       },
       // Endless mode configuration (starts after endlessModeStartRound)
       endlessMode: {
-        startRound: 20, // Start endless mode after this round
+        startRound: 30, // Start endless mode after this round
         failureConditions: {
           // Minimum bet multiplier (must bet at least this many times the base minimum bet)
           minimumBetMultiplier: {
-            enabled: true,
+            enabled: false,
             value: 2.0, // Must bet at least 2x the base minimum bet
           },
           // Minimum credit efficiency (credits earned per round on average)
           minimumCreditEfficiency: {
-            enabled: true,
+            enabled: false,
             value: 100, // Must average at least 100 credits per round
           },
           // Minimum winning hands per round (hands that pay out > 0)
           minimumWinningHandsPerRound: {
             enabled: true,
-            value: 3, // Must win at least 3 hands per round
+            value: 20, // Must win at least 20 hands per round
           },
         },
       },
       shop: {
         deadCard: {
-          creditReward: 2000,
+          creditReward: 2500,
         },
         wildCard: {
-          baseCost: 2000,
+          baseCost: 3000,
           increasePercent: 100,
           maxCount: 3,
         },
@@ -117,19 +117,12 @@ export const gameConfig = {
           baseCost: 5000,
           increasePercent: 10,
         },
-        handCount: {
-          basePricePerHand: 100,
-        },
         parallelHandsBundles: {
           basePricePerHand: 10,
           bundles: [5, 10, 25, 50],
         },
-        rewardUpgrade: {
-          baseCost: 400,
-          increasePercent: 150,
-        },
         extraDraw: {
-          cost: 5000,
+          cost: 10000,
         },
         devilsDealChance: {
           baseCost: 3000, // Configurable per game mode
@@ -162,7 +155,6 @@ export const gameConfig = {
         'parallel-hands-bundle-25': 12,
         'parallel-hands-bundle-50': 8,
         'wild-card': 15,
-        'reward-upgrade': 10,
         'devils-deal-chance': 8,
         'devils-deal-cost-reduction': 8,
       },
