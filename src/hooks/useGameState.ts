@@ -7,6 +7,7 @@ import { useGameActions } from './useGameActions';
 import { useShopActions } from './useShopActions';
 import { checkFailureConditions } from '../utils/failureConditions';
 import { PokerEvaluator } from '../utils/pokerEvaluator';
+import { useThemeAudio } from '../hooks/useThemeAudio';
 
 const currentMode = getCurrentGameMode();
 
@@ -60,6 +61,7 @@ export function useGameState() {
   // Use specialized hooks for different action types
   const gameActions = useGameActions(state, setState);
   const shopActions = useShopActions(state, setState);
+  const { playSound, playMusic, stopMusic } = useThemeAudio();
 
   const openShop = useCallback(() => {
     setState((prev) => ({
@@ -104,6 +106,8 @@ export function useGameState() {
         const handPayout = prev.betAmount * withRewards.multiplier;
         return handPayout > 0 ? count + 1 : count;
       }, 0);
+
+      playSound('returnToPreDraw');
 
       // Add payout to credits and total earnings
       const newCredits = prev.credits + payout;
@@ -226,6 +230,7 @@ export function useGameState() {
   }, []);
 
   const startNewRun = useCallback(() => {
+    playMusic();
     setState((prev) => ({
       ...prev,
       screen: 'game',
@@ -261,6 +266,7 @@ export function useGameState() {
    * Preserves stats (round, totalEarnings, credits) for display
    */
   const endRun = useCallback(() => {
+    stopMusic();
     setState((prev) => ({
       ...prev,
       screen: 'gameOver',
@@ -327,20 +333,20 @@ export function useGameState() {
       if (isNaN(amount) || !isFinite(amount)) {
         return prev;
       }
-      
+
       // Ensure amount is not negative
       if (amount < 0) {
         return prev;
       }
-      
+
       // Ensure amount meets minimum bet requirement
       if (amount < prev.minimumBet) {
         return prev;
       }
-      
+
       // Floor the amount to ensure it's an integer
       const validAmount = Math.floor(amount);
-      
+
       return {
         ...prev,
         betAmount: validAmount,
@@ -354,26 +360,26 @@ export function useGameState() {
       if (isNaN(count) || !isFinite(count)) {
         return prev;
       }
-      
+
       // Ensure count is positive
       if (count < 1) {
         return prev;
       }
-      
+
       // Ensure count doesn't exceed available hands
       if (count > prev.handCount) {
         return prev;
       }
-      
+
       // Floor the count to ensure it's an integer
       const validCount = Math.floor(count);
-      
+
       // Check if player can afford bet with this hand count
       const totalBet = prev.betAmount * validCount;
       if (prev.credits < totalBet) {
         return prev;
       }
-      
+
       return {
         ...prev,
         selectedHandCount: validCount,
@@ -381,8 +387,8 @@ export function useGameState() {
     });
   }, []);
 
-
   const moveToNextScreen = useCallback(() => {
+    playSound('screenTransition');
     setState((prev) => {
       if (prev.gamePhase === 'parallelHandsAnimation') {
         return {

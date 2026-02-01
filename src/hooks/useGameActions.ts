@@ -9,11 +9,11 @@ import { PokerEvaluator } from '../utils/pokerEvaluator';
 /**
  * Hook for game play actions (deal, hold, draw)
  * Provides functions for core gameplay mechanics
- * 
+ *
  * @param _state - Current game state (unused, for future use)
  * @param setState - React state setter function
  * @returns Object containing game action functions
- * 
+ *
  * @example
  * ```tsx
  * const gameActions = useGameActions(state, setState);
@@ -147,7 +147,7 @@ export function useGameActions(
     (index: number) => {
       setState((prev) => {
         const isCurrentlyHeld = prev.heldIndices.includes(index);
-        
+
         // If trying to hold a new card, check 5-card limit
         if (!isCurrentlyHeld) {
           const totalHeld = prev.heldIndices.length + (prev.devilsDealHeld ? 1 : 0);

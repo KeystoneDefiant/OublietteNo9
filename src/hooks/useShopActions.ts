@@ -8,17 +8,17 @@ import {
   calculateDevilsDealChanceCost,
   calculateDevilsDealCostReductionCost,
 } from '../utils/config';
+import { useThemeAudio } from '../hooks/useThemeAudio';
 
 const currentMode = getCurrentGameMode();
-
 /**
  * Hook for shop-related actions
  * Provides functions for purchasing and managing shop items
- * 
+ *
  * @param _state - Current game state (unused, for future use)
  * @param setState - React state setter function
  * @returns Object containing shop action functions
- * 
+ *
  * @example
  * ```tsx
  * const shopActions = useShopActions(state, setState);
@@ -31,11 +31,13 @@ export function useShopActions(
   _state: GameState,
   setState: React.Dispatch<React.SetStateAction<GameState>>
 ) {
+  const { playSound } = useThemeAudio();
   /**
    * Add a dead card to the deck for credits
    * Dead cards are drawn but don't count toward hand evaluation
    */
   const addDeadCard = useCallback(() => {
+    playSound('shopPurchase');
     setState((prev) => {
       // Check if adding a dead card would exceed the limit
       if (prev.deckModifications.deadCards.length >= gameConfig.deadCardLimit) {
@@ -77,6 +79,7 @@ export function useShopActions(
   }, [setState]);
 
   const removeSingleDeadCard = useCallback(() => {
+    playSound('shopPurchase');
     setState((prev) => {
       // Check if there are any dead cards
       if (prev.deckModifications.deadCards.length === 0) {
@@ -109,6 +112,7 @@ export function useShopActions(
   }, [setState]);
 
   const removeAllDeadCards = useCallback(() => {
+    playSound('shopPurchase');
     setState((prev) => {
       // Check if there are any dead cards
       if (prev.deckModifications.deadCards.length === 0) {
@@ -142,6 +146,7 @@ export function useShopActions(
   }, [setState]);
 
   const addWildCard = useCallback(() => {
+    playSound('shopPurchase');
     setState((prev) => {
       const cost = calculateWildCardCost(prev.wildCardCount);
       if (prev.credits < cost || prev.wildCardCount >= currentMode.shop.wildCard.maxCount) {
@@ -169,6 +174,7 @@ export function useShopActions(
   }, [setState]);
 
   const purchaseExtraDraw = useCallback(() => {
+    playSound('shopPurchase');
     setState((prev) => {
       const cost = currentMode.shop.extraDraw.cost;
       if (prev.credits < cost || prev.extraDrawPurchased) {
@@ -184,6 +190,7 @@ export function useShopActions(
 
   const addParallelHandsBundle = useCallback(
     (bundleSize: number) => {
+      playSound('shopPurchase');
       setState((prev) => {
         const basePricePerHand = currentMode.shop.parallelHandsBundles.basePricePerHand;
         const cost = bundleSize * basePricePerHand;
@@ -201,6 +208,7 @@ export function useShopActions(
   );
 
   const purchaseDevilsDealChance = useCallback(() => {
+    playSound('shopPurchase');
     setState((prev) => {
       const devilsDealConfig = currentMode.devilsDeal;
       if (!devilsDealConfig) {
@@ -226,6 +234,7 @@ export function useShopActions(
   }, [setState]);
 
   const purchaseDevilsDealCostReduction = useCallback(() => {
+    playSound('shopPurchase');
     setState((prev) => {
       const devilsDealConfig = currentMode.devilsDeal;
       if (!devilsDealConfig) {

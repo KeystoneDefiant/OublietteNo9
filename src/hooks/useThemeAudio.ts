@@ -3,7 +3,12 @@ import { HandRank, ThemeConfig } from '../types';
 import { getSelectedTheme, loadThemeConfig } from '../utils/themeManager';
 import { gameConfig } from '../config/gameConfig';
 
-type SoundEvent = 'buttonClick' | 'shopPurchase' | 'screenTransition' | 'returnToPreDraw';
+type SoundEvent =
+  | 'buttonClick'
+  | 'shopPurchase'
+  | 'screenTransition'
+  | 'returnToPreDraw'
+  | 'handScoring';
 
 interface AudioInstances {
   soundEffects: Map<string, HTMLAudioElement>;

@@ -8,10 +8,9 @@ import {
 } from '../utils/config';
 import { gameConfig, getCurrentGameMode } from '../config/gameConfig';
 import { ShopOptionType } from '../types';
-
 /**
  * Shop component props
- * 
+ *
  * Displays available upgrades and modifications for the player to purchase
  * between rounds. Upgrades include dead cards, wild cards, parallel hands,
  * extra draws, and Devil's Deal improvements.
@@ -59,11 +58,11 @@ interface ShopProps {
 
 /**
  * Shop component for purchasing game upgrades
- * 
+ *
  * Displays available shop options based on current game state and allows
  * players to purchase upgrades between rounds. Handles affordability checks,
  * cost calculations, and disabled states for maxed-out upgrades.
- * 
+ *
  * @example
  * <Shop
  *   credits={5000}
@@ -95,7 +94,6 @@ export function Shop({
   onClose,
 }: ShopProps) {
   const currentMode = getCurrentGameMode();
-  
   // Track items purchased during this shop visit
   const [purchasedItems, setPurchasedItems] = useState<Set<ShopOptionType>>(new Set());
 
@@ -104,12 +102,12 @@ export function Shop({
     const basePricePerHand = currentMode.shop.parallelHandsBundles.basePricePerHand;
     return bundleSize * basePricePerHand;
   };
-  
+
   // Helper to check if an item was purchased this visit
   const isPurchased = (optionType: ShopOptionType): boolean => {
     return purchasedItems.has(optionType);
   };
-  
+
   // Helper to mark an item as purchased
   const markPurchased = (optionType: ShopOptionType) => {
     setPurchasedItems((prev) => new Set([...prev, optionType]));
@@ -123,7 +121,9 @@ export function Shop({
   );
   const wildCardCost = calculateWildCardCost(wildCardCount);
   const devilsDealChanceCost = calculateDevilsDealChanceCost(devilsDealChancePurchases);
-  const devilsDealCostReductionCost = calculateDevilsDealCostReductionCost(devilsDealCostReductionPurchases);
+  const devilsDealCostReductionCost = calculateDevilsDealCostReductionCost(
+    devilsDealCostReductionPurchases
+  );
 
   // Helper function to check if an option should be shown
   const isOptionAvailable = (optionType: ShopOptionType): boolean => {
@@ -176,7 +176,9 @@ export function Shop({
                   onAddParallelHandsBundle(5);
                   markPurchased('parallel-hands-bundle-5');
                 }}
-                disabled={credits < calculateBundleCost(5) || isPurchased('parallel-hands-bundle-5')}
+                disabled={
+                  credits < calculateBundleCost(5) || isPurchased('parallel-hands-bundle-5')
+                }
                 className={`
                   w-full py-3 px-4 rounded-lg font-bold transition-colors
                   ${
@@ -186,7 +188,9 @@ export function Shop({
                   }
                 `}
               >
-                {isPurchased('parallel-hands-bundle-5') ? 'Already Purchased' : `${calculateBundleCost(5)} Credits`}
+                {isPurchased('parallel-hands-bundle-5')
+                  ? 'Already Purchased'
+                  : `${calculateBundleCost(5)} Credits`}
               </button>
             </div>
           )}
@@ -204,7 +208,9 @@ export function Shop({
                   onAddParallelHandsBundle(10);
                   markPurchased('parallel-hands-bundle-10');
                 }}
-                disabled={credits < calculateBundleCost(10) || isPurchased('parallel-hands-bundle-10')}
+                disabled={
+                  credits < calculateBundleCost(10) || isPurchased('parallel-hands-bundle-10')
+                }
                 className={`
                   w-full py-3 px-4 rounded-lg font-bold transition-colors
                   ${
@@ -214,7 +220,9 @@ export function Shop({
                   }
                 `}
               >
-                {isPurchased('parallel-hands-bundle-10') ? 'Already Purchased' : `${calculateBundleCost(10)} Credits`}
+                {isPurchased('parallel-hands-bundle-10')
+                  ? 'Already Purchased'
+                  : `${calculateBundleCost(10)} Credits`}
               </button>
             </div>
           )}
@@ -232,7 +240,9 @@ export function Shop({
                   onAddParallelHandsBundle(25);
                   markPurchased('parallel-hands-bundle-25');
                 }}
-                disabled={credits < calculateBundleCost(25) || isPurchased('parallel-hands-bundle-25')}
+                disabled={
+                  credits < calculateBundleCost(25) || isPurchased('parallel-hands-bundle-25')
+                }
                 className={`
                   w-full py-3 px-4 rounded-lg font-bold transition-colors
                   ${
@@ -242,7 +252,9 @@ export function Shop({
                   }
                 `}
               >
-                {isPurchased('parallel-hands-bundle-25') ? 'Already Purchased' : `${calculateBundleCost(25)} Credits`}
+                {isPurchased('parallel-hands-bundle-25')
+                  ? 'Already Purchased'
+                  : `${calculateBundleCost(25)} Credits`}
               </button>
             </div>
           )}
@@ -260,7 +272,9 @@ export function Shop({
                   onAddParallelHandsBundle(50);
                   markPurchased('parallel-hands-bundle-50');
                 }}
-                disabled={credits < calculateBundleCost(50) || isPurchased('parallel-hands-bundle-50')}
+                disabled={
+                  credits < calculateBundleCost(50) || isPurchased('parallel-hands-bundle-50')
+                }
                 className={`
                   w-full py-3 px-4 rounded-lg font-bold transition-colors
                   ${
@@ -270,7 +284,9 @@ export function Shop({
                   }
                 `}
               >
-                {isPurchased('parallel-hands-bundle-50') ? 'Already Purchased' : `${calculateBundleCost(50)} Credits`}
+                {isPurchased('parallel-hands-bundle-50')
+                  ? 'Already Purchased'
+                  : `${calculateBundleCost(50)} Credits`}
               </button>
             </div>
           )}
@@ -327,12 +343,16 @@ export function Shop({
                   markPurchased('wild-card');
                 }}
                 disabled={
-                  credits < wildCardCost || wildCardCount >= currentMode.shop.wildCard.maxCount || isPurchased('wild-card')
+                  credits < wildCardCost ||
+                  wildCardCount >= currentMode.shop.wildCard.maxCount ||
+                  isPurchased('wild-card')
                 }
                 className={`
                   w-full py-3 px-4 rounded-lg font-bold transition-colors
                   ${
-                    credits >= wildCardCost && wildCardCount < currentMode.shop.wildCard.maxCount && !isPurchased('wild-card')
+                    credits >= wildCardCost &&
+                    wildCardCount < currentMode.shop.wildCard.maxCount &&
+                    !isPurchased('wild-card')
                       ? 'bg-orange-600 hover:bg-orange-700 text-white'
                       : 'bg-gray-600 text-gray-400 cursor-not-allowed'
                   }
@@ -340,7 +360,9 @@ export function Shop({
               >
                 {isPurchased('wild-card')
                   ? 'Already Purchased'
-                  : `${wildCardCost} Credits${wildCardCount >= currentMode.shop.wildCard.maxCount ? ' (Max)' : ''}`}
+                  : `${wildCardCost} Credits${
+                      wildCardCount >= currentMode.shop.wildCard.maxCount ? ' (Max)' : ''
+                    }`}
               </button>
             </div>
           )}
@@ -359,11 +381,17 @@ export function Shop({
                   onPurchaseExtraDraw();
                   markPurchased('extra-draw');
                 }}
-                disabled={credits < currentMode.shop.extraDraw.cost || extraDrawPurchased || isPurchased('extra-draw')}
+                disabled={
+                  credits < currentMode.shop.extraDraw.cost ||
+                  extraDrawPurchased ||
+                  isPurchased('extra-draw')
+                }
                 className={`
                   w-full py-3 px-4 rounded-lg font-bold transition-colors
                   ${
-                    credits >= currentMode.shop.extraDraw.cost && !extraDrawPurchased && !isPurchased('extra-draw')
+                    credits >= currentMode.shop.extraDraw.cost &&
+                    !extraDrawPurchased &&
+                    !isPurchased('extra-draw')
                       ? 'bg-indigo-600 hover:bg-indigo-700 text-white'
                       : 'bg-gray-600 text-gray-400 cursor-not-allowed'
                   }
@@ -389,7 +417,9 @@ export function Shop({
                   onRemoveSingleDeadCard();
                   markPurchased('remove-single-dead-card');
                 }}
-                disabled={credits < singleDeadCardRemovalCost || isPurchased('remove-single-dead-card')}
+                disabled={
+                  credits < singleDeadCardRemovalCost || isPurchased('remove-single-dead-card')
+                }
                 className={`
                   w-full py-3 px-4 rounded-lg font-bold transition-colors
                   ${
@@ -399,7 +429,9 @@ export function Shop({
                   }
                 `}
               >
-                {isPurchased('remove-single-dead-card') ? 'Already Purchased' : `${singleDeadCardRemovalCost} Credits`}
+                {isPurchased('remove-single-dead-card')
+                  ? 'Already Purchased'
+                  : `${singleDeadCardRemovalCost} Credits`}
               </button>
             </div>
           )}
@@ -427,7 +459,9 @@ export function Shop({
                   }
                 `}
               >
-                {isPurchased('remove-all-dead-cards') ? 'Already Purchased' : `${allDeadCardsRemovalCost} Credits`}
+                {isPurchased('remove-all-dead-cards')
+                  ? 'Already Purchased'
+                  : `${allDeadCardsRemovalCost} Credits`}
               </button>
             </div>
           )}
@@ -444,9 +478,7 @@ export function Shop({
               <p className="text-purple-100 mb-2">
                 Increase chance by {devilsDealConfig.chanceIncreasePerPurchase}% per purchase
               </p>
-              <p className="text-purple-200 text-sm mb-4">
-                Current chance: {effectiveChance}%
-              </p>
+              <p className="text-purple-200 text-sm mb-4">Current chance: {effectiveChance}%</p>
               <button
                 onClick={() => {
                   onPurchaseDevilsDealChance();
