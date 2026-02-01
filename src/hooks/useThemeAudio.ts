@@ -74,7 +74,7 @@ export function useThemeAudio() {
 
       // Build full path relative to theme sounds directory
       const theme = getSelectedTheme();
-      const fullPath = `/sounds/${theme}/${audioPath}`;
+      const fullPath = `./sounds/${theme}/${audioPath}`;
 
       audio.src = fullPath;
       audio.volume = volumeRef.current;
