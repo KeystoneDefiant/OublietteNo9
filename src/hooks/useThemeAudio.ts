@@ -104,7 +104,7 @@ export function useThemeAudio() {
       if (!config?.music?.backgroundMusic) return;
 
       const audio = new Audio();
-      audio.src = `/sounds/${getSelectedTheme()}/${config.music.backgroundMusic}`;
+      audio.src = `./sounds/${getSelectedTheme()}/${config.music.backgroundMusic}`;
       audio.loop = true;
       audio.volume = volumeRef.current * gameConfig.audio.musicVolume;
 
