@@ -2,7 +2,7 @@
   position: fixed;
   inset: 0;
   z-index: -11;
-  background-image: url('../../images/backgrounds/2.jpg');
+  background-image: url('/images/backgrounds/2.jpg');
   background-size: cover;
   background-position: center;
   background-repeat: repeat;
