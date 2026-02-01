@@ -15,7 +15,7 @@ const currentMode = getCurrentGameMode();
  * Hook for shop-related actions
  * Provides functions for purchasing and managing shop items
  *
- * @param _state - Current game state (unused, for future use)
+ * @param state - Current game state
  * @param setState - React state setter function
  * @returns Object containing shop action functions
  *
@@ -28,10 +28,10 @@ const currentMode = getCurrentGameMode();
  * ```
  */
 export function useShopActions(
-  _state: GameState,
+  state: GameState,
   setState: React.Dispatch<React.SetStateAction<GameState>>
 ) {
-  const { playSound } = useThemeAudio();
+  const { playSound } = useThemeAudio(state.audioSettings);
   /**
    * Add a dead card to the deck for credits
    * Dead cards are drawn but don't count toward hand evaluation
@@ -76,7 +76,7 @@ export function useShopActions(
         },
       };
     });
-  }, [setState]);
+  }, [setState, playSound]);
 
   const removeSingleDeadCard = useCallback(() => {
     playSound('shopPurchase');
@@ -109,7 +109,7 @@ export function useShopActions(
         },
       };
     });
-  }, [setState]);
+  }, [setState, playSound]);
 
   const removeAllDeadCards = useCallback(() => {
     playSound('shopPurchase');
@@ -143,7 +143,7 @@ export function useShopActions(
         },
       };
     });
-  }, [setState]);
+  }, [setState, playSound]);
 
   const addWildCard = useCallback(() => {
     playSound('shopPurchase');
@@ -171,7 +171,7 @@ export function useShopActions(
         },
       };
     });
-  }, [setState]);
+  }, [setState, playSound]);
 
   const purchaseExtraDraw = useCallback(() => {
     playSound('shopPurchase');
@@ -186,7 +186,7 @@ export function useShopActions(
         extraDrawPurchased: true,
       };
     });
-  }, [setState]);
+  }, [setState, playSound]);
 
   const addParallelHandsBundle = useCallback(
     (bundleSize: number) => {
@@ -204,7 +204,7 @@ export function useShopActions(
         };
       });
     },
-    [setState]
+    [setState, playSound]
   );
 
   const purchaseDevilsDealChance = useCallback(() => {
@@ -231,7 +231,7 @@ export function useShopActions(
         devilsDealChancePurchases: prev.devilsDealChancePurchases + 1,
       };
     });
-  }, [setState]);
+  }, [setState, playSound]);
 
   const purchaseDevilsDealCostReduction = useCallback(() => {
     playSound('shopPurchase');
@@ -257,7 +257,7 @@ export function useShopActions(
         devilsDealCostReductionPurchases: prev.devilsDealCostReductionPurchases + 1,
       };
     });
-  }, [setState]);
+  }, [setState, playSound]);
 
   return {
     addDeadCard,

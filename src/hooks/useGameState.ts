@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { GameState, HandRank, Card } from '../types';
 import { createFullDeck, shuffleDeck } from '../utils/deck';
 import { selectRandomShopOptions } from '../utils/shopSelection';
@@ -10,6 +10,19 @@ import { PokerEvaluator } from '../utils/pokerEvaluator';
 import { useThemeAudio } from '../hooks/useThemeAudio';
 
 const currentMode = getCurrentGameMode();
+
+// Load audio settings from localStorage if available
+function loadAudioSettings(): { musicEnabled: boolean; soundEffectsEnabled: boolean } {
+  try {
+    const stored = localStorage.getItem('audioSettings');
+    if (stored) {
+      return JSON.parse(stored);
+    }
+  } catch {
+    // Ignore errors
+  }
+  return { musicEnabled: true, soundEffectsEnabled: true };
+}
 
 const INITIAL_STATE: GameState = {
   screen: 'menu',
@@ -53,6 +66,7 @@ const INITIAL_STATE: GameState = {
   devilsDealCostReductionPurchases: 0,
   streakCounter: 0,
   currentStreakMultiplier: 1.0,
+  audioSettings: loadAudioSettings(),
 };
 
 export function useGameState() {
@@ -61,7 +75,24 @@ export function useGameState() {
   // Use specialized hooks for different action types
   const gameActions = useGameActions(state, setState);
   const shopActions = useShopActions(state, setState);
-  const { playSound, playMusic, stopMusic } = useThemeAudio();
+  const { playSound, playMusic, stopMusic } = useThemeAudio(state.audioSettings);
+
+  // Track previous music enabled state to handle re-enabling
+  const prevMusicEnabledRef = useRef(state.audioSettings.musicEnabled);
+
+  // Handle music play/stop when musicEnabled changes
+  useEffect(() => {
+    const currentMusicEnabled = state.audioSettings.musicEnabled;
+    const prevMusicEnabled = prevMusicEnabledRef.current;
+
+    // If music was just enabled (transitioned from false to true)
+    if (currentMusicEnabled && !prevMusicEnabled && state.screen !== 'menu') {
+      playMusic();
+    }
+
+    // Update ref for next comparison
+    prevMusicEnabledRef.current = currentMusicEnabled;
+  }, [state.audioSettings.musicEnabled, state.screen, playMusic]);
 
   const openShop = useCallback(() => {
     setState((prev) => ({
@@ -227,7 +258,7 @@ export function useGameState() {
         currentStreakMultiplier: 1.0, // Reset multiplier at the start of each round
       };
     });
-  }, []);
+  }, [playSound]);
 
   const startNewRun = useCallback(() => {
     playMusic();
@@ -259,7 +290,7 @@ export function useGameState() {
       devilsDealChancePurchases: 0,
       devilsDealCostReductionPurchases: 0,
     }));
-  }, []);
+  }, [playMusic]);
 
   /**
    * End the current run and show game over summary screen
@@ -284,7 +315,7 @@ export function useGameState() {
       showShopNextRound: false,
       selectedShopOptions: [],
     }));
-  }, []);
+  }, [stopMusic]);
 
   const buyAnotherHand = useCallback(() => {
     setState((prev) => {
@@ -398,7 +429,7 @@ export function useGameState() {
       }
       return prev;
     });
-  }, []);
+  }, [playSound]);
 
   const proceedFromResults = useCallback(() => {
     setState((prev) => {
@@ -443,6 +474,59 @@ export function useGameState() {
     }));
   }, []);
 
+  const toggleMusic = useCallback(() => {
+    setState((prev) => {
+      const newMusicEnabled = !prev.audioSettings.musicEnabled;
+      
+      // Save to localStorage
+      try {
+        localStorage.setItem('audioSettings', JSON.stringify({
+          musicEnabled: newMusicEnabled,
+          soundEffectsEnabled: prev.audioSettings.soundEffectsEnabled,
+        }));
+      } catch {
+        // Ignore storage errors
+      }
+      
+      // Stop music if being disabled (useEffect will handle re-enabling)
+      if (!newMusicEnabled) {
+        stopMusic();
+      }
+      
+      return {
+        ...prev,
+        audioSettings: {
+          ...prev.audioSettings,
+          musicEnabled: newMusicEnabled,
+        },
+      };
+    });
+  }, [stopMusic]);
+
+  const toggleSoundEffects = useCallback(() => {
+    setState((prev) => {
+      const newSoundEffectsEnabled = !prev.audioSettings.soundEffectsEnabled;
+      
+      // Save to localStorage
+      try {
+        localStorage.setItem('audioSettings', JSON.stringify({
+          musicEnabled: prev.audioSettings.musicEnabled,
+          soundEffectsEnabled: newSoundEffectsEnabled,
+        }));
+      } catch {
+        // Ignore storage errors
+      }
+      
+      return {
+        ...prev,
+        audioSettings: {
+          ...prev.audioSettings,
+          soundEffectsEnabled: newSoundEffectsEnabled,
+        },
+      };
+    });
+  }, []);
+
   const toggleDevilsDealHold = useCallback(() => {
     setState((prev) => {
       // Can't hold if all 5 regular cards are held
@@ -480,5 +564,7 @@ export function useGameState() {
     cheatSetDevilsDeal,
     toggleDevilsDealHold,
     updateStreakCounter,
+    toggleMusic,
+    toggleSoundEffects,
   };
 }

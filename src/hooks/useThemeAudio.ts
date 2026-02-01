@@ -15,24 +15,41 @@ interface AudioInstances {
   backgroundMusic: HTMLAudioElement | null;
 }
 
+// Global audio cache shared across all hook instances
+// This ensures sounds are downloaded once and reused forever
+const globalAudioCache: AudioInstances = {
+  soundEffects: new Map(),
+  backgroundMusic: null,
+};
+
+// Global theme config cache
+let globalThemeConfig: ThemeConfig | null = null;
+
 /**
  * Hook for managing theme-based audio playback
  * Handles graceful fallback when audio files are missing
+ * Supports audio settings to enable/disable music and sound effects
+ * Uses a global cache to prevent re-downloading audio files
  */
-export function useThemeAudio() {
-  const audioInstancesRef = useRef<AudioInstances>({
-    soundEffects: new Map(),
-    backgroundMusic: null,
-  });
-  const themeConfigRef = useRef<ThemeConfig | null>(null);
+export function useThemeAudio(audioSettings?: { musicEnabled: boolean; soundEffectsEnabled: boolean }) {
   const volumeRef = useRef(1.0);
+  const audioSettingsRef = useRef(audioSettings || { musicEnabled: true, soundEffectsEnabled: true });
 
-  // Load theme config and initialize audio
+  // Update settings ref when prop changes
+  useEffect(() => {
+    if (audioSettings) {
+      audioSettingsRef.current = audioSettings;
+    }
+  }, [audioSettings]);
+
+  // Load theme config once globally and cache it
   useEffect(() => {
     const loadThemeAudio = async () => {
-      const theme = getSelectedTheme();
-      const config = await loadThemeConfig(theme);
-      themeConfigRef.current = config;
+      if (!globalThemeConfig) {
+        const theme = getSelectedTheme();
+        const config = await loadThemeConfig(theme);
+        globalThemeConfig = config;
+      }
     };
 
     loadThemeAudio();
@@ -41,10 +58,15 @@ export function useThemeAudio() {
   /**
    * Play a sound effect based on event type
    * Gracefully falls back to silence if file is missing or invalid
+   * Checks soundEffectsEnabled setting before playing
+   * Uses global cache to prevent re-downloading
    */
   const playSound = useCallback((event: SoundEvent, handRank?: HandRank) => {
+    // Check if sound effects are enabled
+    if (!audioSettingsRef.current.soundEffectsEnabled) return;
+    
     try {
-      const config = themeConfigRef.current;
+      const config = globalThemeConfig;
       if (!config?.sounds) return;
 
       let audioPath: string | undefined;
@@ -63,23 +85,22 @@ export function useThemeAudio() {
 
       if (!audioPath) return; // No audio configured for this event
 
-      // Reuse existing audio instance or create new one
-      const audioKey = `${event}-${handRank || ''}`;
-      let audio = audioInstancesRef.current.soundEffects.get(audioKey);
-
-      if (!audio) {
-        audio = new Audio();
-        audioInstancesRef.current.soundEffects.set(audioKey, audio);
-      }
-
       // Build full path relative to theme sounds directory
       const theme = getSelectedTheme();
       const fullPath = `./sounds/${theme}/${audioPath}`;
 
-      audio.src = fullPath;
-      audio.volume = volumeRef.current;
+      // Reuse existing audio instance from GLOBAL cache or create new one
+      const audioKey = `${event}-${handRank || ''}`;
+      let audio = globalAudioCache.soundEffects.get(audioKey);
 
-      // Reset playback to start
+      if (!audio) {
+        // Create new audio instance and set src only once
+        audio = new Audio(fullPath); // Set src in constructor
+        audio.volume = volumeRef.current;
+        globalAudioCache.soundEffects.set(audioKey, audio);
+      }
+
+      // Reset playback to start (don't reset src!)
       audio.currentTime = 0;
 
       // Play with error handling
@@ -97,16 +118,32 @@ export function useThemeAudio() {
 
   /**
    * Play background music (loops indefinitely)
+   * Checks musicEnabled setting before playing
+   * Uses global cache to prevent re-downloading
    */
   const playMusic = useCallback(() => {
+    // Check if music is enabled
+    if (!audioSettingsRef.current.musicEnabled) return;
+    
     try {
-      const config = themeConfigRef.current;
+      const config = globalThemeConfig;
       if (!config?.music?.backgroundMusic) return;
 
-      const audio = new Audio();
-      audio.src = `./sounds/${getSelectedTheme()}/${config.music.backgroundMusic}`;
-      audio.loop = true;
-      audio.volume = volumeRef.current * gameConfig.audio.musicVolume;
+      const theme = getSelectedTheme();
+      const musicPath = `./sounds/${theme}/${config.music.backgroundMusic}`;
+
+      // Reuse existing music instance from GLOBAL cache if available
+      let audio = globalAudioCache.backgroundMusic;
+      
+      // Check if we need to create a new instance (doesn't exist or src changed)
+      // Note: audio.src will be an absolute URL, so we check if it ends with our path
+      if (!audio || !audio.src.endsWith(musicPath)) {
+        // Create new audio instance only if needed (src changed or doesn't exist)
+        audio = new Audio(musicPath); // Set src in constructor
+        audio.loop = true;
+        audio.volume = volumeRef.current * gameConfig.audio.musicVolume;
+        globalAudioCache.backgroundMusic = audio;
+      }
 
       const playPromise = audio.play();
       if (playPromise !== undefined) {
@@ -114,8 +151,6 @@ export function useThemeAudio() {
           // Gracefully handle missing music file
         });
       }
-
-      audioInstancesRef.current.backgroundMusic = audio;
     } catch {
       // Graceful silence fallback
     }
@@ -123,9 +158,10 @@ export function useThemeAudio() {
 
   /**
    * Stop background music
+   * Uses global cache
    */
   const stopMusic = useCallback(() => {
-    const audio = audioInstancesRef.current.backgroundMusic;
+    const audio = globalAudioCache.backgroundMusic;
     if (audio) {
       audio.pause();
       audio.currentTime = 0;
@@ -134,27 +170,29 @@ export function useThemeAudio() {
 
   /**
    * Set volume for all audio (0.0 to 1.0)
+   * Uses global cache
    */
   const setVolume = useCallback((volume: number) => {
     const clampedVolume = Math.max(0, Math.min(1, volume));
     volumeRef.current = clampedVolume;
 
-    // Update all sound effect volumes
-    audioInstancesRef.current.soundEffects.forEach((audio) => {
+    // Update all sound effect volumes in global cache
+    globalAudioCache.soundEffects.forEach((audio) => {
       audio.volume = clampedVolume;
     });
 
-    // Update background music volume
-    if (audioInstancesRef.current.backgroundMusic) {
-      audioInstancesRef.current.backgroundMusic.volume = clampedVolume * 0.7;
+    // Update background music volume in global cache
+    if (globalAudioCache.backgroundMusic) {
+      globalAudioCache.backgroundMusic.volume = clampedVolume * 0.7;
     }
   }, []);
 
   /**
    * Stop all audio (sound effects and music)
+   * Uses global cache
    */
   const stopAll = useCallback(() => {
-    audioInstancesRef.current.soundEffects.forEach((audio) => {
+    globalAudioCache.soundEffects.forEach((audio) => {
       audio.pause();
       audio.currentTime = 0;
     });

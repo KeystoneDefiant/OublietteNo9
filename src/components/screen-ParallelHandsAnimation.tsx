@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useMemo } from 'react';
 import { Hand, RewardTable } from '../types';
 import { PokerEvaluator } from '../utils/pokerEvaluator';
 import { gameConfig } from '../config/gameConfig';
@@ -30,6 +30,8 @@ interface ParallelHandsAnimationProps {
   initialStreakCounter: number;
   /** Callback when animation completes, returns final streak count */
   onAnimationComplete: (finalStreakCount: number) => void;
+  /** Audio settings for sound effects */
+  audioSettings?: { musicEnabled: boolean; soundEffectsEnabled: boolean };
 }
 
 /**
@@ -58,6 +60,8 @@ const getColumnsPerRow = (handCount: number): number => {
  * Displays the 5 cards in the hand with special handling for dead/wild cards,
  * the hand rank, and credits won (with streak multiplier applied).
  *
+ * Memoized to prevent unnecessary re-renders.
+ *
  * @param hand - The hand to render
  * @param rewardTable - Reward multipliers for payout calculation
  * @param betAmount - Bet amount for calculating credits won
@@ -65,13 +69,19 @@ const getColumnsPerRow = (handCount: number): number => {
  * @param streakMultiplier - Current streak multiplier to apply
  * @returns JSX element representing the hand card
  */
-function renderHandCard(
-  hand: Hand,
-  rewardTable: RewardTable,
-  betAmount: number,
-  index: number,
-  streakMultiplier: number
-): JSX.Element {
+const HandCard = React.memo(function HandCard({
+  hand,
+  rewardTable,
+  betAmount,
+  index,
+  streakMultiplier,
+}: {
+  hand: Hand;
+  rewardTable: RewardTable;
+  betAmount: number;
+  index: number;
+  streakMultiplier: number;
+}) {
   const handResult = PokerEvaluator.evaluate(hand.cards);
   const withRewards = PokerEvaluator.applyRewards(handResult, rewardTable);
   const creditsWon = Math.round(withRewards.multiplier * betAmount * streakMultiplier);
@@ -126,6 +136,28 @@ function renderHandCard(
       </div>
     </div>
   );
+});
+
+/**
+ * DEPRECATED: Use HandCard component instead
+ * Kept for backwards compatibility but prefer the memoized HandCard component
+ */
+function renderHandCard(
+  hand: Hand,
+  rewardTable: RewardTable,
+  betAmount: number,
+  index: number,
+  streakMultiplier: number
+): JSX.Element {
+  return (
+    <HandCard
+      hand={hand}
+      rewardTable={rewardTable}
+      betAmount={betAmount}
+      index={index}
+      streakMultiplier={streakMultiplier}
+    />
+  );
 }
 
 /**
@@ -157,8 +189,9 @@ export function ParallelHandsAnimation({
   betAmount,
   initialStreakCounter,
   onAnimationComplete,
+  audioSettings,
 }: ParallelHandsAnimationProps) {
-  const { playSound } = useThemeAudio();
+  const { playSound } = useThemeAudio(audioSettings);
   const [revealedCount, setRevealedCount] = useState(0);
   const [currentStreakCounter, setCurrentStreakCounter] = useState(initialStreakCounter);
   const [lastHandScored, setLastHandScored] = useState<boolean | null>(null);
@@ -171,13 +204,14 @@ export function ParallelHandsAnimation({
   const columnsPerRow = getColumnsPerRow(parallelHands.length);
 
   // Calculate dynamic scale based on hand count to fit all in viewport
+  // Updated to be less aggressive - keeps hands ~22% larger at each tier
   const getScaleFactor = (handCount: number): number => {
     if (handCount <= 10) return 1.0; // Normal size
-    if (handCount <= 25) return 0.9; // Slightly smaller
-    if (handCount <= 50) return 0.75; // Medium compression
-    if (handCount <= 75) return 0.65; // More compression
-    if (handCount <= 100) return 0.55; // Heavy compression
-    return 0.45; // Maximum compression for 100+
+    if (handCount <= 25) return 0.95; // Slightly smaller (was 0.9)
+    if (handCount <= 50) return 0.85; // Medium compression (was 0.75)
+    if (handCount <= 75) return 0.75; // More compression (was 0.65)
+    if (handCount <= 100) return 0.65; // Heavy compression (was 0.55)
+    return 0.55; // Maximum compression for 100+ (was 0.45)
   };
 
   const scaleFactor = getScaleFactor(parallelHands.length);
@@ -204,6 +238,26 @@ export function ParallelHandsAnimation({
   };
 
   const handRevealInterval = calculateRevealInterval(parallelHands.length);
+
+  // Memoize streak multipliers for all hands - calculate once, not on every render
+  const handStreakMultipliers = useMemo(() => {
+    const multipliers: number[] = [];
+    let streakCount = initialStreakCounter;
+
+    for (let i = 0; i < parallelHands.length; i++) {
+      // Calculate multiplier that applies to THIS hand (before evaluating it)
+      multipliers[i] = calculateStreakMultiplier(streakCount, gameConfig.streakMultiplier);
+
+      // Evaluate this hand to update streak for next hand
+      const handResult = PokerEvaluator.evaluate(parallelHands[i].cards);
+      const withRewards = PokerEvaluator.applyRewards(handResult, rewardTable);
+      const scored = withRewards.multiplier > 0;
+
+      streakCount = scored ? streakCount + 1 : Math.max(0, streakCount - 1);
+    }
+
+    return multipliers;
+  }, [parallelHands, rewardTable, initialStreakCounter]);
 
   // Reveal hands one by one and update streak
   useEffect(() => {
@@ -249,6 +303,7 @@ export function ParallelHandsAnimation({
     onAnimationComplete,
     currentStreakCounter,
     isScrollingOff,
+    playSound,
   ]);
 
   // Handle scroll-off animation when triggered
@@ -304,9 +359,9 @@ export function ParallelHandsAnimation({
   }, [revealedCount]);
 
   // Performance optimization: Remove hands that have scrolled out of viewport
-  // Only enable for large hand counts (150+) to reduce DOM node count
+  // Enable for 50+ hands (lowered from 150) to reduce DOM node count
   useEffect(() => {
-    if (parallelHands.length >= 150 && !isScrollingOff) {
+    if (parallelHands.length >= 50 && !isScrollingOff) {
       const viewport = viewportRef.current;
       const grid = gridRef.current;
 
@@ -329,8 +384,8 @@ export function ParallelHandsAnimation({
         const cardHeight = cardRect.height / scaleFactor; // Adjust for scale
         const rowHeight = cardHeight + 16; // card height + gap
 
-        // Keep a buffer of rows above the viewport (2 rows worth)
-        const bufferRows = 2;
+        // Keep a buffer of rows above the viewport (1 row worth, reduced from 2)
+        const bufferRows = 1;
         const bufferDistance = bufferRows * rowHeight;
 
         // Calculate which row is at the top of the viewport
@@ -338,8 +393,8 @@ export function ParallelHandsAnimation({
         const firstVisibleRow = Math.max(0, Math.floor((scrollTop - bufferDistance) / rowHeight));
         const newStartIndex = firstVisibleRow * columnsCount;
 
-        // Only update if we've scrolled past at least 2 rows worth of content
-        if (newStartIndex > visibleStartIndex + columnsCount * 2) {
+        // Update more aggressively - if we've scrolled past at least 1 row
+        if (newStartIndex > visibleStartIndex + columnsCount) {
           setVisibleStartIndex(newStartIndex);
         }
       };
@@ -383,61 +438,28 @@ export function ParallelHandsAnimation({
           }}
         >
           {parallelHands.slice(0, revealedCount).map((hand, index) => {
-            // Performance optimization: Virtual scrolling for large hand counts
+            // Performance optimization: Virtual scrolling for 50+ hands (lowered from 150)
             // Only render hands within a window around the current viewport
-            if (parallelHands.length >= 150) {
+            if (parallelHands.length >= 50) {
               const columnsCount = getColumnsPerRow(parallelHands.length);
-              const bufferSize = columnsCount * 3; // Keep 3 rows worth as buffer
+              const bufferSize = columnsCount * 1; // Keep 1 row as buffer (reduced from 2)
 
-              // Calculate viewport-relative rendering window
               // Remove hands that have scrolled far above the viewport
               if (index < visibleStartIndex - bufferSize) {
                 return null;
               }
 
-              // Also limit rendering to a reasonable window below the viewport
-              // Keep enough buffer to allow smooth scrolling and reveal animation
-              // But don't render everything - limit to ~15 rows beyond visible area
-              const maxRenderIndex = visibleStartIndex + columnsCount * 15;
-              if (index > maxRenderIndex && index > revealedCount - columnsCount * 5) {
+              // Limit rendering to ~8 rows beyond visible area (reduced from 12)
+              const maxRenderIndex = visibleStartIndex + columnsCount * 8;
+              if (index > maxRenderIndex && index > revealedCount - columnsCount * 3) {
                 // Skip if beyond render window AND not in the recent reveal zone
-                // (keep last 5 rows of revealed hands always rendered)
+                // (keep last 3 rows of revealed hands always rendered, reduced from 4)
                 return null;
               }
             }
 
-            // Calculate the streak multiplier that applies to THIS hand
-            // Start with initial counter and process all hands UP TO AND INCLUDING this one
-            let streakForThisHand = initialStreakCounter;
-
-            // First, apply streak changes from all PREVIOUS hands
-            for (let i = 0; i < index; i++) {
-              const prevHand = parallelHands[i];
-              const prevResult = PokerEvaluator.evaluate(prevHand.cards);
-              const prevWithRewards = PokerEvaluator.applyRewards(prevResult, rewardTable);
-              const prevScored = prevWithRewards.multiplier > 0;
-              streakForThisHand = prevScored
-                ? streakForThisHand + 1
-                : Math.max(0, streakForThisHand - 1);
-            }
-
-            // Calculate multiplier BEFORE evaluating current hand (this is the active multiplier)
-            const multiplierForThisHand = calculateStreakMultiplier(
-              streakForThisHand,
-              gameConfig.streakMultiplier
-            );
-
-            // Now evaluate current hand to see if it will affect the NEXT hand's streak
-            const currentResult = PokerEvaluator.evaluate(hand.cards);
-            const currentWithRewards = PokerEvaluator.applyRewards(currentResult, rewardTable);
-            const currentScored = currentWithRewards.multiplier > 0;
-
-            // Update streak for next hand (but don't use this for current hand's display)
-            if (currentScored) {
-              streakForThisHand += 1;
-            } else {
-              streakForThisHand = Math.max(0, streakForThisHand - 1);
-            }
+            // Use pre-calculated streak multiplier
+            const multiplierForThisHand = handStreakMultipliers[index];
 
             return (
               <React.Fragment key={hand.id}>

@@ -3,6 +3,7 @@ import { useGameState } from './hooks/useGameState';
 import { useThemeBackgroundAnimation } from './hooks/useThemeBackgroundAnimation';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { LoadingSpinner } from './components/LoadingSpinner';
+import { RewardTable } from './components/RewardTable';
 import { initializeTheme, getSelectedTheme, loadThemeConfig } from './utils/themeManager';
 import { ThemeConfig } from './types/index';
 
@@ -22,6 +23,7 @@ function App() {
   const [showCredits, setShowCredits] = useState(false);
   const [showRules, setShowRules] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [showPayoutTable, setShowPayoutTable] = useState(false);
   const [themeConfig, setThemeConfig] = useState<ThemeConfig | null>(null);
   const [isThemeLoading, setIsThemeLoading] = useState(true);
 
@@ -67,6 +69,17 @@ function App() {
   // Apply theme background animation
   useThemeBackgroundAnimation(themeConfig);
 
+  // Close payout table on Escape key
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && showPayoutTable) {
+        setShowPayoutTable(false);
+      }
+    };
+    window.addEventListener('keydown', handleEscape);
+    return () => window.removeEventListener('keydown', handleEscape);
+  }, [showPayoutTable]);
+
   const {
     state,
     dealHand,
@@ -93,6 +106,8 @@ function App() {
     purchaseDevilsDealChance,
     purchaseDevilsDealCostReduction,
     updateStreakCounter,
+    toggleMusic,
+    toggleSoundEffects,
   } = useGameState();
 
   // Show loading spinner while theme is loading
@@ -154,6 +169,11 @@ function App() {
               onCheatAddCredits={cheatAddCredits}
               onCheatAddHands={cheatAddHands}
               onCheatSetDevilsDeal={cheatSetDevilsDeal}
+              musicEnabled={state.audioSettings.musicEnabled}
+              soundEffectsEnabled={state.audioSettings.soundEffectsEnabled}
+              onToggleMusic={toggleMusic}
+              onToggleSoundEffects={toggleSoundEffects}
+              onShowPayoutTable={() => setShowPayoutTable(true)}
             />
           </div>
           </Suspense>
@@ -168,7 +188,6 @@ function App() {
               playerHand={state.playerHand}
               heldIndices={state.heldIndices}
               parallelHands={state.parallelHands}
-              rewardTable={state.rewardTable}
               credits={state.credits}
               selectedHandCount={state.selectedHandCount}
               round={state.round}
@@ -180,6 +199,11 @@ function App() {
               onToggleHold={toggleHold}
               onToggleDevilsDealHold={toggleDevilsDealHold}
               onDraw={drawParallelHands}
+              musicEnabled={state.audioSettings.musicEnabled}
+              soundEffectsEnabled={state.audioSettings.soundEffectsEnabled}
+              onToggleMusic={toggleMusic}
+              onToggleSoundEffects={toggleSoundEffects}
+              onShowPayoutTable={() => setShowPayoutTable(true)}
             />
           </div>
           </Suspense>
@@ -196,6 +220,7 @@ function App() {
               selectedHandCount={state.selectedHandCount}
               betAmount={state.betAmount}
               initialStreakCounter={state.streakCounter}
+              audioSettings={state.audioSettings}
               onAnimationComplete={(finalStreakCount: number) => {
                 updateStreakCounter(finalStreakCount);
                 moveToNextScreen();
@@ -224,6 +249,11 @@ function App() {
                 gameState={state}
                 onReturnToPreDraw={returnToPreDraw}
                 showShopNextRound={state.showShopNextRound}
+                musicEnabled={state.audioSettings.musicEnabled}
+                soundEffectsEnabled={state.audioSettings.soundEffectsEnabled}
+                onToggleMusic={toggleMusic}
+                onToggleSoundEffects={toggleSoundEffects}
+                onShowPayoutTable={() => setShowPayoutTable(true)}
               />
             </div>
           </Suspense>
@@ -281,6 +311,32 @@ function App() {
             <Settings onClose={() => setShowSettings(false)} />
           </div>
         </Suspense>
+      )}
+
+      {showPayoutTable && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"
+          onClick={() => setShowPayoutTable(false)}
+        >
+          <div 
+            className="bg-white rounded-lg shadow-2xl max-w-md w-full max-h-[80vh] overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex justify-between items-center p-4 border-b border-gray-200">
+              <h2 className="text-2xl font-bold text-gray-800">Payout Table</h2>
+              <button
+                onClick={() => setShowPayoutTable(false)}
+                className="text-gray-500 hover:text-gray-700 text-2xl font-bold leading-none"
+                aria-label="Close payout table"
+              >
+                ×
+              </button>
+            </div>
+            <div className="p-4 overflow-y-auto max-h-[calc(80vh-80px)]">
+              <RewardTable rewardTable={state.rewardTable} wildCardCount={state.wildCardCount} />
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

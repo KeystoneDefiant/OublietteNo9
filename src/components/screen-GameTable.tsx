@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { Card as CardType, Hand, FailureStateType, GameState } from '../types';
 import { Card } from './Card';
 import { GameHeader } from './GameHeader';
-import { RewardTable } from './RewardTable';
 import { DevilsDealCard } from './DevilsDealCard';
 import { gameConfig } from '../config/gameConfig';
 
@@ -19,8 +18,6 @@ interface GameTableProps {
   heldIndices: number[];
   /** Array of parallel hands after drawing */
   parallelHands: Hand[];
-  /** Payout multipliers for each hand rank */
-  rewardTable: { [key: string]: number };
   /** Current player credits */
   credits: number;
   /** Number of parallel hands selected */
@@ -43,6 +40,16 @@ interface GameTableProps {
   onToggleDevilsDealHold: () => void;
   /** Callback to draw parallel hands */
   onDraw: () => void;
+  /** Music enabled state */
+  musicEnabled?: boolean;
+  /** Sound effects enabled state */
+  soundEffectsEnabled?: boolean;
+  /** Toggle music callback */
+  onToggleMusic?: () => void;
+  /** Toggle sound effects callback */
+  onToggleSoundEffects?: () => void;
+  /** Show payout table modal callback */
+  onShowPayoutTable?: () => void;
 }
 
 /**
@@ -70,7 +77,6 @@ export function GameTable({
   playerHand,
   heldIndices,
   parallelHands,
-  rewardTable,
   credits,
   selectedHandCount,
   round,
@@ -79,9 +85,14 @@ export function GameTable({
   secondDrawAvailable,
   failureState,
   gameState,
+  musicEnabled,
+  soundEffectsEnabled,
   onToggleHold,
   onToggleDevilsDealHold,
   onDraw,
+  onToggleMusic,
+  onToggleSoundEffects,
+  onShowPayoutTable,
 }: GameTableProps) {
   const canDraw = playerHand.length === 5 && parallelHands.length === 0;
   const efficiency = round > 0 ? (totalEarnings / round).toFixed(2) : '0.00';
@@ -106,11 +117,16 @@ export function GameTable({
           efficiency={efficiency}
           failureState={failureState}
           gameState={gameState}
+          musicEnabled={musicEnabled}
+          soundEffectsEnabled={soundEffectsEnabled}
+          onToggleMusic={onToggleMusic}
+          onToggleSoundEffects={onToggleSoundEffects}
+          onShowPayoutTable={onShowPayoutTable}
         />
 
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 gap-6">
           {/* Main Game Area */}
-          <div className="lg:col-span-3">
+          <div className="lg:col-span-1">
             {/* Player Hand - Card Selection Screen */}
             <div className="bg-white rounded-lg shadow-lg p-6">
               <h2 className="text-2xl font-bold mb-4 text-gray-800">Your Hand</h2>
@@ -176,11 +192,6 @@ export function GameTable({
                 </div>
               )}
             </div>
-          </div>
-
-          {/* Reward Table Sidebar */}
-          <div className="lg:col-span-1">
-            <RewardTable rewardTable={rewardTable} wildCardCount={gameState?.wildCardCount || 0} />
           </div>
         </div>
       </div>

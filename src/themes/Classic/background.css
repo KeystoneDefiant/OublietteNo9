@@ -67,3 +67,50 @@
     transform: translateX(20px) translateY(20px);
   }
 }
+
+/* Animated round black gradient circle */
+.theme-bg-gradient-circle {
+  position: fixed;
+  bottom: -20%;
+  left: 50%;
+  width: 80vw;
+  height: 80vw;
+  max-width: 1200px;
+  max-height: 1200px;
+  transform: translateX(-50%);
+  z-index: -8;
+  background: radial-gradient(circle, rgba(0, 0, 0, 0.3) 0%, transparent 70%);
+  border-radius: 50%;
+  animation: gradientMove 25s ease-in-out infinite, gradientScale 20s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes gradientMove {
+  0%, 100% {
+    transform: translateX(-50%) translateY(0);
+    left: 50%;
+  }
+  25% {
+    transform: translateX(-50%) translateY(-10%);
+    left: 40%;
+  }
+  50% {
+    transform: translateX(-50%) translateY(-5%);
+    left: 60%;
+  }
+  75% {
+    transform: translateX(-50%) translateY(-15%);
+    left: 45%;
+  }
+}
+
+@keyframes gradientScale {
+  0%, 100% {
+    width: 80vw;
+    height: 80vw;
+  }
+  50% {
+    width: 120vw;
+    height: 120vw;
+  }
+}

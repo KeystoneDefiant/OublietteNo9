@@ -60,6 +60,18 @@ export const gameConfig = {
       'Shall we make a deal?',
       'An opportunity presents itself...',
     ],
+    emptyShop: [
+      'Shop is empty',
+      'Nothing available today',
+      'Come back next round',
+      'No items in stock',
+      'Sold out!',
+      'Shop closed for restocking',
+      'Check back later',
+      'Fresh out of options',
+      'Nothing to see here',
+      'The shelves are bare',
+    ],
   },
 
   // Game modes define starting conditions and scaling rules

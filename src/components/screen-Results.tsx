@@ -40,6 +40,16 @@ interface ResultsProps {
   onReturnToPreDraw: (payout: number) => void;
   /** Whether shop will appear next round */
   showShopNextRound?: boolean;
+  /** Music enabled state */
+  musicEnabled?: boolean;
+  /** Sound effects enabled state */
+  soundEffectsEnabled?: boolean;
+  /** Toggle music callback */
+  onToggleMusic?: () => void;
+  /** Toggle sound effects callback */
+  onToggleSoundEffects?: () => void;
+  /** Show payout table modal callback */
+  onShowPayoutTable?: () => void;
 }
 
 /**
@@ -78,8 +88,13 @@ export function Results({
   selectedHandCount,
   failureState,
   gameState,
+  musicEnabled,
+  soundEffectsEnabled,
   onReturnToPreDraw,
   showShopNextRound = false,
+  onToggleMusic,
+  onToggleSoundEffects,
+  onShowPayoutTable,
 }: ResultsProps) {
   const [showSummary, setShowSummary] = useState(false);
   const efficiency = round > 0 ? (totalEarnings / round).toFixed(2) : '0.00';
@@ -125,6 +140,11 @@ export function Results({
           efficiency={efficiency}
           failureState={failureState}
           gameState={gameState}
+          musicEnabled={musicEnabled}
+          soundEffectsEnabled={soundEffectsEnabled}
+          onToggleMusic={onToggleMusic}
+          onToggleSoundEffects={onToggleSoundEffects}
+          onShowPayoutTable={onShowPayoutTable}
         />
 
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">

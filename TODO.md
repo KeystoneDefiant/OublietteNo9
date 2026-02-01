@@ -1,20 +1,6 @@
 # To Do
 
-- Fix performance issues on hand reveal animation screen - Over 100 hands slows down by an extreme amount
-
-- Add a round black gradient to the background of the classic theme that slowly moves and changes size from the bottom of the screen
-
-- Cache audio files so they are not redownloaded on reinvocation
-
-- Display a message when the shop is empty. Source these from an array of strings configurable in the config
-
-- Create a setting to play all sound effects and music. Edit the useThemeAudio file to check for these before playing audio.
-
-- Make a button next to the game header to toggle the music.
-
-- Make a button next to the game header to toggle the sound effects.
-
-- Make a button to show the payout table as a modal window. Remove the payout table from the general game layout.
+- During the hand animation, the hands are scrolled off of the screen too quickly, leaving a blank screen. My guess is that as elements are removed, the height of the container changes and makes the scroll value incorrect. I'm thinking we could just remove all the elements inside the hand containers, but keep their height so the grid calculations still work. I'm open to suggestions.
 
 ---
 

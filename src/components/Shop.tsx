@@ -162,7 +162,23 @@ export function Shop({
           </p>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Empty shop message */}
+        {selectedShopOptions.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-16">
+            <div className="text-6xl mb-6">🏪</div>
+            <h3 className="text-3xl font-bold text-white mb-4">
+              {gameConfig.quips.emptyShop[Math.floor(Math.random() * gameConfig.quips.emptyShop.length)]}
+            </h3>
+            <p className="text-xl text-gray-300 mb-8">Try again next round!</p>
+            <button
+              onClick={onClose}
+              className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-lg transition-colors text-xl"
+            >
+              Continue
+            </button>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Parallel Hands Bundle - 5 hands */}
           {isOptionAvailable('parallel-hands-bundle-5') && (
             <div className="border-2 border-white rounded-lg p-6 bg-blue-800 bg-opacity-50 hover:bg-opacity-70 transition-all">
@@ -554,6 +570,7 @@ export function Shop({
             </div>
           )}
         </div>
+        )}
       </div>
     </div>
   );

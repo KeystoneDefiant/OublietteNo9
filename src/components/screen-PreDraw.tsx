@@ -48,6 +48,16 @@ interface PreDrawProps {
   onCheatAddHands: (amount: number) => void;
   /** Cheat callback to trigger Devil's Deal */
   onCheatSetDevilsDeal?: () => void;
+  /** Music enabled state */
+  musicEnabled?: boolean;
+  /** Sound effects enabled state */
+  soundEffectsEnabled?: boolean;
+  /** Toggle music callback */
+  onToggleMusic?: () => void;
+  /** Toggle sound effects callback */
+  onToggleSoundEffects?: () => void;
+  /** Show payout table modal callback */
+  onShowPayoutTable?: () => void;
 }
 
 /**
@@ -85,6 +95,8 @@ export function PreDraw({
   totalEarnings,
   failureState,
   gameState,
+  musicEnabled,
+  soundEffectsEnabled,
   onSetBetAmount,
   onSetSelectedHandCount,
   onDealHand,
@@ -92,6 +104,9 @@ export function PreDraw({
   onCheatAddCredits,
   onCheatAddHands,
   onCheatSetDevilsDeal,
+  onToggleMusic,
+  onToggleSoundEffects,
+  onShowPayoutTable,
 }: PreDrawProps) {
   const [showCheats, setShowCheats] = useState(false);
   const [showEndRunConfirm, setShowEndRunConfirm] = useState(false);
@@ -145,6 +160,11 @@ export function PreDraw({
             efficiency={efficiency}
             failureState={failureState}
             gameState={gameState}
+            musicEnabled={musicEnabled}
+            soundEffectsEnabled={soundEffectsEnabled}
+            onToggleMusic={onToggleMusic}
+            onToggleSoundEffects={onToggleSoundEffects}
+            onShowPayoutTable={onShowPayoutTable}
           />
           <div className="flex justify-between items-center mb-6 flex-wrap gap-4">
             <button
