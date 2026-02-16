@@ -94,7 +94,9 @@ export function GameTable({
   onToggleSoundEffects,
   onShowPayoutTable,
 }: GameTableProps) {
-  const canDraw = playerHand.length === 5 && parallelHands.length === 0;
+  const canDraw =
+    parallelHands.length === 0 &&
+    (playerHand.length === 5 || (playerHand.length > 5 && heldIndices.length === 5));
   const efficiency = round > 0 ? (totalEarnings / round).toFixed(2) : '0.00';
   
   // Get random quip for Devil's Deal
@@ -153,12 +155,14 @@ export function GameTable({
                   />
                 )}
               </div>
-              {playerHand.length === 5 && (
+              {playerHand.length >= 5 && (
                 <div className="mt-4 text-center">
                   {!firstDrawComplete && (
                     <>
                       <p className="text-gray-600 mb-2">
-                        Click cards to hold them.
+                        {playerHand.length === 5
+                          ? 'Click cards to hold them.'
+                          : `Hold 5 cards to draw. (${heldIndices.length}/5 held)`}
                       </p>
                       <button
                         onClick={onDraw}

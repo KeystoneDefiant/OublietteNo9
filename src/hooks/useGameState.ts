@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { GameState, HandRank, Card } from '../types';
 import { createFullDeck, shuffleDeck } from '../utils/deck';
-import { selectRandomShopOptions } from '../utils/shopSelection';
+import { selectShopOptionsByRarity } from '../utils/shopSelection';
 import { getCurrentGameMode } from '../config/gameConfig';
 import { useGameActions } from './useGameActions';
 import { useShopActions } from './useShopActions';
@@ -72,6 +72,7 @@ const INITIAL_STATE: GameState = {
   devilsDealHeld: false,
   devilsDealChancePurchases: 0,
   devilsDealCostReductionPurchases: 0,
+  extraCardsInHand: 0,
   streakCounter: 0,
   currentStreakMultiplier: 1.0,
   audioSettings: loadAudioSettings(),
@@ -236,7 +237,7 @@ export function useGameState() {
       // Check if shop should appear next round and generate options if so
       const showShopNextRound = newRound % currentMode.shopFrequency === 0;
       const selectedShopOptions = showShopNextRound
-        ? selectRandomShopOptions(currentMode.shopWeights, currentMode.shopOptionCount)
+        ? selectShopOptionsByRarity(currentMode)
         : [];
 
       return {
@@ -298,6 +299,7 @@ export function useGameState() {
       devilsDealHeld: false,
       devilsDealChancePurchases: 0,
       devilsDealCostReductionPurchases: 0,
+      extraCardsInHand: 0,
     }));
   }, [playMusic]);
 

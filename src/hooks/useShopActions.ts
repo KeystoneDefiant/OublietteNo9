@@ -7,6 +7,7 @@ import {
   calculateAllDeadCardsRemovalCost,
   calculateDevilsDealChanceCost,
   calculateDevilsDealCostReductionCost,
+  calculateExtraCardInHandCost,
 } from '../utils/config';
 import { useThemeAudio } from '../hooks/useThemeAudio';
 
@@ -259,6 +260,25 @@ export function useShopActions(
     });
   }, [setState, playSound]);
 
+  const purchaseExtraCardInHand = useCallback(() => {
+    playSound('shopPurchase');
+    setState((prev) => {
+      const { maxPurchases } = currentMode.shop.extraCardInHand;
+      if (prev.extraCardsInHand >= maxPurchases) {
+        return prev;
+      }
+      const cost = calculateExtraCardInHandCost(prev.extraCardsInHand);
+      if (prev.credits < cost) {
+        return prev;
+      }
+      return {
+        ...prev,
+        credits: prev.credits - cost,
+        extraCardsInHand: prev.extraCardsInHand + 1,
+      };
+    });
+  }, [setState, playSound]);
+
   return {
     addDeadCard,
     removeSingleDeadCard,
@@ -268,5 +288,6 @@ export function useShopActions(
     addParallelHandsBundle,
     purchaseDevilsDealChance,
     purchaseDevilsDealCostReduction,
+    purchaseExtraCardInHand,
   };
 }

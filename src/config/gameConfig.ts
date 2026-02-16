@@ -74,110 +74,92 @@ export const gameConfig = {
     ],
   },
 
-  // Game modes define starting conditions and scaling rules
-  gameModes: {
-    normalGame: {
-      displayName: 'Normal Game',
-      startingCredits: 5000,
-      startingBet: 2,
-      startingHandCount: 10,
-      minimumBetIncreasePercent: 95,
-      minimumBetIncreaseInterval: 5, // Increase minimum bet every N rounds (1 = every round)
-      shopOptionCount: 3, // Number of options to display in shop
-      shopFrequency: 2, // Show shop every N turns
-      minimumPairRank: 11, // Minimum rank for a pair to be valid (11 = Jacks or Better)
-      // Devil's Deal configuration
-      devilsDeal: {
-        baseChance: 15, // Base percentage chance (0-100)
-        baseCostPercent: 300, // Base cost as percentage of potential payout
-        chanceIncreasePerPurchase: 20, // Percentage increase per shop purchase
-        maxChancePurchases: 3, // Maximum times chance can be purchased
-        costReductionPerPurchase: 6, // Percentage reduction per shop purchase
-        maxCostReductionPurchases: 5, // Maximum times cost can be reduced
-      },
-      // Endless mode configuration (starts after endlessModeStartRound)
-      endlessMode: {
-        startRound: 30, // Start endless mode after this round
-        failureConditions: {
-          // Minimum bet multiplier (must bet at least this many times the base minimum bet)
-          minimumBetMultiplier: {
-            enabled: true,
-            value: 2.0, // Must bet at least 2x the base minimum bet
-          },
-          // Minimum credit efficiency (credits earned per round on average)
-          minimumCreditEfficiency: {
-            enabled: true,
-            value: 100, // Must average at least 100 credits per round
-          },
-          // Minimum winning hands per round (hands that pay out > 0)
-          minimumWinningHandsPerRound: {
-            enabled: true,
-            value: 20, // Must win at least 20 hands per round
-          },
-          // Minimum win percentage: must win at least X% of hands per round (start 25%, +5%/round, lose at 105%)
-          minimumWinPercent: {
-            enabled: true,
-            startPercent: 25,
-            incrementPerRound: 5,
-            maxPercent: 105,
-          },
+  /**
+   * Default game mode: full config used as the base for all modes.
+   * Each entry in gameModes is merged over this (deep merge); empty {} = use default as-is.
+   */
+  defaultGameMode: {
+    displayName: 'Normal Game',
+    startingCredits: 5000,
+    startingBet: 2,
+    startingHandCount: 10,
+    minimumBetIncreasePercent: 95,
+    minimumBetIncreaseInterval: 5,
+    shopOptionCount: 4,
+    shopFrequency: 2,
+    minimumPairRank: 11,
+    devilsDeal: {
+      baseChance: 15,
+      baseCostPercent: 300,
+      chanceIncreasePerPurchase: 20,
+      maxChancePurchases: 3,
+      costReductionPerPurchase: 6,
+      maxCostReductionPurchases: 5,
+    },
+    endlessMode: {
+      startRound: 30,
+      failureConditions: {
+        minimumBetMultiplier: { enabled: true, value: 2.0 },
+        minimumCreditEfficiency: { enabled: true, value: 100 },
+        minimumWinningHandsPerRound: { enabled: true, value: 20 },
+        minimumWinPercent: {
+          enabled: true,
+          startPercent: 25,
+          incrementPerRound: 5,
+          maxPercent: 105,
         },
-      },
-      shop: {
-        deadCard: {
-          creditReward: 2500,
-        },
-        wildCard: {
-          baseCost: 5000,
-          increasePercent: 100,
-          maxCount: 3,
-        },
-        singleDeadCardRemoval: {
-          baseCost: 5000,
-          increasePercent: 10,
-        },
-        parallelHandsBundles: {
-          basePricePerHand: 10,
-          bundles: [5, 10, 25, 50],
-        },
-        extraDraw: {
-          cost: 10000,
-        },
-        devilsDealChance: {
-          baseCost: 5000, // Configurable per game mode
-          increasePercent: 50, // Configurable per game mode
-        },
-        devilsDealCostReduction: {
-          baseCost: 10000, // Configurable per game mode
-          increasePercent: 25, // Configurable per game mode
-        },
-      },
-      rewards: {
-        'royal-flush': 250,
-        'five-of-a-kind': 100,
-        'straight-flush': 50,
-        'four-of-a-kind': 25,
-        'full-house': 9,
-        flush: 6,
-        straight: 4,
-        'three-of-a-kind': 3,
-        'two-pair': 2,
-        'one-pair': 1,
-        'high-card': 0,
-      },
-      shopWeights: {
-        'dead-card': 20,
-        'single-dead-card-removal': 15,
-        'all-dead-cards-removal': 15,
-        'parallel-hands-bundle-5': 10,
-        'parallel-hands-bundle-10': 15,
-        'parallel-hands-bundle-25': 12,
-        'parallel-hands-bundle-50': 8,
-        'wild-card': 15,
-        'devils-deal-chance': 8,
-        'devils-deal-cost-reduction': 8,
       },
     },
+    shop: {
+      deadCard: { creditReward: 2500 },
+      wildCard: { baseCost: 5000, increasePercent: 100, maxCount: 3 },
+      singleDeadCardRemoval: { baseCost: 5000, increasePercent: 10 },
+      parallelHandsBundles: { basePricePerHand: 10, bundles: [5, 10, 25, 50] },
+      extraDraw: { cost: 10000 },
+      extraCardInHand: { baseCost: 10000, increasePercent: 125, maxPurchases: 3 },
+      devilsDealChance: { baseCost: 5000, increasePercent: 50 },
+      devilsDealCostReduction: { baseCost: 10000, increasePercent: 25 },
+    },
+    rewards: {
+      'royal-flush': 250,
+      'five-of-a-kind': 100,
+      'straight-flush': 50,
+      'four-of-a-kind': 25,
+      'full-house': 9,
+      flush: 6,
+      straight: 4,
+      'three-of-a-kind': 3,
+      'two-pair': 2,
+      'one-pair': 1,
+      'high-card': 0,
+    },
+    // Rarity 1 = common, 4 = rare. Slots define max rarity per slot and chance per rarity.
+    shopSlots: [
+      { maxRarity: 1 }, // Slot 1: common only (100%)
+      { maxRarity: 2, rarityChances: [0.6, 0.4] }, // Slot 2: 60% common, 40% uncommon
+      { maxRarity: 3, rarityChances: [0.2, 0.5, 0.3] }, // Slot 3: 20% common, 50% uncommon, 30% rare
+      { maxRarity: 4, rarityChances: [0.1, 0.5, 0.3, 0.1] }, // Slot 3: 20% common, 50% uncommon, 30% rare
+    ],
+    shopItems: {
+      'dead-card': { rarity: 1 },
+      'single-dead-card-removal': { rarity: 2 },
+      'all-dead-cards-removal': { rarity: 3 },
+      'parallel-hands-bundle-5': { rarity: 1 },
+      'parallel-hands-bundle-10': { rarity: 1 },
+      'parallel-hands-bundle-25': { rarity: 2 },
+      'parallel-hands-bundle-50': { rarity: 3 },
+      'wild-card': { rarity: 3 },
+      'extra-draw': { rarity: 3 },
+      'extra-card-in-hand': { rarity: 3 },
+      'devils-deal-chance': { rarity: 2 },
+      'devils-deal-cost-reduction': { rarity: 2 },
+    },
+  },
+
+  // Mode overrides keyed by mode id. Empty object = use defaultGameMode as-is.
+  gameModes: {
+    normalGame: {},
+    // Example future mode: hardMode: { startingCredits: 3000, displayName: 'Hard' },
   },
 
   // Default deck contents (standard 52-card deck)
@@ -189,7 +171,53 @@ export const gameConfig = {
 
 export type GameConfig = typeof gameConfig;
 
-// Helper function to get current game mode (can be extended for mode selection)
-export function getCurrentGameMode() {
-  return gameConfig.gameModes.normalGame;
+/** Type of the resolved game mode (default + overrides). */
+export type GameModeConfig = (typeof gameConfig)['defaultGameMode'];
+
+/** Deep-merge mode overrides onto default. Arrays and primitives in overrides replace defaults. */
+function mergeGameMode<T extends Record<string, unknown>>(
+  defaults: T,
+  overrides: Partial<T> | Record<string, unknown>
+): T {
+  const result = { ...defaults } as Record<string, unknown>;
+  const over = overrides as Record<string, unknown>;
+  for (const key of Object.keys(over)) {
+    if (!(key in over) || over[key] === undefined) continue;
+    const defVal = (defaults as Record<string, unknown>)[key];
+    const ovVal = over[key];
+    if (
+      ovVal !== null &&
+      typeof ovVal === 'object' &&
+      !Array.isArray(ovVal) &&
+      defVal !== null &&
+      typeof defVal === 'object' &&
+      !Array.isArray(defVal)
+    ) {
+      (result as Record<string, unknown>)[key] = mergeGameMode(
+        defVal as Record<string, unknown>,
+        ovVal as Record<string, unknown>
+      );
+    } else {
+      (result as Record<string, unknown>)[key] = ovVal;
+    }
+  }
+  return result as T;
+}
+
+/** Returns the active game mode: defaultGameMode merged with current mode overrides. */
+export function getCurrentGameMode(): GameModeConfig {
+  const overrides = gameConfig.gameModes.normalGame as Partial<GameModeConfig>;
+  return mergeGameMode(
+    gameConfig.defaultGameMode as unknown as Record<string, unknown>,
+    overrides as Record<string, unknown>
+  ) as GameModeConfig;
+}
+
+/** Get a specific mode by id (for future mode selection). */
+export function getGameMode(modeId: keyof typeof gameConfig.gameModes): GameModeConfig {
+  const overrides = (gameConfig.gameModes[modeId] ?? {}) as Partial<GameModeConfig>;
+  return mergeGameMode(
+    gameConfig.defaultGameMode as unknown as Record<string, unknown>,
+    overrides as Record<string, unknown>
+  ) as GameModeConfig;
 }

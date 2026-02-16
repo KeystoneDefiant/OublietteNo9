@@ -1,5 +1,4 @@
 import { useState, useEffect, useMemo } from 'react';
-import { RewardTable } from './RewardTable';
 import { CheatsModal } from './CheatsModal';
 import { GameHeader } from './GameHeader';
 import { FailureStateType, GameState } from '../types';
@@ -90,7 +89,7 @@ export function PreDraw({
   selectedHandCount,
   betAmount,
   minimumBet,
-  rewardTable,
+  rewardTable: _rewardTable,
   gameOver,
   round,
   totalEarnings,

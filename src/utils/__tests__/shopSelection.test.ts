@@ -1,5 +1,81 @@
 import { describe, it, expect } from 'vitest';
-import { selectRandomShopOptions } from '../shopSelection';
+import { selectRandomShopOptions, selectShopOptionsByRarity } from '../shopSelection';
+import type { ShopRarityMode } from '../shopSelection';
+
+describe('selectShopOptionsByRarity', () => {
+  it('returns one option per slot', () => {
+    const mode: ShopRarityMode = {
+      shopSlots: [
+        { maxRarity: 1 },
+        { maxRarity: 1 },
+        { maxRarity: 1 },
+      ],
+      shopItems: {
+        'dead-card': { rarity: 1 },
+        'wild-card': { rarity: 1 },
+        'extra-draw': { rarity: 1 },
+      },
+    };
+    const result = selectShopOptionsByRarity(mode);
+    expect(result).toHaveLength(3);
+  });
+
+  it('returns empty when no shopSlots or shopItems', () => {
+    expect(selectShopOptionsByRarity({})).toEqual([]);
+    expect(selectShopOptionsByRarity({ shopSlots: [] })).toEqual([]);
+    expect(selectShopOptionsByRarity({ shopItems: {} })).toEqual([]);
+  });
+
+  it('respects slot maxRarity and picks only items of that rarity', () => {
+    const mode: ShopRarityMode = {
+      shopSlots: [{ maxRarity: 1 }],
+      shopItems: {
+        'dead-card': { rarity: 1 },
+        'wild-card': { rarity: 2 },
+      },
+    };
+    for (let i = 0; i < 20; i++) {
+      const result = selectShopOptionsByRarity(mode);
+      expect(result).toHaveLength(1);
+      expect(result[0]).toBe('dead-card');
+    }
+  });
+
+  it('can pick from multiple rarities when slot allows', () => {
+    const mode: ShopRarityMode = {
+      shopSlots: [
+        { maxRarity: 2, rarityChances: [0, 1] }, // 100% rarity 2
+        { maxRarity: 2, rarityChances: [1, 0] }, // 100% rarity 1
+      ],
+      shopItems: {
+        'dead-card': { rarity: 1 },
+        'wild-card': { rarity: 2 },
+      },
+    };
+    const result = selectShopOptionsByRarity(mode);
+    expect(result).toHaveLength(2);
+    expect(result[0]).toBe('wild-card');
+    expect(result[1]).toBe('dead-card');
+  });
+
+  it('avoids duplicates when possible', () => {
+    const mode: ShopRarityMode = {
+      shopSlots: [
+        { maxRarity: 1 },
+        { maxRarity: 1 },
+        { maxRarity: 1 },
+      ],
+      shopItems: {
+        'dead-card': { rarity: 1 },
+        'wild-card': { rarity: 1 },
+        'extra-draw': { rarity: 1 },
+      },
+    };
+    const result = selectShopOptionsByRarity(mode);
+    expect(result).toHaveLength(3);
+    expect(new Set(result).size).toBe(3);
+  });
+});
 
 describe('selectRandomShopOptions', () => {
   it('should return exactly the requested count when enough options available', () => {

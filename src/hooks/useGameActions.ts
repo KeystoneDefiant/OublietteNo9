@@ -46,7 +46,8 @@ export function useGameActions(
           prev.deckModifications.wildCards
         )
       );
-      const newHand: Card[] = deck.slice(0, 5);
+      const handSize = 5 + (prev.extraCardsInHand ?? 0);
+      const newHand: Card[] = deck.slice(0, handSize);
 
       // Check for Devil's Deal
       const currentMode = getCurrentGameMode();
@@ -70,9 +71,10 @@ export function useGameActions(
           );
           const availableDeck = removeCardsFromDeck(fullDeck, newHand);
 
-          // Find best cards
+          // Devil's Deal considers first 5 cards only (same as standard hand)
+          const handForDeal = newHand.slice(0, 5);
           const bestCards = findBestDevilsDealCards(
-            newHand,
+            handForDeal,
             availableDeck,
             prev.rewardTable,
             prev.betAmount
@@ -82,12 +84,11 @@ export function useGameActions(
           if (bestCards.length > 0) {
             const selectedCard = bestCards[Math.floor(Math.random() * bestCards.length)];
 
-            // Calculate best possible hand's payout (per hand)
-            // Uses current betAmount to ensure cost scales with bet size
+            // Calculate best possible hand's payout (per hand) using first 5 cards only
             const currentBetAmount = prev.betAmount;
             let bestMultiplier = 0;
             for (let position = 0; position < 5; position++) {
-              const testHand = [...newHand];
+              const testHand = [...handForDeal];
               testHand[position] = selectedCard;
               const result = PokerEvaluator.evaluate(testHand);
               const withRewards = PokerEvaluator.applyRewards(result, prev.rewardTable);
@@ -147,12 +148,28 @@ export function useGameActions(
     (index: number) => {
       setState((prev) => {
         const isCurrentlyHeld = prev.heldIndices.includes(index);
+        const handSize = prev.playerHand.length;
 
-        // If trying to hold a new card, check 5-card limit
+        // When we have more than 5 cards (e.g. 6), we can hold at most 5 (pick 5 to keep)
+        if (handSize > 5) {
+          if (isCurrentlyHeld) {
+            const heldIndices = prev.heldIndices.filter((i) => i !== index);
+            return { ...prev, heldIndices };
+          }
+          if (prev.heldIndices.length >= 5) {
+            // Replace oldest held with this index so we keep exactly 5
+            const heldIndices = [...prev.heldIndices.slice(1), index];
+            return { ...prev, heldIndices };
+          }
+          const heldIndices = [...prev.heldIndices, index];
+          return { ...prev, heldIndices };
+        }
+
+        // Standard 5-card hand: check 5-card limit (including Devil's Deal)
         if (!isCurrentlyHeld) {
           const totalHeld = prev.heldIndices.length + (prev.devilsDealHeld ? 1 : 0);
           if (totalHeld >= 5) {
-            return prev; // Can't hold more than 5 cards total
+            return prev;
           }
         }
 
@@ -160,10 +177,7 @@ export function useGameActions(
           ? prev.heldIndices.filter((i) => i !== index)
           : [...prev.heldIndices, index];
 
-        return {
-          ...prev,
-          heldIndices,
-        };
+        return { ...prev, heldIndices };
       });
     },
     [setState]
@@ -176,13 +190,26 @@ export function useGameActions(
    */
   const drawParallelHands = useCallback(() => {
     setState((prev) => {
-      if (prev.playerHand.length !== 5) {
+      const handSize = prev.playerHand.length;
+      const canDrawFive = handSize === 5;
+      const canDrawSixPlus = handSize > 5 && prev.heldIndices.length === 5;
+      if (!canDrawFive && !canDrawSixPlus) {
         return prev;
       }
 
-      // If this is the first draw and extra draw is available, mark first draw complete and redraw non-held cards
-      if (!prev.firstDrawComplete && prev.hasExtraDraw) {
-        // Create a deck and shuffle it
+      // When 6+ cards dealt, the 5 held indices form our 5-card hand (no extra-draw replacement)
+      const baseHand: Card[] =
+        handSize > 5
+          ? prev.heldIndices.slice(0, 5).map((i) => prev.playerHand[i])
+          : [...prev.playerHand];
+      const baseHeldIndices: number[] = handSize > 5 ? [0, 1, 2, 3, 4] : [...prev.heldIndices];
+
+      // If this is the first draw and extra draw is available (5-card path only), redraw non-held
+      if (
+        handSize === 5 &&
+        !prev.firstDrawComplete &&
+        prev.hasExtraDraw
+      ) {
         const deck = shuffleDeck(
           createFullDeck(
             prev.deckModifications.deadCards,
@@ -190,8 +217,6 @@ export function useGameActions(
             prev.deckModifications.wildCards
           )
         );
-
-        // Replace non-held cards with new cards from the deck
         const updatedHand = [...prev.playerHand];
         let deckIndex = 0;
         for (let i = 0; i < 5; i++) {
@@ -199,25 +224,19 @@ export function useGameActions(
             updatedHand[i] = deck[deckIndex++];
           }
         }
-
-        // Handle Devil's Deal card if held (for first draw)
         let finalHand = updatedHand;
         let finalHeldIndices = [...prev.heldIndices];
         if (prev.devilsDealHeld && prev.devilsDealCard) {
           const modifiedHand = [...updatedHand];
-          // Find first non-held position and replace with Devil's Deal card
           for (let i = 0; i < 5; i++) {
             if (!prev.heldIndices.includes(i)) {
-              modifiedHand[i] = prev.devilsDealCard;
-              // Mark this position as held so it doesn't get replaced in parallel hands
+              modifiedHand[i] = prev.devilsDealCard!;
               finalHeldIndices = [...prev.heldIndices, i];
               break;
             }
           }
           finalHand = modifiedHand;
         }
-
-        // Generate parallel hands from the updated player hand
         const parallelHands = generateParallelHands(
           finalHand,
           finalHeldIndices,
@@ -226,7 +245,6 @@ export function useGameActions(
           prev.deckModifications.removedCards,
           prev.deckModifications.wildCards
         );
-
         return {
           ...prev,
           playerHand: finalHand,
@@ -237,11 +255,10 @@ export function useGameActions(
         };
       }
 
-      // Second draw or no extra draw - generate final hands and move to parallel hands animation
-      // For second draw, also replace non-held cards
-      let handForAnimation = prev.playerHand;
-      let currentHeldIndices = [...prev.heldIndices];
-      if (prev.firstDrawComplete && prev.hasExtraDraw) {
+      // Second draw or no extra draw (or 6+ cards): generate parallel hands
+      let handForAnimation = baseHand;
+      let currentHeldIndices = [...baseHeldIndices];
+      if (handSize === 5 && prev.firstDrawComplete && prev.hasExtraDraw) {
         const deck = shuffleDeck(
           createFullDeck(
             prev.deckModifications.deadCards,
@@ -249,7 +266,6 @@ export function useGameActions(
             prev.deckModifications.wildCards
           )
         );
-
         const updatedHand = [...prev.playerHand];
         let deckIndex = 0;
         for (let i = 0; i < 5; i++) {
@@ -261,23 +277,19 @@ export function useGameActions(
         currentHeldIndices = [...prev.heldIndices];
       }
 
-      // Handle Devil's Deal card if held
       let finalHand = handForAnimation;
       let finalHeldIndices = [...currentHeldIndices];
       let creditsAfterDeal = prev.credits;
       if (prev.devilsDealHeld && prev.devilsDealCard) {
-        // Replace the first non-held card position with the deal card
         const modifiedHand = [...handForAnimation];
         for (let i = 0; i < 5; i++) {
           if (!currentHeldIndices.includes(i)) {
             modifiedHand[i] = prev.devilsDealCard;
-            // Mark this position as held so it doesn't get replaced in parallel hands
             finalHeldIndices = [...currentHeldIndices, i];
             break;
           }
         }
         finalHand = modifiedHand;
-        // Deduct cost
         creditsAfterDeal = prev.credits - prev.devilsDealCost;
       }
 

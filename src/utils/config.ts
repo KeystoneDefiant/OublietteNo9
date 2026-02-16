@@ -38,3 +38,9 @@ export function calculateDevilsDealCostReductionCost(purchaseCount: number): num
   const multiplier = 1 + currentMode.shop.devilsDealCostReduction.increasePercent / 100;
   return Math.floor(baseCost * Math.pow(multiplier, purchaseCount));
 }
+
+export function calculateExtraCardInHandCost(currentCount: number): number {
+  const baseCost = currentMode.shop.extraCardInHand.baseCost;
+  const multiplier = 1 + currentMode.shop.extraCardInHand.increasePercent / 100;
+  return Math.floor(baseCost * Math.pow(multiplier, currentCount));
+}

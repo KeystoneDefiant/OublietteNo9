@@ -5,6 +5,7 @@ import {
   calculateAllDeadCardsRemovalCost,
   calculateDevilsDealChanceCost,
   calculateDevilsDealCostReductionCost,
+  calculateExtraCardInHandCost,
 } from '../utils/config';
 import { gameConfig, getCurrentGameMode } from '../config/gameConfig';
 import { ShopOptionType } from '../types';
@@ -57,6 +58,10 @@ interface ShopProps {
   devilsDealChancePurchases: number;
   /** Number of Devil's Deal cost reduction upgrades purchased */
   devilsDealCostReductionPurchases: number;
+  /** Number of extra cards in hand purchased (0 = deal 5, 1 = deal 6, etc.) */
+  extraCardsInHand: number;
+  /** Callback to purchase extra card in hand */
+  onPurchaseExtraCardInHand: () => void;
   /** Callback to close shop and continue */
   onClose: () => void;
 }
@@ -100,6 +105,8 @@ export function Shop({
   onPurchaseDevilsDealCostReduction,
   devilsDealChancePurchases,
   devilsDealCostReductionPurchases,
+  extraCardsInHand,
+  onPurchaseExtraCardInHand,
   onClose,
 }: ShopProps) {
   const currentMode = getCurrentGameMode();
@@ -428,6 +435,48 @@ export function Shop({
                 {isPurchased('extra-draw') || extraDrawPurchased
                   ? 'Already Purchased'
                   : `${currentMode.shop.extraDraw.cost} Credits`}
+              </button>
+            </div>
+          )}
+
+          {/* Extra Card in Hand */}
+          {isOptionAvailable('extra-card-in-hand') && (
+            <div className="border-2 border-white rounded-lg p-6 bg-amber-800 bg-opacity-50 hover:bg-opacity-70 transition-all">
+              <div className="flex justify-between items-center mb-3">
+                <h3 className="text-xl font-bold text-white">Extra Card in Hand</h3>
+                <span className="text-amber-200">
+                  {extraCardsInHand}/{currentMode.shop.extraCardInHand.maxPurchases}
+                </span>
+              </div>
+              <p className="text-amber-100 mb-4">
+                Deal one more card to choose from (still play 5). More options each hand.
+              </p>
+              <button
+                onClick={() => {
+                  onPurchaseExtraCardInHand();
+                  markPurchased('extra-card-in-hand');
+                }}
+                disabled={
+                  credits < calculateExtraCardInHandCost(extraCardsInHand) ||
+                  extraCardsInHand >= currentMode.shop.extraCardInHand.maxPurchases ||
+                  isPurchased('extra-card-in-hand')
+                }
+                className={`
+                  w-full py-3 px-4 rounded-lg font-bold transition-colors
+                  ${
+                    credits >= calculateExtraCardInHandCost(extraCardsInHand) &&
+                    extraCardsInHand < currentMode.shop.extraCardInHand.maxPurchases &&
+                    !isPurchased('extra-card-in-hand')
+                      ? 'bg-amber-600 hover:bg-amber-700 text-white'
+                      : 'bg-gray-600 text-gray-400 cursor-not-allowed'
+                  }
+                `}
+              >
+                {extraCardsInHand >= currentMode.shop.extraCardInHand.maxPurchases
+                  ? 'Max Purchased'
+                  : isPurchased('extra-card-in-hand')
+                    ? 'Purchased This Visit'
+                    : `${formatCredits(calculateExtraCardInHandCost(extraCardsInHand))} Credits`}
               </button>
             </div>
           )}

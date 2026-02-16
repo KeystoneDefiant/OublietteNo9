@@ -1,12 +1,12 @@
 import { describe, it, expect } from 'vitest';
 import { GameState } from '../../types';
-import { gameConfig, getCurrentGameMode } from '../../config/gameConfig';
+import { getCurrentGameMode } from '../../config/gameConfig';
 import { checkFailureConditions } from '../failureConditions';
 import { PokerEvaluator } from '../pokerEvaluator';
 import { Card, Hand } from '../../types';
 
 // Get config values
-const mode = gameConfig.gameModes.normalGame;
+const mode = getCurrentGameMode();
 const betMultiplier = mode.endlessMode?.failureConditions.minimumBetMultiplier?.value || 2.0;
 const minEfficiency = mode.endlessMode?.failureConditions.minimumCreditEfficiency?.value || 100;
 const minWinningHands = mode.endlessMode?.failureConditions.minimumWinningHandsPerRound?.value || 20;

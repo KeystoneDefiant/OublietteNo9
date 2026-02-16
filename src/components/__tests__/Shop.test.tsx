@@ -25,6 +25,8 @@ describe('Shop Component', () => {
     onPurchaseDevilsDealCostReduction: vi.fn(),
     devilsDealChancePurchases: 0,
     devilsDealCostReductionPurchases: 0,
+    extraCardsInHand: 0,
+    onPurchaseExtraCardInHand: vi.fn(),
     onClose: vi.fn(),
   };
 

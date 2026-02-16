@@ -1,10 +1,10 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { checkFailureConditions, getFailureStateDescription } from '../failureConditions';
 import { GameState, FailureStateType } from '../../types';
-import { gameConfig } from '../../config/gameConfig';
+import { getCurrentGameMode } from '../../config/gameConfig';
 
 // Get config values
-const mode = gameConfig.gameModes.normalGame;
+const mode = getCurrentGameMode();
 const betMultiplier = mode.endlessMode?.failureConditions.minimumBetMultiplier?.value || 2.0;
 const minEfficiency = mode.endlessMode?.failureConditions.minimumCreditEfficiency?.value || 100;
 const minWinningHands = mode.endlessMode?.failureConditions.minimumWinningHandsPerRound?.value || 20;
@@ -79,7 +79,7 @@ describe('checkFailureConditions', () => {
   describe('minimum bet multiplier condition', () => {
     beforeEach(() => {
       // Ensure we're using the actual config values
-      const mode = gameConfig.gameModes.normalGame;
+      const mode = getCurrentGameMode();
       expect(mode.endlessMode?.failureConditions.minimumBetMultiplier?.enabled).toBe(true);
       expect(mode.endlessMode?.failureConditions.minimumBetMultiplier?.value).toBe(betMultiplier);
     });
@@ -145,7 +145,7 @@ describe('checkFailureConditions', () => {
 
   describe('minimum credit efficiency condition', () => {
     beforeEach(() => {
-      const mode = gameConfig.gameModes.normalGame;
+      const mode = getCurrentGameMode();
       expect(mode.endlessMode?.failureConditions.minimumCreditEfficiency?.enabled).toBe(true);
       expect(mode.endlessMode?.failureConditions.minimumCreditEfficiency?.value).toBe(100);
     });
@@ -219,7 +219,7 @@ describe('checkFailureConditions', () => {
 
   describe('minimum winning hands per round condition', () => {
     beforeEach(() => {
-      const mode = gameConfig.gameModes.normalGame;
+      const mode = getCurrentGameMode();
       expect(mode.endlessMode?.failureConditions.minimumWinningHandsPerRound?.enabled).toBe(true);
       expect(mode.endlessMode?.failureConditions.minimumWinningHandsPerRound?.value).toBe(minWinningHands);
     });

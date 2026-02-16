@@ -105,6 +105,7 @@ function App() {
     toggleDevilsDealHold,
     purchaseDevilsDealChance,
     purchaseDevilsDealCostReduction,
+    purchaseExtraCardInHand,
     updateStreakCounter,
     toggleMusic,
     toggleSoundEffects,
@@ -287,6 +288,8 @@ function App() {
               onPurchaseDevilsDealCostReduction={purchaseDevilsDealCostReduction}
               devilsDealChancePurchases={state.devilsDealChancePurchases}
               devilsDealCostReductionPurchases={state.devilsDealCostReductionPurchases}
+              extraCardsInHand={state.extraCardsInHand}
+              onPurchaseExtraCardInHand={purchaseExtraCardInHand}
               onClose={proceedFromResults}
             />
           </div>
