@@ -108,6 +108,8 @@ function App() {
     updateStreakCounter,
     toggleMusic,
     toggleSoundEffects,
+    setMusicVolume,
+    setSoundEffectsVolume,
   } = useGameState();
 
   // Show loading spinner while theme is loading
@@ -267,6 +269,8 @@ function App() {
               <Shop
               credits={state.credits}
               handCount={state.handCount}
+              betAmount={state.betAmount}
+              selectedHandCount={state.selectedHandCount}
               deadCards={state.deckModifications.deadCards}
               deadCardRemovalCount={state.deckModifications.deadCardRemovalCount}
               wildCards={state.deckModifications.wildCards}
@@ -308,7 +312,12 @@ function App() {
       {showSettings && (
         <Suspense fallback={<LoadingSpinner />}>
           <div className="modal-enter">
-            <Settings onClose={() => setShowSettings(false)} />
+            <Settings
+              onClose={() => setShowSettings(false)}
+              audioSettings={state.audioSettings}
+              onMusicVolumeChange={setMusicVolume}
+              onSoundEffectsVolumeChange={setSoundEffectsVolume}
+            />
           </div>
         </Suspense>
       )}

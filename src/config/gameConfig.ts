@@ -8,10 +8,10 @@ export const gameConfig = {
     cardFlip: 500, // Card flip animation delay
   },
 
-  // Parallel hands grid thresholds
+  // Parallel hands grid thresholds (switch to 2 columns early to avoid stall at 20–21)
   parallelHandsGrid: {
-    singleColumn: { max: 20 },
-    twoColumn: { min: 21, max: 50 },
+    singleColumn: { max: 12 },
+    twoColumn: { min: 13, max: 50 },
     fourColumn: { min: 51, max: 100 },
     eightColumn: { min: 101 },
   },
@@ -25,8 +25,8 @@ export const gameConfig = {
   streakMultiplier: {
     enabled: true,
     baseThreshold: 5, // First bonus at 5 streak
-    thresholdIncrement: 5, // Base increment value
-    exponentialGrowth: 1.3, // Exponential growth factor (1.0 = linear, >1.0 = exponential)
+    thresholdIncrement: 10, // Base increment value
+    exponentialGrowth: 1.5, // Exponential growth factor (1.0 = linear, >1.0 = exponential)
     baseMultiplier: 1.5, // 1.5x at first tier
     multiplierIncrement: 0.5, // +0.5x per tier (2.0x, 2.5x, 3.0x, etc.)
   },
@@ -89,7 +89,7 @@ export const gameConfig = {
       // Devil's Deal configuration
       devilsDeal: {
         baseChance: 15, // Base percentage chance (0-100)
-        baseCostPercent: 10, // Base cost as percentage of potential payout
+        baseCostPercent: 300, // Base cost as percentage of potential payout
         chanceIncreasePerPurchase: 20, // Percentage increase per shop purchase
         maxChancePurchases: 3, // Maximum times chance can be purchased
         costReductionPerPurchase: 6, // Percentage reduction per shop purchase
@@ -101,18 +101,25 @@ export const gameConfig = {
         failureConditions: {
           // Minimum bet multiplier (must bet at least this many times the base minimum bet)
           minimumBetMultiplier: {
-            enabled: false,
+            enabled: true,
             value: 2.0, // Must bet at least 2x the base minimum bet
           },
           // Minimum credit efficiency (credits earned per round on average)
           minimumCreditEfficiency: {
-            enabled: false,
+            enabled: true,
             value: 100, // Must average at least 100 credits per round
           },
           // Minimum winning hands per round (hands that pay out > 0)
           minimumWinningHandsPerRound: {
             enabled: true,
             value: 20, // Must win at least 20 hands per round
+          },
+          // Minimum win percentage: must win at least X% of hands per round (start 25%, +5%/round, lose at 105%)
+          minimumWinPercent: {
+            enabled: true,
+            startPercent: 25,
+            incrementPerRound: 5,
+            maxPercent: 105,
           },
         },
       },
@@ -121,7 +128,7 @@ export const gameConfig = {
           creditReward: 2500,
         },
         wildCard: {
-          baseCost: 3000,
+          baseCost: 5000,
           increasePercent: 100,
           maxCount: 3,
         },
@@ -137,7 +144,7 @@ export const gameConfig = {
           cost: 10000,
         },
         devilsDealChance: {
-          baseCost: 3000, // Configurable per game mode
+          baseCost: 5000, // Configurable per game mode
           increasePercent: 50, // Configurable per game mode
         },
         devilsDealCostReduction: {
@@ -147,8 +154,8 @@ export const gameConfig = {
       },
       rewards: {
         'royal-flush': 250,
-        'straight-flush': 50,
         'five-of-a-kind': 100,
+        'straight-flush': 50,
         'four-of-a-kind': 25,
         'full-house': 9,
         flush: 6,

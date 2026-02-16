@@ -8,6 +8,7 @@ import {
 } from '../utils/config';
 import { gameConfig, getCurrentGameMode } from '../config/gameConfig';
 import { ShopOptionType } from '../types';
+import { formatCredits } from '../utils/format';
 /**
  * Shop component props
  *
@@ -20,6 +21,10 @@ interface ShopProps {
   credits: number;
   /** Total hand count (maximum parallel hands available) */
   handCount: number;
+  /** Bet amount per hand for next round (used to show cost for next round) */
+  betAmount: number;
+  /** Selected hand count for next round (used to show cost for next round) */
+  selectedHandCount: number;
   /** Array of dead cards currently in deck */
   deadCards: { id: string }[];
   /** Number of times dead cards have been removed */
@@ -67,6 +72,8 @@ interface ShopProps {
  * <Shop
  *   credits={5000}
  *   handCount={50}
+ *   betAmount={5}
+ *   selectedHandCount={10}
  *   selectedShopOptions={['dead-card', 'wild-card']}
  *   onAddDeadCard={handleAddDeadCard}
  *   onClose={handleCloseShop}
@@ -76,6 +83,8 @@ interface ShopProps {
 export function Shop({
   credits,
   handCount,
+  betAmount,
+  selectedHandCount,
   deadCards,
   deadCardRemovalCount,
   wildCardCount,
@@ -156,9 +165,12 @@ export function Shop({
           </button>
         </div>
 
-        <div className="mb-6 p-4 bg-green-50 rounded-lg">
+        <div className="mb-6 p-4 bg-green-50 rounded-lg flex flex-wrap justify-between items-center gap-2">
           <p className="text-lg font-semibold text-gray-800">
-            Credits: <span className="text-green-600">{credits}</span>
+            Credits: <span className="text-green-600">{formatCredits(credits)}</span>
+          </p>
+          <p className="text-sm text-gray-600">
+            Credits needed for next round: <span className="font-semibold">{formatCredits(betAmount * selectedHandCount)}</span>
           </p>
         </div>
 
@@ -317,7 +329,7 @@ export function Shop({
                 </span>
               </div>
               <p className="text-purple-100 mb-4">
-                Add a non-counting card. Get {currentMode.shop.deadCard.creditReward} credits
+                Add a non-counting card. Get {formatCredits(currentMode.shop.deadCard.creditReward)} credits
               </p>
               <button
                 onClick={() => {
@@ -338,7 +350,7 @@ export function Shop({
                   ? 'Already Purchased'
                   : deadCards.length >= gameConfig.deadCardLimit
                   ? 'Maximum Dead Cards Reached'
-                  : `Gain ${currentMode.shop.deadCard.creditReward} Credits`}
+                  : `Gain ${formatCredits(currentMode.shop.deadCard.creditReward)} Credits`}
               </button>
             </div>
           )}

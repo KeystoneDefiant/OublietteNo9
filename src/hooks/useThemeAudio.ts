@@ -25,20 +25,47 @@ const globalAudioCache: AudioInstances = {
 // Global theme config cache
 let globalThemeConfig: ThemeConfig | null = null;
 
+// For multiple music tracks: last played index to avoid back-to-back
+let lastPlayedMusicIndex: number = -1;
+
+// Same-hand volume ducking: count of handScoring plays per rank this round (reset each round)
+const handRankPlaysThisRound: Record<string, number> = {};
+
 /**
  * Hook for managing theme-based audio playback
  * Handles graceful fallback when audio files are missing
  * Supports audio settings to enable/disable music and sound effects
  * Uses a global cache to prevent re-downloading audio files
  */
-export function useThemeAudio(audioSettings?: { musicEnabled: boolean; soundEffectsEnabled: boolean }) {
-  const volumeRef = useRef(1.0);
-  const audioSettingsRef = useRef(audioSettings || { musicEnabled: true, soundEffectsEnabled: true });
+export interface ThemeAudioSettings {
+  musicEnabled: boolean;
+  soundEffectsEnabled: boolean;
+  musicVolume?: number;
+  soundEffectsVolume?: number;
+}
 
-  // Update settings ref when prop changes
+const defaultAudioSettings: ThemeAudioSettings = {
+  musicEnabled: true,
+  soundEffectsEnabled: true,
+  musicVolume: 0.7,
+  soundEffectsVolume: 1.0,
+};
+
+export function useThemeAudio(audioSettings?: ThemeAudioSettings) {
+  const audioSettingsRef = useRef(audioSettings || defaultAudioSettings);
+
+  // Update settings ref and live volume when prop changes
   useEffect(() => {
     if (audioSettings) {
       audioSettingsRef.current = audioSettings;
+      const musicVol = audioSettings.musicVolume ?? 0.7;
+      const sfxVol = audioSettings.soundEffectsVolume ?? 1.0;
+      if (globalAudioCache.backgroundMusic) {
+        globalAudioCache.backgroundMusic.volume = musicVol;
+      }
+      globalAudioCache.soundEffects.forEach((audio) => {
+        audio.volume = sfxVol;
+      });
     }
   }, [audioSettings]);
 
@@ -93,14 +120,26 @@ export function useThemeAudio(audioSettings?: { musicEnabled: boolean; soundEffe
       const audioKey = `${event}-${handRank || ''}`;
       let audio = globalAudioCache.soundEffects.get(audioKey);
 
-      if (!audio) {
-        // Create new audio instance and set src only once
-        audio = new Audio(fullPath); // Set src in constructor
-        audio.volume = volumeRef.current;
-        globalAudioCache.soundEffects.set(audioKey, audio);
+      const baseVolume = audioSettingsRef.current.soundEffectsVolume ?? 1.0;
+      let volume = baseVolume;
+
+      // Same-hand volume ducking: after 5 plays of same rank this round, reduce by 25% each additional time
+      if (event === 'handScoring' && handRank) {
+        handRankPlaysThisRound[handRank] = (handRankPlaysThisRound[handRank] || 0) + 1;
+        const count = handRankPlaysThisRound[handRank];
+        if (count > 5) {
+          volume = baseVolume * Math.pow(0.75, count - 5);
+        }
       }
 
-      // Reset playback to start (don't reset src!)
+      if (!audio) {
+        audio = new Audio(fullPath);
+        audio.volume = volume;
+        globalAudioCache.soundEffects.set(audioKey, audio);
+      } else {
+        audio.volume = volume;
+      }
+
       audio.currentTime = 0;
 
       // Play with error handling
@@ -117,40 +156,65 @@ export function useThemeAudio(audioSettings?: { musicEnabled: boolean; soundEffe
   }, []);
 
   /**
-   * Play background music (loops indefinitely)
-   * Checks musicEnabled setting before playing
-   * Uses global cache to prevent re-downloading
+   * Play background music. Single track loops; multiple tracks play in random order (no back-to-back).
+   * Checks musicEnabled setting before playing.
    */
   const playMusic = useCallback(() => {
-    // Check if music is enabled
     if (!audioSettingsRef.current.musicEnabled) return;
-    
+
     try {
       const config = globalThemeConfig;
-      if (!config?.music?.backgroundMusic) return;
+      const raw = config?.music?.backgroundMusic;
+      if (!raw) return;
 
       const theme = getSelectedTheme();
-      const musicPath = `./sounds/${theme}/${config.music.backgroundMusic}`;
+      const tracks = Array.isArray(raw) ? raw : [raw];
+      if (tracks.length === 0) return;
 
-      // Reuse existing music instance from GLOBAL cache if available
-      let audio = globalAudioCache.backgroundMusic;
-      
-      // Check if we need to create a new instance (doesn't exist or src changed)
-      // Note: audio.src will be an absolute URL, so we check if it ends with our path
-      if (!audio || !audio.src.endsWith(musicPath)) {
-        // Create new audio instance only if needed (src changed or doesn't exist)
-        audio = new Audio(musicPath); // Set src in constructor
-        audio.loop = true;
-        audio.volume = volumeRef.current * gameConfig.audio.musicVolume;
-        globalAudioCache.backgroundMusic = audio;
-      }
+      const basePath = `./sounds/${theme}/`;
+      const volume = audioSettingsRef.current.musicVolume ?? gameConfig.audio.musicVolume;
 
-      const playPromise = audio.play();
-      if (playPromise !== undefined) {
-        playPromise.catch(() => {
-          // Gracefully handle missing music file
-        });
-      }
+      const pickNextIndex = (): number => {
+        if (tracks.length === 1) return 0;
+        let idx = Math.floor(Math.random() * tracks.length);
+        if (idx === lastPlayedMusicIndex && tracks.length > 1) {
+          idx = (idx + 1) % tracks.length;
+        }
+        return idx;
+      };
+
+      const playTrack = (index: number) => {
+        const file = tracks[index];
+        lastPlayedMusicIndex = index;
+        const musicPath = basePath + file;
+        let audio = globalAudioCache.backgroundMusic;
+
+        if (!audio) {
+          audio = new Audio(musicPath);
+          audio.volume = volume;
+          globalAudioCache.backgroundMusic = audio;
+        } else {
+          audio.src = musicPath;
+          audio.volume = volume;
+        }
+
+        audio.loop = tracks.length === 1;
+        if (tracks.length > 1) {
+          const onEnded = () => {
+            audio!.removeEventListener('ended', onEnded);
+            const nextIdx = pickNextIndex();
+            playTrack(nextIdx);
+          };
+          audio.addEventListener('ended', onEnded);
+        }
+
+        const playPromise = audio.play();
+        if (playPromise !== undefined) {
+          playPromise.catch(() => {});
+        }
+      };
+
+      playTrack(pickNextIndex());
     } catch {
       // Graceful silence fallback
     }
@@ -169,25 +233,6 @@ export function useThemeAudio(audioSettings?: { musicEnabled: boolean; soundEffe
   }, []);
 
   /**
-   * Set volume for all audio (0.0 to 1.0)
-   * Uses global cache
-   */
-  const setVolume = useCallback((volume: number) => {
-    const clampedVolume = Math.max(0, Math.min(1, volume));
-    volumeRef.current = clampedVolume;
-
-    // Update all sound effect volumes in global cache
-    globalAudioCache.soundEffects.forEach((audio) => {
-      audio.volume = clampedVolume;
-    });
-
-    // Update background music volume in global cache
-    if (globalAudioCache.backgroundMusic) {
-      globalAudioCache.backgroundMusic.volume = clampedVolume * 0.7;
-    }
-  }, []);
-
-  /**
    * Stop all audio (sound effects and music)
    * Uses global cache
    */
@@ -200,11 +245,18 @@ export function useThemeAudio(audioSettings?: { musicEnabled: boolean; soundEffe
     stopMusic();
   }, [stopMusic]);
 
+  /**
+   * Reset per-round hand scoring counts (call when starting a new round for volume ducking).
+   */
+  const resetRoundSoundCounts = useCallback(() => {
+    Object.keys(handRankPlaysThisRound).forEach((k) => delete handRankPlaysThisRound[k]);
+  }, []);
+
   return {
     playSound,
     playMusic,
     stopMusic,
-    setVolume,
     stopAll,
+    resetRoundSoundCounts,
   };
 }

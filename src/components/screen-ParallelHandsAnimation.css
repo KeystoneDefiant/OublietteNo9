@@ -10,6 +10,13 @@
   align-items: center;
   justify-content: center;
   overflow: hidden;
+  opacity: 1;
+  transition: opacity 0.8s ease-out;
+}
+
+/* Completion: fade out to results (no scroll — avoids cards falling off / height bugs) */
+.parallel-hands-animation-container.parallel-hands-fade-out {
+  opacity: 0;
 }
 
 .animation-background {
@@ -58,11 +65,6 @@
   align-items: flex-start;
   transition: transform 0.3s ease-out; /* Smooth scaling */
   padding-top: 40px; /* Space from top when scaled */
-}
-
-/* Scroll-off animation applied when all hands are revealed */
-.hands-grid.scroll-off {
-  transition: transform 1s ease-in-out; /* Smooth 1-second upward scroll */
 }
 
 /* Tighter spacing for 4-column layouts (51-100 hands) */

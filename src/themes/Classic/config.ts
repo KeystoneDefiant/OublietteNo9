@@ -32,6 +32,6 @@ export const classicThemeConfig: ThemeConfig = {
     },
   },
   music: {
-    backgroundMusic: 'bgm1.mp3',
+    backgroundMusic: ['bgm1.mp3', 'bgm2.mp3', 'bgm3.mp3', 'bgm4.mp3'],
   },
 };

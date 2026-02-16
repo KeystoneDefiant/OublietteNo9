@@ -7,6 +7,8 @@ describe('Shop Component', () => {
   const mockProps = {
     credits: 10000,
     handCount: 50,
+    betAmount: 5,
+    selectedHandCount: 10,
     deadCards: [],
     deadCardRemovalCount: 0,
     wildCards: [],
@@ -41,6 +43,14 @@ describe('Shop Component', () => {
       render(<Shop {...mockProps} />);
       
       expect(screen.getByText(/10,000.*credit/i)).toBeInTheDocument();
+    });
+
+    it('should display credits needed for next round', () => {
+      render(<Shop {...mockProps} />);
+      const label = screen.getByText(/Credits needed for next round/i);
+      expect(label).toBeInTheDocument();
+      // Next round cost = betAmount 5 * selectedHandCount 10 = 50
+      expect(label.closest('div')?.textContent).toMatch(/50/);
     });
 
     it('should display all shop options', () => {

@@ -1,3 +1,5 @@
+import { formatCredits } from '../utils/format';
+
 interface GameOverProps {
   round: number;
   totalEarnings: number;
@@ -44,7 +46,7 @@ export function GameOver({
             <div className="bg-green-50 rounded-lg p-4 border-2 border-green-200">
               <p className="text-sm text-gray-600 font-medium">Total Earnings</p>
               <p className="text-3xl font-bold text-green-600">
-                {totalEarnings.toLocaleString()}
+                {formatCredits(totalEarnings)}
               </p>
             </div>
             
@@ -57,7 +59,7 @@ export function GameOver({
             <div className={`${isVoluntaryEnd ? 'bg-amber-50 border-amber-200' : 'bg-red-50 border-red-200'} rounded-lg p-4 border-2`}>
               <p className="text-sm text-gray-600 font-medium">Final Credits</p>
               <p className={`text-3xl font-bold ${isVoluntaryEnd ? 'text-amber-600' : 'text-red-600'}`}>
-                {credits.toLocaleString()}
+                {formatCredits(credits)}
               </p>
               {isVoluntaryEnd && (
                 <p className="text-xs text-green-600 font-semibold mt-1">✓ Finished with credits!</p>
@@ -68,7 +70,7 @@ export function GameOver({
           {isVoluntaryEnd && credits > 100 && (
             <div className="bg-gradient-to-r from-yellow-50 to-amber-50 rounded-lg p-4 border-2 border-amber-300">
               <p className="text-center text-amber-800 font-semibold">
-                🏆 Excellent run! You finished with {credits.toLocaleString()} credits!
+                🏆 Excellent run! You finished with {formatCredits(credits)} credits!
               </p>
             </div>
           )}

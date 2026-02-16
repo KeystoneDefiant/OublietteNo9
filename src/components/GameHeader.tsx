@@ -1,5 +1,6 @@
 import { FailureStateType, GameState } from '../types';
 import { getFailureStateDescription } from '../utils/failureConditions';
+import { formatCredits } from '../utils/format';
 
 interface GameHeaderProps {
   credits: number;
@@ -30,7 +31,7 @@ export function GameHeader({ credits, round, efficiency, failureState, gameState
         </div>
         <div className="bg-white rounded-lg shadow-lg px-6 py-3 flex gap-4">
           <p className="text-lg font-bold text-gray-800">
-            Credits: <span className="text-green-600">{credits}</span>
+            Credits: <span className="text-green-600">{formatCredits(credits)}</span>
           </p>
           {round !== undefined && (
             <p className="text-lg font-bold text-gray-800">

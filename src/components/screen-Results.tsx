@@ -6,6 +6,7 @@ import { PokerEvaluator } from '../utils/pokerEvaluator';
 import { RewardTable } from './RewardTable';
 import { calculateStreakMultiplier } from '../utils/streakCalculator';
 import { gameConfig } from '../config/gameConfig';
+import { formatCredits } from '../utils/format';
 
 /**
  * Results screen component props
@@ -242,7 +243,7 @@ export function Results({
                           <span
                             className={`font-bold ${item.totalPayout > 0 ? 'text-green-600' : 'text-gray-500'}`}
                           >
-                            = {Math.round(item.totalPayout)} credit{Math.round(item.totalPayout) !== 1 ? 's' : ''}
+                            = {formatCredits(Math.round(item.totalPayout))} credit{Math.round(item.totalPayout) !== 1 ? 's' : ''}
                           </span>
                         </div>
                       );
@@ -255,21 +256,21 @@ export function Results({
                     <div className="flex justify-between items-center mb-2">
                       <span className="text-lg font-semibold text-gray-700">Round Cost:</span>
                       <span className="text-2xl font-bold text-red-600">
-                        {betAmount * selectedHandCount} credits
+                        {formatCredits(betAmount * selectedHandCount)} credits
                       </span>
                     </div>
                     {gameState?.devilsDealCard && gameState?.devilsDealHeld && gameState?.devilsDealCost > 0 && (
                       <div className="flex justify-between items-center">
                         <span className="text-lg font-semibold text-gray-700">Devil's Deal:</span>
                         <span className="text-2xl font-bold text-red-600">
-                          -{Math.abs(gameState.devilsDealCost)} credits
+                          -{formatCredits(Math.abs(gameState.devilsDealCost))} credits
                         </span>
                       </div>
                     )}
                     <div className="flex justify-between items-center">
                       <span className="text-lg font-semibold text-gray-700">Total Payout:</span>
                       <span className="text-2xl font-bold text-green-600">
-                        {totalPayout} credits
+                        {formatCredits(totalPayout)} credits
                       </span>
                     </div>
                     <div className="flex justify-between items-center">
@@ -281,11 +282,13 @@ export function Results({
                             : 'text-red-600'
                         }`}
                       >
-                        {totalPayout -
-                          betAmount * selectedHandCount -
-                          (gameState?.devilsDealHeld && gameState?.devilsDealCost
-                            ? Math.abs(gameState.devilsDealCost)
-                            : 0)}{' '}
+                        {formatCredits(
+                          totalPayout -
+                            betAmount * selectedHandCount -
+                            (gameState?.devilsDealHeld && gameState?.devilsDealCost
+                              ? Math.abs(gameState.devilsDealCost)
+                              : 0)
+                        )}{' '}
                         credit
                         {Math.abs(
                           totalPayout -

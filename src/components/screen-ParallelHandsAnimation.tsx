@@ -10,6 +10,7 @@ import {
 import { StreakProgressBar } from './StreakProgressBar';
 import './screen-ParallelHandsAnimation.css';
 import { useThemeAudio } from '../hooks/useThemeAudio';
+import { formatCredits } from '../utils/format';
 
 /**
  * ParallelHandsAnimation screen component props
@@ -123,14 +124,14 @@ const HandCard = React.memo(function HandCard({
           <div className="score-text">{handResult.rank.replace('-', ' ').toUpperCase()}</div>
           <div className="score-breakdown">
             <div className="base-payout">
-              {withRewards.multiplier}x × {betAmount} bet ={' '}
-              {Math.round(withRewards.multiplier * betAmount)}
+              {withRewards.multiplier}x × {formatCredits(betAmount)} bet ={' '}
+              {formatCredits(Math.round(withRewards.multiplier * betAmount))}
             </div>
             {/* Always show streak multiplier for consistent card height */}
             <div className={`streak-badge streak-${getStreakTier(streakMultiplier)}`}>
               × {streakMultiplier.toFixed(1)}x {streakMultiplier > 1.0 ? 'Streak!' : 'Base'}
             </div>
-            <div className="score-value">= {Math.round(creditsWon)} credits</div>
+            <div className="score-value">= {formatCredits(Math.round(creditsWon))} credits</div>
           </div>
         </div>
       </div>
@@ -195,23 +196,31 @@ export function ParallelHandsAnimation({
   const [revealedCount, setRevealedCount] = useState(0);
   const [currentStreakCounter, setCurrentStreakCounter] = useState(initialStreakCounter);
   const [lastHandScored, setLastHandScored] = useState<boolean | null>(null);
-  const [isScrollingOff, setIsScrollingOff] = useState(false);
+  /** When true, we're fading out to results (no scroll-off; avoids cards falling off / height bugs) */
+  const [isFadingOut, setIsFadingOut] = useState(false);
   const [visibleStartIndex, setVisibleStartIndex] = useState(0);
   const gridRef = useRef<HTMLDivElement>(null);
   const viewportRef = useRef<HTMLDivElement>(null);
   const lastVisibilityCheckRef = useRef<number>(0);
+  const lastScrollTimeRef = useRef<number>(0);
+  const SCROLL_THROTTLE_MS = 400;
+
+  // Completion timing: longer pause and fade so it doesn't feel rushed
+  const REVEAL_COMPLETE_PAUSE_MS = 2400;
+  const FADE_DURATION_MS = 800;
 
   const columnsPerRow = getColumnsPerRow(parallelHands.length);
+  /** Once all are revealed, we render the full grid (no virtualization) so no cards pop in when fade starts */
+  const allRevealed = parallelHands.length > 0 && revealedCount === parallelHands.length;
 
   // Calculate dynamic scale based on hand count to fit all in viewport
   // Updated to be less aggressive - keeps hands ~22% larger at each tier
   const getScaleFactor = (handCount: number): number => {
-    if (handCount <= 10) return 1.0; // Normal size
-    if (handCount <= 25) return 0.95; // Slightly smaller (was 0.9)
-    if (handCount <= 50) return 0.85; // Medium compression (was 0.75)
-    if (handCount <= 75) return 0.75; // More compression (was 0.65)
-    if (handCount <= 100) return 0.65; // Heavy compression (was 0.55)
-    return 0.55; // Maximum compression for 100+ (was 0.45)
+    if (handCount <= 10) return 1.0;
+    if (handCount <= 50) return 0.95; // One step to avoid stall at 25–26
+    if (handCount <= 75) return 0.85;
+    if (handCount <= 100) return 0.75;
+    return 0.65;
   };
 
   const scaleFactor = getScaleFactor(parallelHands.length);
@@ -286,12 +295,12 @@ export function ParallelHandsAnimation({
     } else if (
       revealedCount === parallelHands.length &&
       parallelHands.length > 0 &&
-      !isScrollingOff
+      !isFadingOut
     ) {
-      // All hands revealed, pause for 300ms then trigger scroll-off animation
+      // All hands revealed: pause so user can see the last hands, then fade out (no scroll)
       const pauseTimer = setTimeout(() => {
-        setIsScrollingOff(true);
-      }, 300);
+        setIsFadingOut(true);
+      }, REVEAL_COMPLETE_PAUSE_MS);
 
       return () => clearTimeout(pauseTimer);
     }
@@ -302,66 +311,51 @@ export function ParallelHandsAnimation({
     handRevealInterval,
     onAnimationComplete,
     currentStreakCounter,
-    isScrollingOff,
+    isFadingOut,
     playSound,
   ]);
 
-  // Handle scroll-off animation when triggered
+  // When fading out, wait for fade transition then complete (no scroll — avoids height/race issues)
   useEffect(() => {
-    if (isScrollingOff && gridRef.current) {
-      const grid = gridRef.current;
+    if (!isFadingOut) return;
+    const doneTimer = setTimeout(() => {
+      onAnimationComplete(currentStreakCounter);
+    }, FADE_DURATION_MS);
+    return () => clearTimeout(doneTimer);
+  }, [isFadingOut, currentStreakCounter, onAnimationComplete]);
 
-      // Calculate the height needed to scroll everything off screen
-      const gridHeight = grid.getBoundingClientRect().height;
-      const viewportHeight =
-        viewportRef.current?.getBoundingClientRect().height || window.innerHeight;
-      const scrollDistance = gridHeight + viewportHeight;
-
-      // Apply CSS class for scroll-off animation
-      grid.classList.add('scroll-off');
-      grid.style.transform = `scale(${scaleFactor}) translateY(-${scrollDistance}px)`;
-
-      // Wait for animation to complete (1 second for smooth scroll), then call completion
-      const animationTimer = setTimeout(() => {
-        onAnimationComplete(currentStreakCounter);
-      }, 1000); // 1 second animation duration
-
-      return () => clearTimeout(animationTimer);
-    }
-  }, [isScrollingOff, scaleFactor, currentStreakCounter, onAnimationComplete]);
-
-  // Auto-scroll to keep the most recently revealed hand visible
+  // Auto-scroll to keep the most recently revealed hand visible (throttled to avoid hitch)
   useEffect(() => {
-    if (revealedCount > 0 && viewportRef.current && gridRef.current) {
-      const viewport = viewportRef.current;
-      const grid = gridRef.current;
+    if (revealedCount === 0 || !viewportRef.current || !gridRef.current) return;
+    const now = Date.now();
+    if (now - lastScrollTimeRef.current < SCROLL_THROTTLE_MS) return;
 
-      // Get all revealed hand cards
-      const handCards = grid.querySelectorAll('.grid-hand-card');
-      if (handCards.length > 0) {
-        const lastCard = handCards[handCards.length - 1] as HTMLElement;
+    const viewport = viewportRef.current;
+    const grid = gridRef.current;
 
-        // Calculate the position to scroll to
-        // We want to keep the newly revealed card visible with some margin
-        const cardRect = lastCard.getBoundingClientRect();
-        const viewportRect = viewport.getBoundingClientRect();
+    const handCards = grid.querySelectorAll('.grid-hand-card');
+    if (handCards.length === 0) return;
 
-        // If the card is below the visible area, scroll to it
-        if (cardRect.bottom > viewportRect.bottom) {
-          const scrollTarget = viewport.scrollTop + (cardRect.bottom - viewportRect.bottom) + 100;
-          viewport.scrollTo({
-            top: scrollTarget,
-            behavior: 'smooth',
-          });
-        }
-      }
-    }
+    const lastCard = handCards[handCards.length - 1] as HTMLElement;
+    const cardRect = lastCard.getBoundingClientRect();
+    const viewportRect = viewport.getBoundingClientRect();
+
+    if (cardRect.bottom <= viewportRect.bottom) return;
+
+    lastScrollTimeRef.current = now;
+    const scrollTarget = viewport.scrollTop + (cardRect.bottom - viewportRect.bottom) + 100;
+
+    // Defer scroll to next frame so we don't fight with React layout
+    const rafId = requestAnimationFrame(() => {
+      viewport.scrollTo({ top: scrollTarget, behavior: 'smooth' });
+    });
+    return () => cancelAnimationFrame(rafId);
   }, [revealedCount]);
 
   // Performance optimization: Remove hands that have scrolled out of viewport
-  // Enable for 50+ hands (lowered from 150) to reduce DOM node count
+  // Enable for 50+ hands until all revealed (then we show full grid so no pop-in when fading)
   useEffect(() => {
-    if (parallelHands.length >= 50 && !isScrollingOff) {
+    if (parallelHands.length >= 50 && !allRevealed) {
       const viewport = viewportRef.current;
       const grid = gridRef.current;
 
@@ -409,11 +403,13 @@ export function ParallelHandsAnimation({
         viewport.removeEventListener('scroll', updateVisibleRange);
       };
     }
-  }, [parallelHands.length, visibleStartIndex, isScrollingOff, scaleFactor]);
+  }, [parallelHands.length, visibleStartIndex, allRevealed, scaleFactor]);
 
-  // Single rendering path for all hand counts - no scrolling, compressed grid
+  // Single rendering path: real cards only (no scroll-off placeholders); completion is fade-out
   return (
-    <div className="parallel-hands-animation-container select-none">
+    <div
+      className={`parallel-hands-animation-container select-none${isFadingOut ? ' parallel-hands-fade-out' : ''}`}
+    >
       {/* Streak Thermometer */}
       {gameConfig.streakMultiplier.enabled && (
         <StreakProgressBar
@@ -438,27 +434,21 @@ export function ParallelHandsAnimation({
           }}
         >
           {parallelHands.slice(0, revealedCount).map((hand, index) => {
-            // Performance optimization: Virtual scrolling for 50+ hands (lowered from 150)
-            // Only render hands within a window around the current viewport
-            if (parallelHands.length >= 50) {
+            // Virtual scrolling for 50+ hands; disable when all revealed so no burst of cards when fade starts
+            if (!allRevealed && parallelHands.length >= 50) {
               const columnsCount = getColumnsPerRow(parallelHands.length);
-              const bufferSize = columnsCount * 1; // Keep 1 row as buffer (reduced from 2)
+              const bufferSize = columnsCount * 1;
 
-              // Remove hands that have scrolled far above the viewport
               if (index < visibleStartIndex - bufferSize) {
                 return null;
               }
 
-              // Limit rendering to ~8 rows beyond visible area (reduced from 12)
               const maxRenderIndex = visibleStartIndex + columnsCount * 8;
               if (index > maxRenderIndex && index > revealedCount - columnsCount * 3) {
-                // Skip if beyond render window AND not in the recent reveal zone
-                // (keep last 3 rows of revealed hands always rendered, reduced from 4)
                 return null;
               }
             }
 
-            // Use pre-calculated streak multiplier
             const multiplierForThisHand = handStreakMultipliers[index];
 
             return (

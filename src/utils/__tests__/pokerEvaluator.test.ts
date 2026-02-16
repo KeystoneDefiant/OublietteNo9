@@ -543,6 +543,31 @@ describe('PokerEvaluator', () => {
         expect(result.rank).toBe('four-of-a-kind');
       });
 
+      it('should score wheel (A-2-3-4-5) when wild acts as 3', () => {
+        const hand: Card[] = [
+          createCard('A', 'hearts'),
+          createCard('2', 'diamonds'),
+          createCard('4', 'clubs'),
+          createCard('5', 'spades'),
+          createCard('K', 'hearts', { isWild: true }),
+        ];
+        const result = PokerEvaluator.evaluate(hand);
+        expect(result.rank).toBe('straight');
+      });
+
+      it('should score four of a kind (not full house) for A, A, Wild, Wild + kicker', () => {
+        const hand: Card[] = [
+          createCard('A', 'hearts'),
+          createCard('A', 'diamonds'),
+          createCard('K', 'clubs'),
+          createCard('2', 'spades', { isWild: true }),
+          createCard('3', 'hearts', { isWild: true }),
+        ];
+        const result = PokerEvaluator.evaluate(hand);
+        expect(['four-of-a-kind', 'five-of-a-kind']).toContain(result.rank);
+        expect(result.rank).not.toBe('full-house');
+      });
+
       it('should create optimal hand with 2 pair + 2 wilds', () => {
         const hand: Card[] = [
           createCard('K', 'hearts'),

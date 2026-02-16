@@ -90,7 +90,8 @@ export interface ThemeSoundConfig {
 }
 
 export interface ThemeMusicConfig {
-  backgroundMusic?: string; // Path relative to theme/sounds/ directory
+  /** Single track (loops) or multiple tracks (play in random order, no back-to-back) */
+  backgroundMusic?: string | string[]; // Path(s) relative to theme/sounds/ directory
 }
 
 export interface ThemeConfig {
@@ -107,6 +108,7 @@ export type FailureStateType =
   | 'minimum-bet-multiplier'
   | 'minimum-credit-efficiency'
   | 'minimum-winning-hands'
+  | 'minimum-win-percent'
   | null;
 
 export interface GameState {
@@ -149,5 +151,7 @@ export interface GameState {
   audioSettings: {
     musicEnabled: boolean;
     soundEffectsEnabled: boolean;
+    musicVolume: number; // 0.0 to 1.0
+    soundEffectsVolume: number; // 0.0 to 1.0
   };
 }

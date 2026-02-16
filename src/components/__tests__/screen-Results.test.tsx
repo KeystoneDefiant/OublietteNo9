@@ -13,6 +13,7 @@ describe('Results Component', () => {
   });
 
   const mockHand: Hand = {
+    id: 'hand-1',
     cards: [
       createMockCard('A', 'hearts', 'ah'),
       createMockCard('K', 'hearts', 'kh'),
@@ -20,24 +21,17 @@ describe('Results Component', () => {
       createMockCard('J', 'hearts', 'jh'),
       createMockCard('10', 'hearts', '10h'),
     ],
-    totalPayout: 2500,
   };
 
   const mockProps = {
     playerHand: mockHand.cards,
     heldIndices: [0, 1, 2, 3, 4],
-    parallelHands: [mockHand, mockHand, mockHand],
-    bestHand: mockHand,
+    parallelHands: [{ ...mockHand, id: 'h1' }, { ...mockHand, id: 'h2' }, { ...mockHand, id: 'h3' }],
     betAmount: 10,
     selectedHandCount: 3,
     credits: 10000,
     round: 5,
     totalEarnings: 5000,
-    handCounts: {
-      'royal-flush': 3,
-      'straight-flush': 0,
-      'four-of-a-kind': 0,
-    },
     rewardTable: {
       'royal-flush': 250,
       'straight-flush': 50,
@@ -53,7 +47,7 @@ describe('Results Component', () => {
     it('should render the component', () => {
       render(<Results {...mockProps} />);
       
-      expect(screen.getByText(/Results/i)).toBeInTheDocument();
+      expect(screen.getByText(/Hand Summary/i)).toBeInTheDocument();
     });
 
     it('should display round number', () => {
@@ -73,7 +67,7 @@ describe('Results Component', () => {
     it('should display total payout correctly', () => {
       render(<Results {...mockProps} />);
       
-      // 3 hands * 2500 = 7500 total payout
+      // 3 royal flushes * 250 * 10 = 7500 total payout (with streak)
       expect(screen.getByText(/7,500/)).toBeInTheDocument();
     });
 
@@ -81,7 +75,7 @@ describe('Results Component', () => {
       render(<Results {...mockProps} />);
       
       // 10 bet * 3 hands = 30 credits
-      expect(screen.getByText(/30/)).toBeInTheDocument();
+      expect(document.body.textContent).toMatch(/30/);
     });
 
     it('should calculate profit correctly', () => {
@@ -94,19 +88,27 @@ describe('Results Component', () => {
     it('should show positive profit in green', () => {
       render(<Results {...mockProps} />);
       
-      const profitElement = screen.getByText(/7,470/).parentElement;
-      expect(profitElement).toHaveClass(/text-green/);
+      const profitElement = screen.getByText(/7,470/).closest('span');
+      expect(profitElement).toHaveClass('text-green-600');
     });
 
     it('should show negative profit in red', () => {
+      // Use hands that evaluate to high-card (0 payout) so total payout is 0, profit -30
+      const highCardHand: Hand = {
+        id: 'hc',
+        cards: [
+          createMockCard('2', 'hearts', '2h'),
+          createMockCard('4', 'clubs', '4c'),
+          createMockCard('7', 'diamonds', '7d'),
+          createMockCard('9', 'spades', '9s'),
+          createMockCard('K', 'hearts', 'kh'),
+        ],
+      };
       const lossProps = {
         ...mockProps,
-        parallelHands: [{ ...mockHand, totalPayout: 5 }],
+        parallelHands: [highCardHand, highCardHand, highCardHand],
       };
-      
       const { container } = render(<Results {...lossProps} />);
-      
-      // Find negative profit (5 - 30 = -25)
       const profitElements = container.querySelectorAll('.text-red-600');
       expect(profitElements.length).toBeGreaterThan(0);
     });
@@ -156,88 +158,80 @@ describe('Results Component', () => {
     it('should display hand counts', () => {
       render(<Results {...mockProps} />);
       
-      expect(screen.getByText(/Royal Flush.*3/i)).toBeInTheDocument();
+      expect(screen.getByText(/Royal flush.*3/i)).toBeInTheDocument();
     });
 
     it('should only show hands that occurred', () => {
+      const onePairHand: Hand = {
+        id: 'op1',
+        cards: [
+          createMockCard('J', 'hearts', 'jh'),
+          createMockCard('J', 'clubs', 'jc'),
+          createMockCard('2', 'diamonds', '2d'),
+          createMockCard('5', 'spades', '5s'),
+          createMockCard('9', 'hearts', '9h'),
+        ],
+      };
       const props = {
         ...mockProps,
-        handCounts: {
-          'royal-flush': 1,
-          'one-pair': 2,
-        },
+        parallelHands: [mockHand, onePairHand, onePairHand],
       };
-      
       render(<Results {...props} />);
-      
-      expect(screen.getByText(/Royal Flush.*1/i)).toBeInTheDocument();
-      expect(screen.getByText(/One Pair.*2/i)).toBeInTheDocument();
+      expect(screen.getByText(/Royal flush.*1/i)).toBeInTheDocument();
+      expect(screen.getByText(/One pair.*2/i)).toBeInTheDocument();
     });
 
     it('should not display hands with zero count', () => {
       render(<Results {...mockProps} />);
-      
-      // Straight flush has 0 count, should not be shown
-      expect(screen.queryByText(/Straight Flush/i)).not.toBeInTheDocument();
+      expect(screen.queryByText(/Straight flush/i)).not.toBeInTheDocument();
     });
   });
 
   describe('Held Cards Display', () => {
-    it('should display held cards', () => {
+    it('should display held cards section', () => {
       render(<Results {...mockProps} />);
-      
-      expect(screen.getByText(/Held Cards/i)).toBeInTheDocument();
+      expect(screen.getByText(/Cards Held:/i)).toBeInTheDocument();
     });
 
     it('should show all held cards', () => {
-      const { container } = render(<Results {...mockProps} />);
-      
-      // 5 cards were held
-      const heldCards = container.querySelectorAll('.held-card, .card');
-      expect(heldCards.length).toBeGreaterThanOrEqual(5);
+      render(<Results {...mockProps} />);
+      expect(screen.getByText(/A/)).toBeInTheDocument();
+      expect(screen.getByText(/K/)).toBeInTheDocument();
+      expect(screen.getByText(/Q/)).toBeInTheDocument();
+      expect(screen.getByText(/J/)).toBeInTheDocument();
+      expect(screen.getByText(/10/)).toBeInTheDocument();
     });
 
-    it('should display "None" when no cards held', () => {
+    it('should not show Cards Held section when no cards held', () => {
       const props = { ...mockProps, heldIndices: [] };
       render(<Results {...props} />);
-      
-      expect(screen.getByText(/None/i)).toBeInTheDocument();
+      expect(screen.queryByText(/Cards Held:/i)).not.toBeInTheDocument();
     });
   });
 
-  describe('Best Hand Display', () => {
-    it('should show best hand title', () => {
+  describe('Round Summary', () => {
+    it('should show Round Summary with payouts', () => {
       render(<Results {...mockProps} />);
-      
-      expect(screen.getByText(/Best Hand/i)).toBeInTheDocument();
+      expect(screen.getByText(/Round Summary/i)).toBeInTheDocument();
+      expect(screen.getByText(/7,500/)).toBeInTheDocument();
     });
 
-    it('should display best hand cards', () => {
-      const { container } = render(<Results {...mockProps} />);
-      
-      // Best hand should be displayed
-      const cards = container.querySelectorAll('.card');
-      expect(cards.length).toBeGreaterThan(0);
-    });
-
-    it('should show best hand payout', () => {
+    it('should show Total Payout and Round Cost', () => {
       render(<Results {...mockProps} />);
-      
-      expect(screen.getByText(/2,500/)).toBeInTheDocument();
+      expect(screen.getByText(/Total Payout/i)).toBeInTheDocument();
+      expect(screen.getByText(/Round Cost/i)).toBeInTheDocument();
     });
   });
 
   describe('Continue Button', () => {
     it('should display continue button', () => {
       render(<Results {...mockProps} />);
-      
       expect(screen.getByRole('button', { name: /Continue/i })).toBeInTheDocument();
     });
 
     it('should call onReturnToPreDraw when clicked', () => {
       render(<Results {...mockProps} />);
       const continueButton = screen.getByRole('button', { name: /Continue/i });
-      
       fireEvent.click(continueButton);
       expect(mockProps.onReturnToPreDraw).toHaveBeenCalledTimes(1);
     });
@@ -245,7 +239,6 @@ describe('Results Component', () => {
     it('should be enabled', () => {
       render(<Results {...mockProps} />);
       const continueButton = screen.getByRole('button', { name: /Continue/i });
-      
       expect(continueButton).not.toBeDisabled();
     });
   });
@@ -253,23 +246,19 @@ describe('Results Component', () => {
   describe('Accessibility', () => {
     it('should have proper heading structure', () => {
       render(<Results {...mockProps} />);
-      
       const headings = screen.getAllByRole('heading');
       expect(headings.length).toBeGreaterThan(0);
     });
 
     it('should have descriptive labels', () => {
       render(<Results {...mockProps} />);
-      
       expect(screen.getByText(/Total Payout/i)).toBeInTheDocument();
-      expect(screen.getByText(/Bet Cost/i)).toBeInTheDocument();
+      expect(screen.getByText(/Round Cost/i)).toBeInTheDocument();
     });
 
     it('should have button with accessible name', () => {
       render(<Results {...mockProps} />);
-      
-      const button = screen.getByRole('button', { name: /Continue/i });
-      expect(button).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /Continue/i })).toBeInTheDocument();
     });
   });
 
@@ -293,46 +282,57 @@ describe('Results Component', () => {
       
       render(<Results {...props} />);
       
-      expect(screen.getByText(/Round: 1/)).toBeInTheDocument();
+      // Round and number may be in separate elements (e.g. "Round: " + <span>1</span>)
+      expect(document.body.textContent).toMatch(/Round:\s*1/);
     });
   });
 
   describe('Edge Cases', () => {
     it('should handle zero payout', () => {
+      const highCardHand: Hand = {
+        id: 'hc',
+        cards: [
+          createMockCard('2', 'hearts', '2h'),
+          createMockCard('4', 'clubs', '4c'),
+          createMockCard('7', 'diamonds', '7d'),
+          createMockCard('9', 'spades', '9s'),
+          createMockCard('K', 'hearts', 'kh'),
+        ],
+      };
       const props = {
         ...mockProps,
-        parallelHands: [{ ...mockHand, totalPayout: 0 }],
+        parallelHands: [highCardHand],
+        selectedHandCount: 1,
+        betAmount: 10,
       };
-      
       render(<Results {...props} />);
-      
-      expect(screen.getByText(/0/)).toBeInTheDocument();
+      expect(document.body.textContent).toContain('0');
     });
 
-    it('should handle empty hand counts', () => {
-      const props = {
-        ...mockProps,
-        handCounts: {},
-      };
-      
-      render(<Results {...props} />);
-      
-      // Should still render without errors
+    it('should render without errors with minimal props', () => {
+      render(<Results {...mockProps} />);
       expect(screen.getByRole('button', { name: /Continue/i })).toBeInTheDocument();
     });
 
     it('should pluralize "credit" correctly', () => {
+      const onePairHand: Hand = {
+        id: 'op',
+        cards: [
+          createMockCard('J', 'hearts', 'jh'),
+          createMockCard('J', 'clubs', 'jc'),
+          createMockCard('2', 'diamonds', '2d'),
+          createMockCard('5', 'spades', '5s'),
+          createMockCard('9', 'hearts', '9h'),
+        ],
+      };
       const props = {
         ...mockProps,
-        parallelHands: [{ ...mockHand, totalPayout: 1 }],
+        parallelHands: [onePairHand],
         selectedHandCount: 1,
         betAmount: 1,
       };
-      
       render(<Results {...props} />);
-      
-      // Should show "credit" not "credits" for singular
-      expect(screen.getByText(/1 credit(?!s)/i)).toBeInTheDocument();
+      expect(document.body.textContent).toMatch(/1 credit(?!s)/i);
     });
   });
 });

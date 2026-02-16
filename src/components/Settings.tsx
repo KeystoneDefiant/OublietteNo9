@@ -11,12 +11,25 @@ import { ThemeConfig } from '../types/index';
 
 interface SettingsProps {
   onClose: () => void;
+  /** Current audio settings (for volume sliders) */
+  audioSettings?: { musicVolume: number; soundEffectsVolume: number };
+  /** Called when music volume slider changes (0–1) */
+  onMusicVolumeChange?: (value: number) => void;
+  /** Called when sound effects volume slider changes (0–1) */
+  onSoundEffectsVolumeChange?: (value: number) => void;
 }
 
-export function Settings({ onClose }: SettingsProps) {
+export function Settings({
+  onClose,
+  audioSettings,
+  onMusicVolumeChange,
+  onSoundEffectsVolumeChange,
+}: SettingsProps) {
   const [selectedTheme, setSelectedTheme] = useState<string>(getSelectedTheme());
   const [availableThemes, setAvailableThemes] = useState<string[]>([]);
   const [currentThemeConfig, setCurrentThemeConfig] = useState<ThemeConfig | null>(null);
+  const musicVolume = audioSettings?.musicVolume ?? 0.7;
+  const soundEffectsVolume = audioSettings?.soundEffectsVolume ?? 1.0;
 
   // Discover available themes on mount
   useEffect(() => {
@@ -95,6 +108,55 @@ export function Settings({ onClose }: SettingsProps) {
               ))}
             </div>
           </div>
+
+          {/* Volume sliders */}
+          {(onMusicVolumeChange != null || onSoundEffectsVolumeChange != null) && (
+            <div className="border-2 border-gray-200 rounded-lg p-4">
+              <h3 className="text-xl font-bold text-gray-800 mb-4">Audio</h3>
+              <div className="space-y-4">
+                {onMusicVolumeChange != null && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Music volume
+                    </label>
+                    <input
+                      type="range"
+                      min={0}
+                      max={1}
+                      step={0.05}
+                      value={musicVolume}
+                      onChange={(e) => onMusicVolumeChange(parseFloat(e.target.value))}
+                      className="w-full h-2 rounded-lg appearance-none cursor-pointer bg-gray-200 accent-blue-600"
+                      aria-label="Music volume"
+                    />
+                    <span className="text-sm text-gray-600 ml-2">
+                      {Math.round(musicVolume * 100)}%
+                    </span>
+                  </div>
+                )}
+                {onSoundEffectsVolumeChange != null && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Sound effects volume
+                    </label>
+                    <input
+                      type="range"
+                      min={0}
+                      max={1}
+                      step={0.05}
+                      value={soundEffectsVolume}
+                      onChange={(e) => onSoundEffectsVolumeChange?.(parseFloat(e.target.value))}
+                      className="w-full h-2 rounded-lg appearance-none cursor-pointer bg-gray-200 accent-blue-600"
+                      aria-label="Sound effects volume"
+                    />
+                    <span className="text-sm text-gray-600 ml-2">
+                      {Math.round(soundEffectsVolume * 100)}%
+                    </span>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Save Button */}

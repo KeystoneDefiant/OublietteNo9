@@ -530,7 +530,7 @@ export class PokerEvaluator {
         }
         if (expanded.length === 5) {
           const result = this.evaluateRegularHand(expanded);
-          if (result.rank === 'four-of-a-kind') {
+          if (result.rank === 'four-of-a-kind' || result.rank === 'five-of-a-kind') {
             return result;
           }
         }
@@ -631,7 +631,38 @@ export class PokerEvaluator {
       }
     }
 
-    // Try Straight
+    // Try Straight (including wheel A-2-3-4-5)
+    // Wheel: ranks 2, 3, 4, 5, A (Ace low)
+    const wheelRanks: Array<keyof typeof RANK_VALUES> = ['2', '3', '4', '5', 'A'];
+    const wheelNeeded = wheelRanks.filter((r) => !regularCards.some((c) => c.rank === r));
+    if (wheelNeeded.length <= numWilds) {
+      const expanded = [...regularCards];
+      for (const rank of wheelNeeded) {
+        expanded.push({
+          suit: 'hearts',
+          rank: rank as Card['rank'],
+          id: `wild-straight-wheel-${rank}`,
+          isWild: true,
+        });
+      }
+      for (let i = wheelNeeded.length; i < numWilds; i++) {
+        expanded.push({
+          suit: 'hearts',
+          rank: 'A' as Card['rank'],
+          id: `wild-straight-wheel-fill-${i}`,
+          isWild: true,
+        });
+      }
+      if (expanded.length === 5) {
+        const result = this.evaluateRegularHand(expanded);
+        if (result.rank === 'straight') {
+          if (!bestHand || scoreHand(result) > scoreHand(bestHand)) {
+            bestHand = result;
+          }
+        }
+      }
+    }
+
     for (let startRank = 2; startRank <= 10; startRank++) {
       const needed: Array<keyof typeof RANK_VALUES> = [];
       for (let i = 0; i < 5; i++) {

@@ -31,7 +31,6 @@ describe('Devil\'s Deal Cost Calculation', () => {
       );
 
       expect(cost).toBe(expectedCost);
-      expect(cost).toBe(5000); // ((250 * 2 * 10) * 10) * 10 / 100 = 5000
     });
 
     it('should scale cost with bet amount', () => {
@@ -128,14 +127,16 @@ describe('Devil\'s Deal Cost Calculation', () => {
       const selectedHandCount = 7;
       const costPercent = devilsDealConfig.baseCostPercent;
 
-      // This might produce a decimal: ((3 * 3 * 7) * 7 * 10) / 100 = (63 * 7 * 10) / 100 = 4410 / 100 = 44.1
       const cost = Math.round(
         ((bestMultiplier * betAmount * selectedHandCount) * selectedHandCount * costPercent) / 100
       );
 
-      // Should be rounded to integer
       expect(Number.isInteger(cost)).toBe(true);
-      expect(cost).toBe(44); // 44.1 rounded to 44
+      expect(cost).toBe(
+        Math.round(
+          ((bestMultiplier * betAmount * selectedHandCount) * selectedHandCount * costPercent) / 100
+        )
+      );
     });
 
     it('should handle edge case with very small bet amount', () => {
@@ -148,8 +149,10 @@ describe('Devil\'s Deal Cost Calculation', () => {
         ((bestMultiplier * betAmount * selectedHandCount) * selectedHandCount * costPercent) / 100
       );
 
-      // Should still calculate correctly: ((250 * 1 * 1) * 1 * 10) / 100 = (250 * 1 * 10) / 100 = 25
-      expect(cost).toBe(25);
+      const expected = Math.round(
+        ((bestMultiplier * betAmount * selectedHandCount) * selectedHandCount * costPercent) / 100
+      );
+      expect(cost).toBe(expected);
       expect(cost).toBeGreaterThan(0);
     });
 

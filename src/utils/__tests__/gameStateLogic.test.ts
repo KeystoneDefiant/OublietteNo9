@@ -47,6 +47,12 @@ function createGameState(overrides: Partial<GameState> = {}): GameState {
     isEndlessMode: false,
     currentFailureState: null,
     winningHandsLastRound: 0,
+    audioSettings: {
+      musicEnabled: true,
+      soundEffectsEnabled: true,
+      musicVolume: 0.7,
+      soundEffectsVolume: 1.0,
+    },
   };
 
   return { ...baseState, ...overrides };

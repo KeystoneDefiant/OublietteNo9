@@ -42,6 +42,22 @@ export function checkFailureConditions(state: GameState): FailureStateType {
     }
   }
 
+  // Check minimum win percentage (end game: start 25%, +5%/round, lose at 105%)
+  const minWinPct = conditions.minimumWinPercent;
+  if (minWinPct?.enabled && state.round >= 2) {
+    const roundJustCompleted = state.round - 1;
+    const requiredPercent = Math.min(
+      minWinPct.startPercent + (roundJustCompleted - 1) * minWinPct.incrementPerRound,
+      minWinPct.maxPercent
+    );
+    const minRequiredWins = Math.ceil(
+      (state.selectedHandCount * requiredPercent) / 100
+    );
+    if (state.winningHandsLastRound < minRequiredWins) {
+      return 'minimum-win-percent';
+    }
+  }
+
   // All conditions passed
   return null;
 }
@@ -79,6 +95,14 @@ export function getFailureStateDescription(
     case 'minimum-winning-hands': {
       const required = endlessConfig.failureConditions.minimumWinningHandsPerRound!.value;
       return `Win ≥ ${required} hands/round (last: ${state.winningHandsLastRound})`;
+    }
+    case 'minimum-win-percent': {
+      const minWinPct = endlessConfig.failureConditions.minimumWinPercent!;
+      const requiredPercent = Math.min(
+        minWinPct.startPercent + (state.round - 1) * minWinPct.incrementPerRound,
+        minWinPct.maxPercent
+      );
+      return `You must win at least ${requiredPercent}% of the hands played this round`;
     }
     default:
       return '';

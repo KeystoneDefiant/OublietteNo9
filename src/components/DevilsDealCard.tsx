@@ -1,5 +1,6 @@
 import { Card as CardType } from '../types';
 import { Card } from './Card';
+import { formatCredits } from '../utils/format';
 
 interface DevilsDealCardProps {
   card: CardType;
@@ -54,7 +55,7 @@ export function DevilsDealCard({
           onClick={handleClick}
         >
           <p className="text-lg font-semibold mb-2">{quip}</p>
-          <p className="text-sm text-gray-600">Cost: {cost} credits</p>
+          <p className="text-sm text-gray-600">Cost: {formatCredits(cost)} credits</p>
         </div>
       </div>
     </div>

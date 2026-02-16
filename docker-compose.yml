@@ -2,10 +2,11 @@ version: '3.8'
 
 services:
   dev:
+    name: oubliette-number-9-poker-dev
     build:
       context: .
       dockerfile: Dockerfile.dev
-    container_name: pokerthing-dev
+    container_name: oubliette-number-9-poker-dev
     ports:
       - '5173:5173'
       - '5174:5174'

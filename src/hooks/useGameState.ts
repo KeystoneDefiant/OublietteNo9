@@ -11,17 +11,25 @@ import { useThemeAudio } from '../hooks/useThemeAudio';
 
 const currentMode = getCurrentGameMode();
 
+const DEFAULT_AUDIO_SETTINGS = {
+  musicEnabled: true,
+  soundEffectsEnabled: true,
+  musicVolume: 0.7,
+  soundEffectsVolume: 1.0,
+};
+
 // Load audio settings from localStorage if available
-function loadAudioSettings(): { musicEnabled: boolean; soundEffectsEnabled: boolean } {
+function loadAudioSettings(): GameState['audioSettings'] {
   try {
     const stored = localStorage.getItem('audioSettings');
     if (stored) {
-      return JSON.parse(stored);
+      const parsed = JSON.parse(stored);
+      return { ...DEFAULT_AUDIO_SETTINGS, ...parsed };
     }
   } catch {
     // Ignore errors
   }
-  return { musicEnabled: true, soundEffectsEnabled: true };
+  return { ...DEFAULT_AUDIO_SETTINGS };
 }
 
 const INITIAL_STATE: GameState = {
@@ -75,7 +83,7 @@ export function useGameState() {
   // Use specialized hooks for different action types
   const gameActions = useGameActions(state, setState);
   const shopActions = useShopActions(state, setState);
-  const { playSound, playMusic, stopMusic } = useThemeAudio(state.audioSettings);
+  const { playSound, playMusic, stopMusic, resetRoundSoundCounts } = useThemeAudio(state.audioSettings);
 
   // Track previous music enabled state to handle re-enabling
   const prevMusicEnabledRef = useRef(state.audioSettings.musicEnabled);
@@ -129,6 +137,7 @@ export function useGameState() {
   }, []);
 
   const returnToPreDraw = useCallback((payout: number = 0) => {
+    resetRoundSoundCounts();
     setState((prev) => {
       // Count winning hands from last round (hands with payout > 0)
       const winningHandsCount = prev.parallelHands.reduce((count, hand) => {
@@ -258,7 +267,7 @@ export function useGameState() {
         currentStreakMultiplier: 1.0, // Reset multiplier at the start of each round
       };
     });
-  }, [playSound]);
+  }, [playSound, resetRoundSoundCounts]);
 
   const startNewRun = useCallback(() => {
     playMusic();
@@ -481,8 +490,8 @@ export function useGameState() {
       // Save to localStorage
       try {
         localStorage.setItem('audioSettings', JSON.stringify({
+          ...prev.audioSettings,
           musicEnabled: newMusicEnabled,
-          soundEffectsEnabled: prev.audioSettings.soundEffectsEnabled,
         }));
       } catch {
         // Ignore storage errors
@@ -510,7 +519,7 @@ export function useGameState() {
       // Save to localStorage
       try {
         localStorage.setItem('audioSettings', JSON.stringify({
-          musicEnabled: prev.audioSettings.musicEnabled,
+          ...prev.audioSettings,
           soundEffectsEnabled: newSoundEffectsEnabled,
         }));
       } catch {
@@ -524,6 +533,32 @@ export function useGameState() {
           soundEffectsEnabled: newSoundEffectsEnabled,
         },
       };
+    });
+  }, []);
+
+  const setMusicVolume = useCallback((musicVolume: number) => {
+    const clamped = Math.max(0, Math.min(1, musicVolume));
+    setState((prev) => {
+      const next = { ...prev, audioSettings: { ...prev.audioSettings, musicVolume: clamped } };
+      try {
+        localStorage.setItem('audioSettings', JSON.stringify(next.audioSettings));
+      } catch {
+        // Ignore storage errors
+      }
+      return next;
+    });
+  }, []);
+
+  const setSoundEffectsVolume = useCallback((soundEffectsVolume: number) => {
+    const clamped = Math.max(0, Math.min(1, soundEffectsVolume));
+    setState((prev) => {
+      const next = { ...prev, audioSettings: { ...prev.audioSettings, soundEffectsVolume: clamped } };
+      try {
+        localStorage.setItem('audioSettings', JSON.stringify(next.audioSettings));
+      } catch {
+        // Ignore storage errors
+      }
+      return next;
     });
   }, []);
 
@@ -566,5 +601,7 @@ export function useGameState() {
     updateStreakCounter,
     toggleMusic,
     toggleSoundEffects,
+    setMusicVolume,
+    setSoundEffectsVolume,
   };
 }

@@ -3,10 +3,11 @@ import { RewardTable } from './RewardTable';
 import { CheatsModal } from './CheatsModal';
 import { GameHeader } from './GameHeader';
 import { FailureStateType, GameState } from '../types';
+import { formatCredits } from '../utils/format';
 
 /**
  * PreDraw screen component props
- * 
+ *
  * Screen where players configure their bet amount and number of parallel hands
  * before dealing. Includes validation, affordability checks, and bet efficiency
  * calculations.
@@ -62,17 +63,17 @@ interface PreDrawProps {
 
 /**
  * PreDraw screen component
- * 
+ *
  * Primary configuration screen before dealing a hand. Allows players to:
  * - Adjust bet amount (with min/max validation)
  * - Select number of parallel hands (up to available)
  * - View bet efficiency and total cost
  * - Access reward table and game information
  * - Deal hand when ready or end current run
- * 
+ *
  * Includes comprehensive input validation with visual feedback and
  * auto-adjustment if previous bet becomes unaffordable in new round.
- * 
+ *
  * @example
  * <PreDraw
  *   credits={5000}
@@ -110,7 +111,7 @@ export function PreDraw({
 }: PreDrawProps) {
   const [showCheats, setShowCheats] = useState(false);
   const [showEndRunConfirm, setShowEndRunConfirm] = useState(false);
-  
+
   // Auto-set to max hands and min bet
   useEffect(() => {
     // Set to maximum available hands
@@ -122,7 +123,7 @@ export function PreDraw({
       onSetBetAmount(minimumBet);
     }
   }, [handCount, minimumBet, selectedHandCount, betAmount, onSetSelectedHandCount, onSetBetAmount]);
-  
+
   // Check if player can afford the minimum cost
   useEffect(() => {
     if (gameOver) {
@@ -130,18 +131,15 @@ export function PreDraw({
     }
 
     const minCost = minimumBet * handCount;
-    
+
     // If can't afford minimum, trigger game over
     if (credits < minCost) {
       onEndRun();
     }
   }, [credits, minimumBet, handCount, gameOver, onEndRun]);
-  
+
   // Memoize calculations
-  const totalBetCost = useMemo(
-    () => minimumBet * handCount,
-    [minimumBet, handCount]
-  );
+  const totalBetCost = useMemo(() => minimumBet * handCount, [minimumBet, handCount]);
   const canAffordBet = useMemo(() => credits >= totalBetCost, [credits, totalBetCost]);
   const canPlayRound = useMemo(() => !gameOver && canAffordBet, [gameOver, canAffordBet]);
   const efficiency = useMemo(
@@ -150,13 +148,17 @@ export function PreDraw({
   );
 
   return (
-    <div id="preDraw-screen" className="min-h-screen p-6 relative overflow-hidden select-none" role="main">
+    <div
+      id="preDraw-screen"
+      className="min-h-screen p-6 relative overflow-hidden select-none"
+      role="main"
+    >
       <div className="max-w-7xl mx-auto relative z-0">
         {/* Header */}
         <div className="flex justify-between items-center mb-6">
-          <GameHeader 
-            credits={credits} 
-            round={round} 
+          <GameHeader
+            credits={credits}
+            round={round}
             efficiency={efficiency}
             failureState={failureState}
             gameState={gameState}
@@ -189,7 +191,7 @@ export function PreDraw({
                 <div className="bg-red-50 border-2 border-red-300 rounded-lg p-6 mb-8">
                   <p className="text-lg font-semibold text-red-700 mb-2">Insufficient Credits</p>
                   <p className="text-red-600 mb-2">
-                    You need at least {minimumBet * handCount} credits to play.
+                    You need at least {formatCredits(minimumBet * handCount)} credits to play.
                   </p>
                   <p className="text-red-600">
                     The game has ended because you cannot afford the minimum bet with maximum hands.
@@ -198,17 +200,16 @@ export function PreDraw({
               )}
 
               <div className="space-y-6">
-
                 <div role="group">
                   <div className="flex items-center gap-3">
                     <div className="flex-1 px-4 py-3 border-2 border-gray-300 bg-gray-50 rounded-lg text-lg text-gray-700 font-semibold">
-                      {minimumBet} credits
+                      {formatCredits(minimumBet)} credits
                     </div>
                     <div className="flex-1 px-4 py-3 border-2 border-gray-300 bg-gray-50 rounded-lg text-lg text-gray-700 font-semibold">
                       {handCount} hands
                     </div>
                     <div className="flex-1 px-4 py-3 border-2 border-gray-300 bg-gray-50 rounded-lg text-lg text-gray-700 font-semibold">
-                    {totalBetCost} credits to play
+                      {formatCredits(totalBetCost)} credits to play
                     </div>
                   </div>
                 </div>
@@ -239,7 +240,13 @@ export function PreDraw({
                         : 'bg-gray-400 text-gray-600 cursor-not-allowed'
                     }
                   `}
-                  aria-label={gameOver ? 'Cannot play - game over' : `Run round with ${handCount} hands at ${minimumBet} credits per hand`}
+                  aria-label={
+                    gameOver
+                      ? 'Cannot play - game over'
+                      : `Run round with ${handCount} hands at ${formatCredits(
+                          minimumBet
+                        )} credits per hand`
+                  }
                   aria-disabled={!canPlayRound}
                 >
                   {gameOver ? 'Cannot Play - Game Over' : 'Run Round'}
@@ -255,11 +262,6 @@ export function PreDraw({
                 </button>
               </div>
             </div>
-          </div>
-
-          {/* Reward Table Sidebar */}
-          <div className="lg:col-span-1">
-            <RewardTable rewardTable={rewardTable} wildCardCount={gameState?.wildCardCount || 0} />
           </div>
         </div>
       </div>
