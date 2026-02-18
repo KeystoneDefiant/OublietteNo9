@@ -157,10 +157,10 @@ export function useGameState() {
       // Increment round
       const newRound = prev.round + 1;
 
-      // Check if we should enter endless mode
+      // Check if we should enter endless mode (at or above startRound)
       const endlessConfig = currentMode.endlessMode;
       const shouldEnterEndlessMode =
-        endlessConfig && newRound > endlessConfig.startRound && !prev.isEndlessMode;
+        endlessConfig && newRound >= endlessConfig.startRound && !prev.isEndlessMode;
 
       // Update minimum bet - only increase every X rounds (based on minimumBetIncreaseInterval)
       let newMinimumBet = prev.minimumBet;
@@ -171,11 +171,8 @@ export function useGameState() {
         newBaseMinimumBet = prev.minimumBet;
       }
 
-      // Only increase minimum bet when in/entering endless mode and the minimum-bet-multiplier rule is enabled
-      const minBetRuleEnabled = endlessConfig?.failureConditions?.minimumBetMultiplier?.enabled ?? false;
+      // Increase minimum bet every X rounds based on minimumBetIncreaseInterval and minimumBetIncreasePercent
       const shouldIncreaseMinBet =
-        minBetRuleEnabled &&
-        (shouldEnterEndlessMode || prev.isEndlessMode) &&
         newRound % currentMode.minimumBetIncreaseInterval === 0;
       if (shouldIncreaseMinBet) {
         const minBetMultiplier = 1 + currentMode.minimumBetIncreasePercent / 100;

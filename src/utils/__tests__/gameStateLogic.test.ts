@@ -130,15 +130,15 @@ describe('Game State Logic - Endless Mode Entry', () => {
   const mode = getCurrentGameMode();
   const endlessConfig = mode.endlessMode!;
 
-  it('should enter endless mode after startRound', () => {
+  it('should enter endless mode at or above startRound', () => {
     const startRound = endlessConfig.startRound;
-    let state = createGameState({ round: startRound, isEndlessMode: false });
+    let state = createGameState({ round: startRound - 1, isEndlessMode: false });
 
-    // At start round (not yet in endless mode)
+    // Before start round: not in endless mode
     expect(state.isEndlessMode).toBe(false);
 
-    // After start round (newRound > startRound)
-    state = { ...state, round: startRound + 1, isEndlessMode: true };
+    // At start round (newRound >= startRound): enter endless mode
+    state = { ...state, round: startRound, isEndlessMode: true };
     expect(state.isEndlessMode).toBe(true);
   });
 
@@ -147,16 +147,16 @@ describe('Game State Logic - Endless Mode Entry', () => {
     const currentMinimumBet = 15;
 
     const state = createGameState({
-      round: startRound,
+      round: startRound - 1,
       minimumBet: currentMinimumBet,
       baseMinimumBet: 1, // Old base
       isEndlessMode: false,
     });
 
-    // When entering endless mode (at startRound + 1), baseMinimumBet should be set to current minimumBet
+    // When entering endless mode (at startRound), baseMinimumBet should be set to current minimumBet
     const newState = {
       ...state,
-      round: startRound + 1,
+      round: startRound,
       isEndlessMode: true,
       baseMinimumBet: state.minimumBet, // Set to current minimum bet
     };
@@ -164,12 +164,10 @@ describe('Game State Logic - Endless Mode Entry', () => {
     expect(newState.baseMinimumBet).toBe(currentMinimumBet);
   });
 
-  it('should not enter endless mode before or at startRound', () => {
+  it('should not enter endless mode before startRound', () => {
     const startRound = endlessConfig.startRound;
-    const stateAtStartRound = createGameState({ round: startRound, isEndlessMode: false });
     const stateBeforeStartRound = createGameState({ round: startRound - 1, isEndlessMode: false });
 
-    expect(stateAtStartRound.isEndlessMode).toBe(false);
     expect(stateBeforeStartRound.isEndlessMode).toBe(false);
   });
 });
@@ -411,8 +409,8 @@ describe('Game State Logic - Round Progression Scenarios', () => {
         ? Math.floor(state.minimumBet * multiplier)
         : state.minimumBet;
 
-      // Endless mode starts AFTER startRound (newRound > startRound)
-      const shouldEnterEndless = newRound > startRound && !state.isEndlessMode;
+      // Endless mode starts at or above startRound (newRound >= startRound)
+      const shouldEnterEndless = newRound >= startRound && !state.isEndlessMode;
       const newBaseMinimumBet = shouldEnterEndless ? state.minimumBet : state.baseMinimumBet;
 
       state = {
@@ -423,8 +421,8 @@ describe('Game State Logic - Round Progression Scenarios', () => {
         isEndlessMode: shouldEnterEndless || state.isEndlessMode,
       };
 
-      // Endless mode should start at startRound + 1
-      if (newRound === startRound + 1) {
+      // Endless mode should start at startRound
+      if (newRound === startRound) {
         expect(state.isEndlessMode).toBe(true);
         expect(state.baseMinimumBet).toBeGreaterThanOrEqual(mode.startingBet);
       }
@@ -440,14 +438,14 @@ describe('Game State Logic - Round Progression Scenarios', () => {
     let state = createGameState({
       minimumBet: 15,
       baseMinimumBet: 1,
-      round: startRound,
+      round: startRound - 1,
       isEndlessMode: false,
     });
 
-    // Enter endless mode (at startRound + 1)
+    // Enter endless mode (at startRound)
     state = {
       ...state,
-      round: startRound + 1,
+      round: startRound,
       baseMinimumBet: state.minimumBet, // Set to current minimum bet
       isEndlessMode: true,
     };

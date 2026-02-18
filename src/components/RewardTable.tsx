@@ -24,8 +24,8 @@ const RANK_LABELS: { [key in HandRank]: string } = {
 
 const RANK_ORDER: HandRank[] = [
   'royal-flush',
-  'straight-flush',
   'five-of-a-kind',
+  'straight-flush',
   'four-of-a-kind',
   'full-house',
   'flush',

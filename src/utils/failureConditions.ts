@@ -42,12 +42,12 @@ export function checkFailureConditions(state: GameState): FailureStateType {
     }
   }
 
-  // Check minimum win percentage (end game: start 25%, +5%/round, lose at 105%)
+  // Check minimum win percentage (only increments from when endless mode started)
   const minWinPct = conditions.minimumWinPercent;
-  if (minWinPct?.enabled && state.round >= 2) {
-    const roundJustCompleted = state.round - 1;
+  if (minWinPct?.enabled && endlessConfig && state.round > endlessConfig.startRound) {
+    const roundsCompletedInEndless = state.round - endlessConfig.startRound;
     const requiredPercent = Math.min(
-      minWinPct.startPercent + (roundJustCompleted - 1) * minWinPct.incrementPerRound,
+      minWinPct.startPercent + (roundsCompletedInEndless - 1) * minWinPct.incrementPerRound,
       minWinPct.maxPercent
     );
     const minRequiredWins = Math.ceil(
@@ -98,8 +98,11 @@ export function getFailureStateDescription(
     }
     case 'minimum-win-percent': {
       const minWinPct = endlessConfig.failureConditions.minimumWinPercent!;
+      const roundsCompletedInEndless = endlessConfig.startRound
+        ? Math.max(0, state.round - endlessConfig.startRound)
+        : 0;
       const requiredPercent = Math.min(
-        minWinPct.startPercent + (state.round - 1) * minWinPct.incrementPerRound,
+        minWinPct.startPercent + (roundsCompletedInEndless - 1) * minWinPct.incrementPerRound,
         minWinPct.maxPercent
       );
       return `You must win at least ${requiredPercent}% of the hands played this round`;
