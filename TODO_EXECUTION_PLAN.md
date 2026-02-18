@@ -6,7 +6,7 @@
 
 This plan orders work by dependency and risk: fixes first, then config, then large features (animation, tutorial). Medium/low items from TODO.md are tracked separately.
 
-**Current status:** Phase A (fixes) complete. Phase B (animation) complete. Additional fixes (shop, draw logic, poker evaluator) done. Next: Phase C (tutorial).
+**Current status:** Phase A (fixes) complete. Phase B (animation) complete. Phase C (tutorial) complete. Additional fixes (shop, draw logic, poker evaluator) done. Next: Phase D (finishing up).
 
 ---
 
@@ -82,18 +82,9 @@ This plan orders work by dependency and risk: fixes first, then config, then lar
 
 ---
 
-## Phase C: Tutorial mode
+## Phase C: Tutorial mode ✅ DONE (Feb 2026)
 
-**Target:** Tutorial from main menu; series of slides (1–7) covering: intro, pay table, parallel hands, multiplier, shop, wild/dead cards, end game.
-
-**Approach:**
-
-1. **Entry:** Add “Tutorial” (or “How to play”) to main menu; navigates to tutorial flow (new screen or modal).
-2. **Slides:** One component per slide or single component with slide index; content per TODO (Slide 1–7). Use simple layout (title, body text, optional image/diagram, Next/Back).
-3. **Assets:** No new assets required for MVP; use text + existing UI. Optional: screenshots or simple diagrams later.
-4. **Exit:** “Back to menu” or “Done” on last slide returns to main menu.
-
-**Files:** New `Tutorial.tsx` (or `TutorialSlides.tsx`), main menu link, route/screen in `App.tsx`, optional `tutorialConfig.ts` for copy.
+**Implemented:** "How to Play" on main menu; 7 slides; Back/Next; Escape and arrow keys; white-space pre-line for content. **Files:** `Tutorial.tsx`, `Tutorial.css`, `tutorialConfig.ts`.
 
 ---
 
@@ -124,7 +115,7 @@ This plan orders work by dependency and risk: fixes first, then config, then lar
 - [x] A.2 Config: max hand size and number of draws configurable. **(Done)**
 - [x] A.3 Endgame: only apply endless rules that are enabled in config (e.g. no min bet increase at 30 unless enabled). **(Done)**
 - [x] B Animation: left (held + score list), right (rolodex multi-stack grid), bottom (multiplier bar); cascade; responsive; scaling. **(Done)**
-- [ ] C Tutorial: main menu entry, slides 1–7, back to menu.
+- [x] C Tutorial: main menu entry, slides 1–7, back to menu. **(Done)**
 - [ ] D Clarifications, tests, docs.
 
 ---
@@ -140,6 +131,8 @@ Beyond Phase A, the following were implemented:
 | Draw logic refactor | Done | maxDraws/drawsCompletedThisRound; deal = first draw; nextActionIsDraw; draws left = maxDraws - drawsCompletedThisRound - 1. Config sets base maxDraws; extra draw purchase adds 1. |
 | Poker 5-of-a-kind | Done | 3 wilds + 2 queens (or any rank with count + wilds ≥ 5) now evaluates as five-of-a-kind. |
 | **Phase B Animation** | Done | Rolodex with multi-stack (1–4 stacks by hand count), cascade animation, responsive grid (vertical vs 2-column at 700px), container-based scaling, left panel + multiplier bar. |
+| **Phase C Tutorial** | Done | "How to Play" on main menu; 7 slides (intro, pay table, parallel hands, multiplier, shop, wild/dead, end game); Back/Next; Escape and arrow keys; white-space pre-line for content. |
+| **Rules button removed** | Done | Rules removed from main menu; tutorial covers rules. |
 
 ---
 

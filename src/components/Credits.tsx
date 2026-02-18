@@ -24,7 +24,11 @@ export function Credits({ onClose }: CreditsProps) {
 
           <div>
             <h3 className="text-xl font-bold text-gray-800 mb-2">Special Thanks</h3>
-            <p className="text-gray-600">You, for taking a peek at this nonsense.</p>
+            <ul className="text-gray-600">
+              <li>You, for taking a peek at this nonsense.</li>
+              <li>Kristen, for actually enjoying this mess of a game.</li>
+              <li>Kelsey, for the Devil's Deal idea. Blame her.</li>
+            </ul>
           </div>
 
           <div>

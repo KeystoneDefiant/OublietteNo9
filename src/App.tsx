@@ -16,12 +16,12 @@ const ParallelHandsAnimation = lazy(() => import('./components/screen-ParallelHa
 const Shop = lazy(() => import('./components/Shop').then(m => ({ default: m.Shop })));
 const GameOver = lazy(() => import('./components/screen-GameOver').then(m => ({ default: m.GameOver })));
 const Credits = lazy(() => import('./components/Credits').then(m => ({ default: m.Credits })));
-const Rules = lazy(() => import('./components/Rules').then(m => ({ default: m.Rules })));
+const Tutorial = lazy(() => import('./components/Tutorial').then(m => ({ default: m.Tutorial })));
 const Settings = lazy(() => import('./components/Settings').then(m => ({ default: m.Settings })));
 
 function App() {
   const [showCredits, setShowCredits] = useState(false);
-  const [showRules, setShowRules] = useState(false);
+  const [showTutorial, setShowTutorial] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [showPayoutTable, setShowPayoutTable] = useState(false);
   const [themeConfig, setThemeConfig] = useState<ThemeConfig | null>(null);
@@ -126,8 +126,8 @@ function App() {
           <div key="menu" className="screen-enter">
             <MainMenu
               onStartRun={startNewRun}
+              onTutorial={() => setShowTutorial(true)}
               onCredits={() => setShowCredits(true)}
-              onRules={() => setShowRules(true)}
               onSettings={() => setShowSettings(true)}
             />
           </div>
@@ -142,10 +142,10 @@ function App() {
         </Suspense>
       )}
 
-      {showRules && (
+      {showTutorial && (
         <Suspense fallback={<LoadingSpinner />}>
           <div className="modal-enter">
-            <Rules onClose={() => setShowRules(false)} />
+            <Tutorial onClose={() => setShowTutorial(false)} />
           </div>
         </Suspense>
       )}

@@ -29,23 +29,17 @@
 
 - [x] **Mobile:** Left panel stacks above animation on narrow screens; multiplier bar scales; hand stacks scale to viewport.
 
-## TUTORIAL MODE
+## TUTORIAL MODE ✅ (Phase C – completed Feb 2026)
 
-- We will be adding a tutorial mode that walks the player through a hand of the game, explaining dead and wild cards, and the idea of parallel hands. This option will be available from the main menu, and when clicked, we will show a series of slides with examples of hands, how poker hands work, and how to play the game.
+- [x] "How to Play" button on main menu opens tutorial modal.
+- [x] Seven slides: intro, pay table, parallel hands, multiplier, shop, wild/dead cards, end game.
+- [x] Back/Next navigation; Back to Menu on first slide; Done on last slide.
+- [x] Keyboard: Escape to close, Arrow keys to navigate.
+- [x] Tutorial content supports `\n` for line breaks (white-space: pre-line).
 
-- Slide 1 introduces the game as a single player poker game where the player is given cards, they select any number to hold, and then new cards are drawn to make up a poker hand.
+### UI changes (Feb 2026)
 
-- Slide 2 shows the pay table for the poker hands and how each round there is an ever increasing bet amount, and the hands will pay out based on the bet size.
-
-- Slide 3 introduces the idea of parallel hands. After the player holds their cards, that deck of cards is cloned and shuffled, and multiple hands are drawn against the cards they've held. Also mentioned is that each parallel hand is played with the bet size, so if you're playing 5 parallel hands with a bet size of 2, you pay 10 credits to play the round. If you are playing 100 parallel hands with a bet size of 5, the round costs 500 credits to play. But with more hands comes more possibilities and chances to win, even on a bad draw! And if you have a really good set of held cards, you rake in the money!
-
-- Slide 4 introduces the multiplier system, where the more hands you score in a row, the higher the multiplier goes. When you don't score a hand, your progress to the next level of multiplier goes down.
-
-- Slide 5 introduces the store and the various things you can buy. From adding more parallel hands, buying dead cards, wild cards, additional draw phases, additional cards in your draw phase, etc. Every decision to buy has an implication to your game - while buying more hands grants more chances to win and increase the multiplier even higher, it makes each round more expensive.
-
-- Slide 6 informs the player of wild cards and dead cards.
-
-- Slide 7 mentions the end game after round 30 and losing is an eventuality. The goal is to win with as many credits as you can, but just surviving to round 30 is a success!
+- [x] Rules button removed from main menu (tutorial covers rules).
 
 ## FINISHING UP
 
@@ -55,10 +49,10 @@
 
 ## Medium Priority - In Progress
 
-### Code Splitting
+### Code Splitting ✅
 
-- 🔄 Ready to implement with React.lazy() for screens
-- 🔄 Will reduce initial bundle size
+- [x] React.lazy() for screens (MainMenu, PreDraw, GameTable, Results, ParallelHandsAnimation, Shop, GameOver, Credits, Tutorial, Settings)
+- [x] Initial bundle size reduced (~29%)
 
 ### Hook Tests
 
@@ -138,10 +132,12 @@ Growth:  +171% coverage increase
 
 ## Summary
 
-**Completed**: 6/25 items from IMPROVEMENTS.md (24%)  
+**Completed**: 7/25 items from IMPROVEMENTS.md (28%)  
 **High Priority**: 3/3 complete (100%) ✅  
-**Medium Priority**: 2/10 complete (20%) 🔄  
-**Build Status**: ✅ Passing (373.83 kB main bundle, 29% smaller)  
+**Medium Priority**: 3/10 complete (30%) 🔄  
+**Build Status**: ✅ Passing (387.58 kB main bundle)  
 **Test Status**: ✅ 475+ tests passing
 
-Phase B (animation change) complete. All recommendations from IMPROVEMENTS.md are being systematically implemented.
+Phase B (animation) and Phase C (tutorial) complete. Rules button removed; code splitting in place.
+
+**Recent session (Feb 16, 2026):** Phase B multi-stack rolodex and Phase C tutorial fully implemented. TODO_EXECUTION_PLAN.md cleaned up (orphaned Phase C approach content removed).

@@ -1,11 +1,11 @@
 interface MainMenuProps {
   onStartRun: () => void;
+  onTutorial: () => void;
   onCredits: () => void;
-  onRules: () => void;
   onSettings: () => void;
 }
 
-export function MainMenu({ onStartRun, onCredits, onRules, onSettings }: MainMenuProps) {
+export function MainMenu({ onStartRun, onTutorial, onCredits, onSettings }: MainMenuProps) {
   return (
     <div
       id="mainMenu-screen"
@@ -24,16 +24,16 @@ export function MainMenu({ onStartRun, onCredits, onRules, onSettings }: MainMen
             Start Run
           </button>
           <button
+            onClick={onTutorial}
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-6 rounded-lg transition-colors text-lg"
+          >
+            How to Play
+          </button>
+          <button
             onClick={onCredits}
             className="w-full bg-gray-600 hover:bg-gray-700 text-white font-bold py-4 px-6 rounded-lg transition-colors text-lg"
           >
             Credits
-          </button>
-          <button
-            onClick={onRules}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-6 rounded-lg transition-colors text-lg"
-          >
-            Rules
           </button>
           <button
             onClick={onSettings}
