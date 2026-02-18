@@ -1,5 +1,5 @@
-import React, { useEffect, useState, useRef, useMemo } from 'react';
-import { Hand, RewardTable } from '../types';
+import React, { useEffect, useState, useMemo, useCallback } from 'react';
+import { Card as CardType, Hand, RewardTable } from '../types';
 import { PokerEvaluator } from '../utils/pokerEvaluator';
 import { gameConfig } from '../config/gameConfig';
 import {
@@ -8,19 +8,23 @@ import {
   getStreakProgress,
 } from '../utils/streakCalculator';
 import { StreakProgressBar } from './StreakProgressBar';
+import { Card } from './Card';
 import './screen-ParallelHandsAnimation.css';
 import { useThemeAudio } from '../hooks/useThemeAudio';
-import { formatCredits } from '../utils/format';
+import { formatCreditsWithSuffix } from '../utils/format';
 
 /**
  * ParallelHandsAnimation screen component props
  *
- * Displays animated reveal of all parallel hands in a grid layout
- * with automatic virtualization for large hand counts.
+ * Phase B: Left panel (held cards + score list), right rolodex, bottom multiplier bar.
  */
 interface ParallelHandsAnimationProps {
   /** Array of all parallel hands to animate */
   parallelHands: Hand[];
+  /** Base hand cards (for held cards display) */
+  playerHand: CardType[];
+  /** Indices of held cards in playerHand */
+  heldIndices: number[];
   /** Reward multipliers for calculating payouts */
   rewardTable: RewardTable;
   /** Number of hands selected (for reference) */
@@ -33,75 +37,65 @@ interface ParallelHandsAnimationProps {
   onAnimationComplete: (finalStreakCount: number) => void;
   /** Audio settings for sound effects */
   audioSettings?: { musicEnabled: boolean; soundEffectsEnabled: boolean };
+  /** Toggle music callback */
+  onToggleMusic?: () => void;
+  /** Toggle sound effects callback */
+  onToggleSoundEffects?: () => void;
+  /** Animation speed mode from game state (1 | 2 | 3 | 'skip') */
+  animationSpeedMode?: 1 | 2 | 3 | 'skip';
+  /** Cycle animation speed callback */
+  onCycleAnimationSpeed?: () => void;
 }
 
-/**
- * Shared function to calculate grid columns based on hand count
- * Uses configuration from gameConfig.parallelHandsGrid
- *
- * @param handCount - Total number of hands to display
- * @returns Number of columns (1, 2, 4, or 8)
- */
+/** Split hands across stacks: stack s gets indices where i % numStacks === s */
+function getStackHands(
+  parallelHands: Hand[],
+  numStacks: number
+): { hand: Hand; globalIndex: number }[][] {
+  const stacks: { hand: Hand; globalIndex: number }[][] = Array.from({ length: numStacks }, () => []);
+  parallelHands.forEach((hand, i) => {
+    stacks[i % numStacks].push({ hand, globalIndex: i });
+  });
+  return stacks;
+}
 
-/**
- * Shared function to calculate grid columns
- */
-const getColumnsPerRow = (handCount: number): number => {
-  const grid = gameConfig.parallelHandsGrid;
-  if (handCount <= grid.singleColumn.max) return 1;
-  if (handCount >= grid.twoColumn.min && handCount <= grid.twoColumn.max) return 2;
-  if (handCount >= grid.fourColumn.min && handCount <= grid.fourColumn.max) return 4;
-  return 8; // 101+ hands
-};
-
-/**
- * Render a single hand card component
- *
- * Used by both virtualized (50+ hands) and non-virtualized rendering.
- * Displays the 5 cards in the hand with special handling for dead/wild cards,
- * the hand rank, and credits won (with streak multiplier applied).
- *
- * Memoized to prevent unnecessary re-renders.
- *
- * @param hand - The hand to render
- * @param rewardTable - Reward multipliers for payout calculation
- * @param betAmount - Bet amount for calculating credits won
- * @param index - Index for staggered animation delay
- * @param streakMultiplier - Current streak multiplier to apply
- * @returns JSX element representing the hand card
- */
-const HandCard = React.memo(function HandCard({
+/** Phase B: Compact hand card for rolodex */
+const RolodexHandCard = React.memo(function RolodexHandCard({
   hand,
   rewardTable,
   betAmount,
-  index,
   streakMultiplier,
+  isFront,
+  isAnimatingOut,
 }: {
   hand: Hand;
   rewardTable: RewardTable;
   betAmount: number;
-  index: number;
   streakMultiplier: number;
+  isFront: boolean;
+  isAnimatingOut: boolean;
 }) {
   const handResult = PokerEvaluator.evaluate(hand.cards);
   const withRewards = PokerEvaluator.applyRewards(handResult, rewardTable);
   const creditsWon = Math.round(withRewards.multiplier * betAmount * streakMultiplier);
 
   return (
-    <div className="grid-hand-card" style={{ animationDelay: `${index * 0.02}s` }}>
-      <div className="hand-content">
-        <div className="hand-cards">
+    <div
+      className={`rolodex-hand-card ${isFront ? 'rolodex-front' : 'rolodex-back'} ${isAnimatingOut ? 'rolodex-animating-out' : ''}`}
+    >
+      <div className="rolodex-hand-content">
+        <div className="rolodex-hand-cards">
           {hand.cards.map((card, cardIndex) => {
             if (card.isDead) {
               return (
-                <div key={cardIndex} className="hand-card-small" title="Dead Card">
-                  <span className="text-2xl">💀</span>
+                <div key={cardIndex} className="rolodex-card-small" title="Dead Card">
+                  <span className="text-xl">💀</span>
                 </div>
               );
             }
             if (card.isWild) {
               return (
-                <div key={cardIndex} className="hand-card-small" title="Wild Card">
+                <div key={cardIndex} className="rolodex-card-small" title="Wild Card">
                   <span className="text-orange-600 font-bold text-xs">WILD</span>
                 </div>
               );
@@ -111,7 +105,7 @@ const HandCard = React.memo(function HandCard({
             return (
               <div
                 key={cardIndex}
-                className="hand-card-small"
+                className="rolodex-card-small"
                 title={`${card.rank}${card.suit.charAt(0).toUpperCase()}`}
               >
                 <span className={suitColorClass}>{card.rank}</span>
@@ -120,70 +114,105 @@ const HandCard = React.memo(function HandCard({
             );
           })}
         </div>
-        <div className="hand-score">
-          <div className="score-text">{handResult.rank.replace('-', ' ').toUpperCase()}</div>
-          <div className="score-breakdown">
-            <div className="base-payout">
-              {withRewards.multiplier}x × {formatCredits(betAmount)} bet ={' '}
-              {formatCredits(Math.round(withRewards.multiplier * betAmount))}
-            </div>
-            {/* Always show streak multiplier for consistent card height */}
-            <div className={`streak-badge streak-${getStreakTier(streakMultiplier)}`}>
-              × {streakMultiplier.toFixed(1)}x {streakMultiplier > 1.0 ? 'Streak!' : 'Base'}
-            </div>
-            <div className="score-value">= {formatCredits(Math.round(creditsWon))} credits</div>
-          </div>
+        <div className="rolodex-score">
+          <span className="rolodex-rank">{toCapitalCase(handResult.rank)}</span>
+          <span className="rolodex-credits">{formatCreditsWithSuffix(creditsWon)}</span>
         </div>
       </div>
     </div>
   );
 });
 
-/**
- * DEPRECATED: Use HandCard component instead
- * Kept for backwards compatibility but prefer the memoized HandCard component
- */
-function renderHandCard(
-  hand: Hand,
-  rewardTable: RewardTable,
-  betAmount: number,
-  index: number,
-  streakMultiplier: number
-): JSX.Element {
+/** Single rolodex stack with delayed start for cascade effect */
+function RolodexStack({
+  stackHands,
+  startDelay,
+  displayBeforeOut,
+  ROTATE_FADE_MS,
+  handStreakMultipliers,
+  rewardTable,
+  betAmount,
+  playSound,
+  onHandRevealed,
+  maxVisible,
+}: {
+  stackHands: { hand: Hand; globalIndex: number }[];
+  startDelay: number;
+  displayBeforeOut: number;
+  ROTATE_FADE_MS: number;
+  handStreakMultipliers: number[];
+  rewardTable: RewardTable;
+  betAmount: number;
+  playSound: (type: string, rank?: string) => void;
+  onHandRevealed: (globalIndex: number) => void;
+  maxVisible: number;
+}) {
+  const [started, setStarted] = useState(false);
+  const [revealedCount, setRevealedCount] = useState(0);
+  const [isAnimatingOut, setIsAnimatingOut] = useState(false);
+
+  useEffect(() => {
+    const t = setTimeout(() => setStarted(true), startDelay);
+    return () => clearTimeout(t);
+  }, [startDelay]);
+
+  useEffect(() => {
+    if (!started || revealedCount >= stackHands.length || stackHands.length === 0) return;
+    const { hand, globalIndex } = stackHands[revealedCount];
+    const handResult = PokerEvaluator.evaluate(hand.cards);
+    const withRewards = PokerEvaluator.applyRewards(handResult, rewardTable);
+    const handScored = withRewards.multiplier > 0;
+
+    const scoreTimer = setTimeout(() => {
+      if (handScored) playSound('handScoring', handResult.rank);
+      onHandRevealed(globalIndex);
+      setIsAnimatingOut(true);
+    }, displayBeforeOut);
+
+    return () => clearTimeout(scoreTimer);
+  }, [started, revealedCount, stackHands, displayBeforeOut, playSound, onHandRevealed, rewardTable]);
+
+  useEffect(() => {
+    if (!isAnimatingOut) return;
+    const advanceTimer = setTimeout(() => {
+      setIsAnimatingOut(false);
+      setRevealedCount((prev) => prev + 1);
+    }, ROTATE_FADE_MS);
+    return () => clearTimeout(advanceTimer);
+  }, [isAnimatingOut, ROTATE_FADE_MS]);
+
+  if (stackHands.length === 0) return null;
+
   return (
-    <HandCard
-      hand={hand}
-      rewardTable={rewardTable}
-      betAmount={betAmount}
-      index={index}
-      streakMultiplier={streakMultiplier}
-    />
+    <div className="rolodex-stack">
+      {Array.from(
+        { length: Math.min(maxVisible, stackHands.length - revealedCount + 1) },
+        (_, i) => {
+          const idx = revealedCount + i;
+          if (idx >= stackHands.length) return null;
+          const { hand, globalIndex } = stackHands[idx];
+          const isFront = i === 0;
+          return (
+            <RolodexHandCard
+              key={hand.id}
+              hand={hand}
+              rewardTable={rewardTable}
+              betAmount={betAmount}
+              streakMultiplier={handStreakMultipliers[globalIndex]}
+              isFront={isFront}
+              isAnimatingOut={isFront && isAnimatingOut}
+            />
+          );
+        }
+      )}
+    </div>
   );
 }
 
-/**
- * ParallelHandsAnimation screen component
- *
- * Displays all parallel hands in an animated grid reveal:
- * - Hands revealed sequentially (top-to-bottom, left-to-right)
- * - Dynamic columns based on hand count (1, 2, 4, or 8 columns)
- * - Smooth scrolling as hands are revealed
- * - Automatic virtualization for 50+ hands using react-virtuoso
- * - Viewport-locked with content scrolling off top
- *
- * Uses configuration from gameConfig for timing and grid layout.
- * Calls onAnimationComplete when all hands are revealed and delay expires.
- *
- * @example
- * <ParallelHandsAnimation
- *   parallelHands={hands}
- *   rewardTable={rewards}
- *   betAmount={10}
- *   onAnimationComplete={() => moveToResults()}
- * />
- */
 export function ParallelHandsAnimation({
   parallelHands,
+  playerHand,
+  heldIndices,
   rewardTable,
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   selectedHandCount: _selectedHandCount,
@@ -191,41 +220,92 @@ export function ParallelHandsAnimation({
   initialStreakCounter,
   onAnimationComplete,
   audioSettings,
+  animationSpeedMode = 1,
+  onToggleMusic,
+  onToggleSoundEffects,
+  onCycleAnimationSpeed,
 }: ParallelHandsAnimationProps) {
   const { playSound } = useThemeAudio(audioSettings);
-  const [revealedCount, setRevealedCount] = useState(0);
+  const [totalRevealedCount, setTotalRevealedCount] = useState(0);
   const [currentStreakCounter, setCurrentStreakCounter] = useState(initialStreakCounter);
   const [lastHandScored, setLastHandScored] = useState<boolean | null>(null);
-  /** When true, we're fading out to results (no scroll-off; avoids cards falling off / height bugs) */
   const [isFadingOut, setIsFadingOut] = useState(false);
-  const [visibleStartIndex, setVisibleStartIndex] = useState(0);
-  const gridRef = useRef<HTMLDivElement>(null);
-  const viewportRef = useRef<HTMLDivElement>(null);
-  const lastVisibilityCheckRef = useRef<number>(0);
-  const lastScrollTimeRef = useRef<number>(0);
-  const SCROLL_THROTTLE_MS = 400;
+  const [scoreByRank, setScoreByRank] = useState<Record<string, { count: number; credits: number }>>({});
 
-  // Completion timing: longer pause and fade so it doesn't feel rushed
-  const REVEAL_COMPLETE_PAUSE_MS = 2400;
-  const FADE_DURATION_MS = 800;
+  const animCfg = gameConfig.animation as { parallelHandsRolodexMaxVisible?: number };
+  const maxVisible = animCfg.parallelHandsRolodexMaxVisible ?? 10;
 
-  const columnsPerRow = getColumnsPerRow(parallelHands.length);
-  /** Once all are revealed, we render the full grid (no virtualization) so no cards pop in when fade starts */
-  const allRevealed = parallelHands.length > 0 && revealedCount === parallelHands.length;
+  // Stack count: 1 (≤100), 2 (101-200), 3 (201-300), 4 (301+)
+  const numStacks =
+    parallelHands.length <= 100 ? 1
+    : parallelHands.length <= 200 ? 2
+    : parallelHands.length <= 300 ? 3
+    : 4;
+  const stackHands = useMemo(
+    () => getStackHands(parallelHands, numStacks),
+    [parallelHands, numStacks]
+  );
 
-  // Calculate dynamic scale based on hand count to fit all in viewport
-  // Updated to be less aggressive - keeps hands ~22% larger at each tier
-  const getScaleFactor = (handCount: number): number => {
-    if (handCount <= 10) return 1.0;
-    if (handCount <= 50) return 0.95; // One step to avoid stall at 25–26
-    if (handCount <= 75) return 0.85;
-    if (handCount <= 100) return 0.75;
-    return 0.65;
-  };
+  // Fixed ms per hand by speed mode: 1x=200ms, 2x=125ms, 3x=65ms
+  const msPerHand =
+    animationSpeedMode === 2 ? 125 : animationSpeedMode === 3 ? 65 : 200;
+  const speedMultiplier = msPerHand / 200; // relative to 1x
 
-  const scaleFactor = getScaleFactor(parallelHands.length);
+  // Ensure card animates to flat before animate-out (scaled by speed)
+  const ANIMATE_IN_MS = 100 * speedMultiplier;
+  const FLAT_DISPLAY_MS = 50 * speedMultiplier;
+  const MIN_DISPLAY_BEFORE_OUT = ANIMATE_IN_MS + FLAT_DISPLAY_MS;
 
-  // Calculate current streak multiplier
+  const ROTATE_FADE_MS = Math.max(20, msPerHand * 0.4);
+  const displayBeforeOut = Math.max(msPerHand - ROTATE_FADE_MS, MIN_DISPLAY_BEFORE_OUT);
+  const REVEAL_COMPLETE_PAUSE_MS = 600 * speedMultiplier;
+  const FADE_DURATION_MS = 400 * speedMultiplier;
+
+  // Cascade delay: each stack starts offset by (stackIndex * msPerHand / numStacks)
+  const startDelays = useMemo(
+    () => Array.from({ length: numStacks }, (_, s) => s * (msPerHand / numStacks)),
+    [numStacks, msPerHand]
+  );
+
+  const handStreakMultipliers = useMemo(() => {
+    const multipliers: number[] = [];
+    let streakCount = initialStreakCounter;
+
+    for (let i = 0; i < parallelHands.length; i++) {
+      multipliers[i] = calculateStreakMultiplier(streakCount, gameConfig.streakMultiplier);
+      const handResult = PokerEvaluator.evaluate(parallelHands[i].cards);
+      const withRewards = PokerEvaluator.applyRewards(handResult, rewardTable);
+      const scored = withRewards.multiplier > 0;
+      streakCount = scored ? streakCount + 1 : Math.max(0, streakCount - 1);
+    }
+    return multipliers;
+  }, [parallelHands, rewardTable, initialStreakCounter]);
+
+  const onHandRevealed = useCallback(
+    (globalIndex: number) => {
+      const hand = parallelHands[globalIndex];
+      const handResult = PokerEvaluator.evaluate(hand.cards);
+      const withRewards = PokerEvaluator.applyRewards(handResult, rewardTable);
+      const handScored = withRewards.multiplier > 0;
+      const creditsWon = Math.round(
+        withRewards.multiplier * betAmount * handStreakMultipliers[globalIndex]
+      );
+
+      setCurrentStreakCounter((prev) => (handScored ? prev + 1 : Math.max(0, prev - 1)));
+      setLastHandScored(handScored);
+      setScoreByRank((prev) => {
+        const rank = handResult.rank;
+        const cur = prev[rank] ?? { count: 0, credits: 0 };
+        return {
+          ...prev,
+          [rank]: { count: cur.count + 1, credits: cur.credits + creditsWon },
+        };
+      });
+      setTotalRevealedCount((prev) => prev + 1);
+    },
+    [parallelHands, rewardTable, betAmount, handStreakMultipliers]
+  );
+
   const currentStreakMultiplier = calculateStreakMultiplier(
     currentStreakCounter,
     gameConfig.streakMultiplier
@@ -233,234 +313,202 @@ export function ParallelHandsAnimation({
   const nextThreshold = getNextThreshold(currentStreakCounter, gameConfig.streakMultiplier);
   const streakProgress = getStreakProgress(currentStreakCounter, gameConfig.streakMultiplier);
 
-  // Dynamic animation timing based on hand count
-  // Much slower for few hands, much faster for many hands
-  const calculateRevealInterval = (handCount: number): number => {
-    if (handCount <= 5) return 300; // 1.5s total for 5 hands
-    if (handCount <= 10) return 250; // 2.5s total for 10 hands
-    if (handCount <= 20) return 180; // 3.6s total for 20 hands
-    if (handCount <= 30) return 120; // 3.6s total for 30 hands
-    if (handCount <= 50) return 80; // 4.0s total for 50 hands
-    if (handCount <= 70) return 50; // 3.5s total for 70 hands
-    if (handCount <= 90) return 35; // 3.15s total for 90 hands
-    return 25; // 2.5s total for 100 hands
-  };
+  const heldCards = useMemo(
+    () => heldIndices.map((i) => playerHand[i]).filter(Boolean),
+    [playerHand, heldIndices]
+  );
+  const totalCredits = useMemo(
+    () => Object.values(scoreByRank).reduce((sum, r) => sum + r.credits, 0),
+    [scoreByRank]
+  );
 
-  const handRevealInterval = calculateRevealInterval(parallelHands.length);
-
-  // Memoize streak multipliers for all hands - calculate once, not on every render
-  const handStreakMultipliers = useMemo(() => {
-    const multipliers: number[] = [];
-    let streakCount = initialStreakCounter;
-
+  const finalStreakFromAllHands = useMemo(() => {
+    let streak = initialStreakCounter;
     for (let i = 0; i < parallelHands.length; i++) {
-      // Calculate multiplier that applies to THIS hand (before evaluating it)
-      multipliers[i] = calculateStreakMultiplier(streakCount, gameConfig.streakMultiplier);
-
-      // Evaluate this hand to update streak for next hand
       const handResult = PokerEvaluator.evaluate(parallelHands[i].cards);
       const withRewards = PokerEvaluator.applyRewards(handResult, rewardTable);
       const scored = withRewards.multiplier > 0;
-
-      streakCount = scored ? streakCount + 1 : Math.max(0, streakCount - 1);
+      streak = scored ? streak + 1 : Math.max(0, streak - 1);
     }
-
-    return multipliers;
+    return streak;
   }, [parallelHands, rewardTable, initialStreakCounter]);
 
-  // Reveal hands one by one and update streak
+  const skipToSummary = () => {
+    onAnimationComplete(finalStreakFromAllHands);
+  };
+
+  // When animation speed is 'skip', go directly to summary
   useEffect(() => {
-    if (revealedCount < parallelHands.length) {
-      const timer = setTimeout(() => {
-        // Update streak based on whether this hand scored
-        const hand = parallelHands[revealedCount];
-        const handResult = PokerEvaluator.evaluate(hand.cards);
-        const withRewards = PokerEvaluator.applyRewards(handResult, rewardTable);
-        const handScored = withRewards.multiplier > 0;
+    if (animationSpeedMode === 'skip') {
+      onAnimationComplete(finalStreakFromAllHands);
+    }
+  }, [animationSpeedMode, onAnimationComplete, finalStreakFromAllHands]);
 
-        if (handScored) {
-          playSound('handScoring', handResult.rank);
-        }
+  // Handle empty hands: complete immediately
+  useEffect(() => {
+    if (parallelHands.length === 0) {
+      const t = setTimeout(() => onAnimationComplete(initialStreakCounter), 100);
+      return () => clearTimeout(t);
+    }
+  }, [parallelHands.length, onAnimationComplete, initialStreakCounter]);
 
-        setCurrentStreakCounter((prev) => {
-          const newCount = handScored ? prev + 1 : Math.max(0, prev - 1);
-          return newCount;
-        });
-
-        setLastHandScored(handScored);
-        setRevealedCount((prev) => prev + 1);
-      }, handRevealInterval);
-
-      return () => clearTimeout(timer);
-    } else if (
-      revealedCount === parallelHands.length &&
+  // All revealed: wait for last hand to animate out, then pause, then fade out
+  useEffect(() => {
+    if (
+      totalRevealedCount === parallelHands.length &&
       parallelHands.length > 0 &&
-      !isFadingOut
+      !isFadingOut &&
+      animationSpeedMode !== 'skip'
     ) {
-      // All hands revealed: pause so user can see the last hands, then fade out (no scroll)
-      const pauseTimer = setTimeout(() => {
-        setIsFadingOut(true);
-      }, REVEAL_COMPLETE_PAUSE_MS);
-
+      const pauseMs = ROTATE_FADE_MS + REVEAL_COMPLETE_PAUSE_MS;
+      const pauseTimer = setTimeout(() => setIsFadingOut(true), pauseMs);
       return () => clearTimeout(pauseTimer);
     }
-  }, [
-    revealedCount,
-    parallelHands,
-    rewardTable,
-    handRevealInterval,
-    onAnimationComplete,
-    currentStreakCounter,
-    isFadingOut,
-    playSound,
-  ]);
+  }, [totalRevealedCount, parallelHands.length, isFadingOut, ROTATE_FADE_MS, REVEAL_COMPLETE_PAUSE_MS, animationSpeedMode]);
 
-  // When fading out, wait for fade transition then complete (no scroll — avoids height/race issues)
   useEffect(() => {
     if (!isFadingOut) return;
-    const doneTimer = setTimeout(() => {
-      onAnimationComplete(currentStreakCounter);
-    }, FADE_DURATION_MS);
+    const doneTimer = setTimeout(() => onAnimationComplete(currentStreakCounter), FADE_DURATION_MS);
     return () => clearTimeout(doneTimer);
   }, [isFadingOut, currentStreakCounter, onAnimationComplete]);
 
-  // Auto-scroll to keep the most recently revealed hand visible (throttled to avoid hitch)
-  useEffect(() => {
-    if (revealedCount === 0 || !viewportRef.current || !gridRef.current) return;
-    const now = Date.now();
-    if (now - lastScrollTimeRef.current < SCROLL_THROTTLE_MS) return;
-
-    const viewport = viewportRef.current;
-    const grid = gridRef.current;
-
-    const handCards = grid.querySelectorAll('.grid-hand-card');
-    if (handCards.length === 0) return;
-
-    const lastCard = handCards[handCards.length - 1] as HTMLElement;
-    const cardRect = lastCard.getBoundingClientRect();
-    const viewportRect = viewport.getBoundingClientRect();
-
-    if (cardRect.bottom <= viewportRect.bottom) return;
-
-    lastScrollTimeRef.current = now;
-    const scrollTarget = viewport.scrollTop + (cardRect.bottom - viewportRect.bottom) + 100;
-
-    // Defer scroll to next frame so we don't fight with React layout
-    const rafId = requestAnimationFrame(() => {
-      viewport.scrollTo({ top: scrollTarget, behavior: 'smooth' });
-    });
-    return () => cancelAnimationFrame(rafId);
-  }, [revealedCount]);
-
-  // Performance optimization: Remove hands that have scrolled out of viewport
-  // Enable for 50+ hands until all revealed (then we show full grid so no pop-in when fading)
-  useEffect(() => {
-    if (parallelHands.length >= 50 && !allRevealed) {
-      const viewport = viewportRef.current;
-      const grid = gridRef.current;
-
-      if (!viewport || !grid) return;
-
-      const updateVisibleRange = () => {
-        const now = Date.now();
-        // Throttle to max once per 100ms
-        if (now - lastVisibilityCheckRef.current < 100) return;
-        lastVisibilityCheckRef.current = now;
-
-        const handCards = grid.querySelectorAll('.grid-hand-card');
-        if (handCards.length === 0) return;
-
-        const columnsCount = getColumnsPerRow(parallelHands.length);
-
-        // Calculate approximate height of one row based on first card
-        const firstCard = handCards[0] as HTMLElement;
-        const cardRect = firstCard.getBoundingClientRect();
-        const cardHeight = cardRect.height / scaleFactor; // Adjust for scale
-        const rowHeight = cardHeight + 16; // card height + gap
-
-        // Keep a buffer of rows above the viewport (1 row worth, reduced from 2)
-        const bufferRows = 1;
-        const bufferDistance = bufferRows * rowHeight;
-
-        // Calculate which row is at the top of the viewport
-        const scrollTop = viewport.scrollTop;
-        const firstVisibleRow = Math.max(0, Math.floor((scrollTop - bufferDistance) / rowHeight));
-        const newStartIndex = firstVisibleRow * columnsCount;
-
-        // Update more aggressively - if we've scrolled past at least 1 row
-        if (newStartIndex > visibleStartIndex + columnsCount) {
-          setVisibleStartIndex(newStartIndex);
-        }
-      };
-
-      // Initial check
-      updateVisibleRange();
-
-      // Add scroll listener
-      viewport.addEventListener('scroll', updateVisibleRange);
-
-      return () => {
-        viewport.removeEventListener('scroll', updateVisibleRange);
-      };
-    }
-  }, [parallelHands.length, visibleStartIndex, allRevealed, scaleFactor]);
-
-  // Single rendering path: real cards only (no scroll-off placeholders); completion is fade-out
   return (
     <div
-      className={`parallel-hands-animation-container select-none${isFadingOut ? ' parallel-hands-fade-out' : ''}`}
+      className={`parallel-hands-animation-container phase-b-layout select-none${isFadingOut ? ' parallel-hands-fade-out' : ''}`}
+      data-animation-speed={animationSpeedMode}
+      style={
+        {
+          '--card-transition-ms': animationSpeedMode === 2 ? 60 : animationSpeedMode === 3 ? 30 : 100,
+          '--fade-out-ms': FADE_DURATION_MS,
+        } as React.CSSProperties
+      }
     >
-      {/* Streak Thermometer */}
-      {gameConfig.streakMultiplier.enabled && (
-        <StreakProgressBar
-          currentStreak={currentStreakCounter}
-          currentMultiplier={currentStreakMultiplier}
-          nextThreshold={nextThreshold}
-          progress={streakProgress}
-          lastHandScored={lastHandScored}
-          config={gameConfig.streakMultiplier}
-        />
-      )}
-
-      <div className="animation-background"></div>
-      <div className="hands-grid-viewport" ref={viewportRef}>
-        <div
-          ref={gridRef}
-          className="hands-grid"
-          data-columns={columnsPerRow}
-          style={{
-            transform: `scale(${scaleFactor})`,
-            transformOrigin: 'center top',
-          }}
-        >
-          {parallelHands.slice(0, revealedCount).map((hand, index) => {
-            // Virtual scrolling for 50+ hands; disable when all revealed so no burst of cards when fade starts
-            if (!allRevealed && parallelHands.length >= 50) {
-              const columnsCount = getColumnsPerRow(parallelHands.length);
-              const bufferSize = columnsCount * 1;
-
-              if (index < visibleStartIndex - bufferSize) {
-                return null;
-              }
-
-              const maxRenderIndex = visibleStartIndex + columnsCount * 8;
-              if (index > maxRenderIndex && index > revealedCount - columnsCount * 3) {
-                return null;
-              }
+      <div className="animation-background" />
+      {/* Top bar: animation speed toggle, sound toggles, skip */}
+      <div className="phase-b-top-bar">
+        <div className="phase-b-top-controls">
+          {onCycleAnimationSpeed && (
+          <button
+            type="button"
+            onClick={onCycleAnimationSpeed}
+            className={`phase-b-speed-btn phase-b-speed-${animationSpeedMode}`}
+            title={
+              animationSpeedMode === 1
+                ? 'Animation 1x (click for 2x)'
+                : animationSpeedMode === 2
+                  ? 'Animation 2x (click for 3x)'
+                  : animationSpeedMode === 3
+                    ? 'Animation 3x (click to skip)'
+                    : 'Skip animation (click for 1x)'
             }
-
-            const multiplierForThisHand = handStreakMultipliers[index];
-
-            return (
-              <React.Fragment key={hand.id}>
-                {renderHandCard(hand, rewardTable, betAmount, index, multiplierForThisHand)}
-              </React.Fragment>
-            );
-          })}
+          >
+            {animationSpeedMode === 1 ? '1×' : animationSpeedMode === 2 ? '2×' : animationSpeedMode === 3 ? '3×' : '⏭'}
+          </button>
+          )}
+          {onToggleMusic && (
+            <button
+              type="button"
+              onClick={onToggleMusic}
+              className={`phase-b-audio-btn ${audioSettings?.musicEnabled ? 'active' : ''}`}
+              title={audioSettings?.musicEnabled ? 'Disable Music' : 'Enable Music'}
+            >
+              {audioSettings?.musicEnabled ? '🎵' : '🔇'}
+            </button>
+          )}
+          {onToggleSoundEffects && (
+            <button
+              type="button"
+              onClick={onToggleSoundEffects}
+              className={`phase-b-audio-btn ${audioSettings?.soundEffectsEnabled ? 'active' : ''}`}
+              title={audioSettings?.soundEffectsEnabled ? 'Disable Sound Effects' : 'Enable Sound Effects'}
+            >
+              {audioSettings?.soundEffectsEnabled ? '🔊' : '🔇'}
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={skipToSummary}
+            className="phase-b-skip-btn"
+            title="Skip to round summary"
+          >
+            Skip
+          </button>
         </div>
       </div>
+      {/* Left panel: held cards + score list + accumulated */}
+      <div className="phase-b-left-panel">
+        <div className="phase-b-held-section">
+          <div className="phase-b-held-label">Held cards</div>
+          <div className="phase-b-held-cards">
+            {heldCards.length > 0 ? (
+              heldCards.map((card) => (
+                <Card key={card.id} card={card} size="small" />
+              ))
+            ) : (
+              <span className="phase-b-held-empty">None held</span>
+            )}
+          </div>
+        </div>
+        <div className="phase-b-scores-section">
+          <div className="phase-b-scores-label">Scored hands</div>
+          <div className="phase-b-scores-list">
+            {Object.entries(scoreByRank).map(([rank, { count, credits }]) => (
+              <div key={rank} className="phase-b-score-row">
+                <span className="phase-b-score-left">{toCapitalCase(rank)} × {count}</span>
+                <span className="phase-b-score-right">{formatCreditsWithSuffix(credits)}</span>
+              </div>
+            ))}
+            {Object.keys(scoreByRank).length === 0 && (
+              <span className="phase-b-scores-empty">—</span>
+            )}
+          </div>
+          <div className="phase-b-total">{formatCreditsWithSuffix(totalCredits)}</div>
+        </div>
+      </div>
+      {/* Right: Rolodex stack(s) - grid layout, CSS handles placement and scaling */}
+      <div className={`phase-b-rolodex phase-b-rolodex-stacks-${numStacks}`}>
+        {animationSpeedMode !== 'skip' &&
+          stackHands.map((hands, stackIndex) => (
+            <div key={stackIndex} className="rolodex-cell">
+              <RolodexStack
+                stackHands={hands}
+                startDelay={startDelays[stackIndex]}
+                displayBeforeOut={displayBeforeOut}
+                ROTATE_FADE_MS={ROTATE_FADE_MS}
+                handStreakMultipliers={handStreakMultipliers}
+                rewardTable={rewardTable}
+                betAmount={betAmount}
+                playSound={playSound as (type: string, rank?: string) => void}
+                onHandRevealed={onHandRevealed}
+                maxVisible={maxVisible}
+              />
+            </div>
+          ))}
+      </div>
+      {/* Bottom: horizontal multiplier bar */}
+      {gameConfig.streakMultiplier.enabled && (
+        <div className="phase-b-bottom-bar">
+          <StreakProgressBar
+            currentStreak={currentStreakCounter}
+            currentMultiplier={currentStreakMultiplier}
+            nextThreshold={nextThreshold}
+            progress={streakProgress}
+            lastHandScored={lastHandScored}
+            config={gameConfig.streakMultiplier}
+            variant="horizontal-segments"
+          />
+        </div>
+      )}
     </div>
   );
+}
+
+/** Convert hand rank to Capital Case (e.g. "one-pair" → "One Pair") */
+function toCapitalCase(rank: string): string {
+  return rank
+    .split('-')
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(' ');
 }
 
 function getSuitSymbol(suit: string): string {
@@ -478,9 +526,3 @@ function getSuitSymbol(suit: string): string {
   }
 }
 
-function getStreakTier(multiplier: number): string {
-  if (multiplier >= 2.5) return 'red';
-  if (multiplier >= 2.0) return 'orange';
-  if (multiplier >= 1.5) return 'gold';
-  return 'gray';
-}

@@ -3,14 +3,13 @@ import { Card as CardType, Hand, FailureStateType, GameState } from '../types';
 import { Card } from './Card';
 import { GameHeader } from './GameHeader';
 import { PokerEvaluator } from '../utils/pokerEvaluator';
-import { RewardTable } from './RewardTable';
 import { calculateStreakMultiplier } from '../utils/streakCalculator';
 import { gameConfig } from '../config/gameConfig';
 import { formatCredits } from '../utils/format';
 
 /**
  * Results screen component props
- * 
+ *
  * Displays outcomes of all parallel hands including payouts, hand counts,
  * profit/loss calculations, and Devil's Deal costs if applicable.
  */
@@ -51,11 +50,15 @@ interface ResultsProps {
   onToggleSoundEffects?: () => void;
   /** Show payout table modal callback */
   onShowPayoutTable?: () => void;
+  /** Animation speed mode (1 | 2 | 3 | 'skip') */
+  animationSpeedMode?: 1 | 2 | 3 | 'skip';
+  /** Cycle animation speed callback */
+  onCycleAnimationSpeed?: () => void;
 }
 
 /**
  * Results screen component
- * 
+ *
  * Displays comprehensive results after drawing parallel hands:
  * - Total payout across all hands
  * - Bet cost calculation
@@ -64,10 +67,10 @@ interface ResultsProps {
  * - Hand counts by rank
  * - Held cards summary
  * - Best hand display
- * 
+ *
  * Calculates and displays profit with color coding (green for profit, red for loss)
  * and properly accounts for Devil's Deal cost deductions.
- * 
+ *
  * @example
  * <Results
  *   parallelHands={hands}
@@ -96,6 +99,8 @@ export function Results({
   onToggleMusic,
   onToggleSoundEffects,
   onShowPayoutTable,
+  animationSpeedMode = 1,
+  onCycleAnimationSpeed,
 }: ResultsProps) {
   const [showSummary, setShowSummary] = useState(false);
   const efficiency = round > 0 ? (totalEarnings / round).toFixed(2) : '0.00';
@@ -105,7 +110,7 @@ export function Results({
   const handPayouts = parallelHands.map((hand, index) => {
     // Calculate streak multiplier at the time this hand was evaluated
     let streakForThisHand = 0; // Rounds always start with streak = 0
-    
+
     // Apply streak changes from all PREVIOUS hands
     for (let i = 0; i < index; i++) {
       const prevHand = parallelHands[i];
@@ -114,10 +119,13 @@ export function Results({
       const prevScored = prevWithRewards.multiplier > 0;
       streakForThisHand = prevScored ? streakForThisHand + 1 : Math.max(0, streakForThisHand - 1);
     }
-    
+
     // Calculate multiplier for THIS hand (before evaluating it)
-    const streakMultiplier = calculateStreakMultiplier(streakForThisHand, gameConfig.streakMultiplier);
-    
+    const streakMultiplier = calculateStreakMultiplier(
+      streakForThisHand,
+      gameConfig.streakMultiplier
+    );
+
     // Evaluate this hand and apply rewards + streak
     const result = PokerEvaluator.evaluate(hand.cards);
     const withRewards = PokerEvaluator.applyRewards(result, rewardTable);
@@ -135,9 +143,9 @@ export function Results({
     <div id="results-screen" className="min-h-screen p-6 relative overflow-hidden select-none">
       <div className="max-w-7xl mx-auto relative z-0">
         {/* Header */}
-        <GameHeader 
-          credits={credits} 
-          round={round} 
+        <GameHeader
+          credits={credits}
+          round={round}
           efficiency={efficiency}
           failureState={failureState}
           gameState={gameState}
@@ -146,9 +154,11 @@ export function Results({
           onToggleMusic={onToggleMusic}
           onToggleSoundEffects={onToggleSoundEffects}
           onShowPayoutTable={onShowPayoutTable}
+          animationSpeedMode={animationSpeedMode}
+          onCycleAnimationSpeed={onCycleAnimationSpeed}
         />
 
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+        <div className="">
           {/* Main Content */}
           <div className="lg:col-span-3 space-y-6">
             {/* Hand Summary - Always visible */}
@@ -210,15 +220,25 @@ export function Results({
                       for (let i = 0; i < index; i++) {
                         const prevHand = parallelHands[i];
                         const prevResult = PokerEvaluator.evaluate(prevHand.cards);
-                        const prevWithRewards = PokerEvaluator.applyRewards(prevResult, rewardTable);
+                        const prevWithRewards = PokerEvaluator.applyRewards(
+                          prevResult,
+                          rewardTable
+                        );
                         const prevScored = prevWithRewards.multiplier > 0;
-                        streakForThisHand = prevScored ? streakForThisHand + 1 : Math.max(0, streakForThisHand - 1);
+                        streakForThisHand = prevScored
+                          ? streakForThisHand + 1
+                          : Math.max(0, streakForThisHand - 1);
                       }
-                      
-                      const streakMultiplier = calculateStreakMultiplier(streakForThisHand, gameConfig.streakMultiplier);
+
+                      const streakMultiplier = calculateStreakMultiplier(
+                        streakForThisHand,
+                        gameConfig.streakMultiplier
+                      );
                       const result = PokerEvaluator.evaluate(hand.cards);
                       const withRewards = PokerEvaluator.applyRewards(result, rewardTable);
-                      const handPayout = Math.round(betAmount * withRewards.multiplier * streakMultiplier);
+                      const handPayout = Math.round(
+                        betAmount * withRewards.multiplier * streakMultiplier
+                      );
                       const rankKey = result.rank;
 
                       if (rankData.has(rankKey)) {
@@ -243,7 +263,8 @@ export function Results({
                           <span
                             className={`font-bold ${item.totalPayout > 0 ? 'text-green-600' : 'text-gray-500'}`}
                           >
-                            = {formatCredits(Math.round(item.totalPayout))} credit{Math.round(item.totalPayout) !== 1 ? 's' : ''}
+                            = {formatCredits(Math.round(item.totalPayout))} credit
+                            {Math.round(item.totalPayout) !== 1 ? 's' : ''}
                           </span>
                         </div>
                       );
@@ -259,14 +280,16 @@ export function Results({
                         {formatCredits(betAmount * selectedHandCount)} credits
                       </span>
                     </div>
-                    {gameState?.devilsDealCard && gameState?.devilsDealHeld && gameState?.devilsDealCost > 0 && (
-                      <div className="flex justify-between items-center">
-                        <span className="text-lg font-semibold text-gray-700">Devil's Deal:</span>
-                        <span className="text-2xl font-bold text-red-600">
-                          -{formatCredits(Math.abs(gameState.devilsDealCost))} credits
-                        </span>
-                      </div>
-                    )}
+                    {gameState?.devilsDealCard &&
+                      gameState?.devilsDealHeld &&
+                      gameState?.devilsDealCost > 0 && (
+                        <div className="flex justify-between items-center">
+                          <span className="text-lg font-semibold text-gray-700">Devil's Deal:</span>
+                          <span className="text-2xl font-bold text-red-600">
+                            -{formatCredits(Math.abs(gameState.devilsDealCost))} credits
+                          </span>
+                        </div>
+                      )}
                     <div className="flex justify-between items-center">
                       <span className="text-lg font-semibold text-gray-700">Total Payout:</span>
                       <span className="text-2xl font-bold text-green-600">
@@ -277,7 +300,12 @@ export function Results({
                       <span className="text-xl font-bold text-gray-800">Profit:</span>
                       <span
                         className={`text-3xl font-bold ${
-                          totalPayout - betAmount * selectedHandCount - (gameState?.devilsDealHeld && gameState?.devilsDealCost ? Math.abs(gameState.devilsDealCost) : 0) >= 0
+                          totalPayout -
+                            betAmount * selectedHandCount -
+                            (gameState?.devilsDealHeld && gameState?.devilsDealCost
+                              ? Math.abs(gameState.devilsDealCost)
+                              : 0) >=
+                          0
                             ? 'text-green-600'
                             : 'text-red-600'
                         }`}
@@ -318,11 +346,6 @@ export function Results({
                 </button>
               </div>
             )}
-          </div>
-
-          {/* Reward Table Sidebar */}
-          <div className="lg:col-span-1">
-            <RewardTable rewardTable={rewardTable} wildCardCount={gameState?.wildCardCount || 0} />
           </div>
         </div>
       </div>

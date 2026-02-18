@@ -1,9 +1,12 @@
 # Execution Plan for Current TODO.md
 
 **Created:** February 2026  
+**Last updated:** February 2026  
 **Source:** TODO.md (FIXES, ANIMATION CHANGE, TUTORIAL MODE, FINISHING UP)
 
 This plan orders work by dependency and risk: fixes first, then config, then large features (animation, tutorial). Medium/low items from TODO.md are tracked separately.
+
+**Current status:** Phase A (fixes) complete. Additional fixes (shop, draw logic, poker evaluator) done. Next: Phase B (animation) or Phase C (tutorial).
 
 ---
 
@@ -128,6 +131,19 @@ This plan orders work by dependency and risk: fixes first, then config, then lar
 - [ ] B Animation: left (held + score list), right (rolodex), bottom (multiplier bar); timing ≤ 1 s/hand.
 - [ ] C Tutorial: main menu entry, slides 1–7, back to menu.
 - [ ] D Clarifications, tests, docs.
+
+---
+
+## Additional work completed (Feb 2026)
+
+Beyond Phase A, the following were implemented:
+
+| Item | Status | Notes |
+|------|--------|------|
+| Shop slot count | Done | Always fills to shopOptionCount; slot-based rendering; config keys fixed (remove-single-dead-card, remove-all-dead-cards). |
+| Credits needed display | Done | Recalculates after purchases. |
+| Draw logic refactor | Done | maxDraws/drawsCompletedThisRound; deal = first draw; nextActionIsDraw; draws left = maxDraws - drawsCompletedThisRound - 1. Config sets base maxDraws; extra draw purchase adds 1. |
+| Poker 5-of-a-kind | Done | 3 wilds + 2 queens (or any rank with count + wilds ≥ 5) now evaluates as five-of-a-kind. |
 
 ---
 

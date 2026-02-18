@@ -58,6 +58,10 @@ interface PreDrawProps {
   onToggleSoundEffects?: () => void;
   /** Show payout table modal callback */
   onShowPayoutTable?: () => void;
+  /** Animation speed mode (1 | 2 | 3 | 'skip') */
+  animationSpeedMode?: 1 | 2 | 3 | 'skip';
+  /** Cycle animation speed callback */
+  onCycleAnimationSpeed?: () => void;
 }
 
 /**
@@ -89,7 +93,6 @@ export function PreDraw({
   selectedHandCount,
   betAmount,
   minimumBet,
-  rewardTable: _rewardTable,
   gameOver,
   round,
   totalEarnings,
@@ -107,6 +110,8 @@ export function PreDraw({
   onToggleMusic,
   onToggleSoundEffects,
   onShowPayoutTable,
+  animationSpeedMode = 1,
+  onCycleAnimationSpeed,
 }: PreDrawProps) {
   const [showCheats, setShowCheats] = useState(false);
   const [showEndRunConfirm, setShowEndRunConfirm] = useState(false);
@@ -166,6 +171,8 @@ export function PreDraw({
             onToggleMusic={onToggleMusic}
             onToggleSoundEffects={onToggleSoundEffects}
             onShowPayoutTable={onShowPayoutTable}
+            animationSpeedMode={animationSpeedMode}
+            onCycleAnimationSpeed={onCycleAnimationSpeed}
           />
           <div className="flex justify-between items-center mb-6 flex-wrap gap-4">
             <button
@@ -179,42 +186,41 @@ export function PreDraw({
         </div>
 
         {/* Main Content */}
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-          <div className="lg:col-span-3">
-            <div className="bg-white rounded-lg shadow-lg p-8">
-              <h1 className="text-4xl font-bold mb-8 text-gray-800 text-center">
-                {gameOver ? 'Game Over' : 'Ready to Play?'}
-              </h1>
+        <div className="">
+          <div className="bg-white rounded-lg shadow-lg p-8">
+            <h1 className="text-4xl font-bold mb-8 text-gray-800 text-center">
+              {gameOver ? 'Game Over' : 'Ready to Play?'}
+            </h1>
 
-              {gameOver && (
-                <div className="bg-red-50 border-2 border-red-300 rounded-lg p-6 mb-8">
-                  <p className="text-lg font-semibold text-red-700 mb-2">Insufficient Credits</p>
-                  <p className="text-red-600 mb-2">
-                    You need at least {formatCredits(minimumBet * handCount)} credits to play.
-                  </p>
-                  <p className="text-red-600">
-                    The game has ended because you cannot afford the minimum bet with maximum hands.
-                  </p>
-                </div>
-              )}
+            {gameOver && (
+              <div className="bg-red-50 border-2 border-red-300 rounded-lg p-6 mb-8">
+                <p className="text-lg font-semibold text-red-700 mb-2">Insufficient Credits</p>
+                <p className="text-red-600 mb-2">
+                  You need at least {formatCredits(minimumBet * handCount)} credits to play.
+                </p>
+                <p className="text-red-600">
+                  The game has ended because you cannot afford the minimum bet with maximum hands.
+                </p>
+              </div>
+            )}
 
-              <div className="space-y-6">
-                <div role="group">
-                  <div className="flex items-center gap-3">
-                    <div className="flex-1 px-4 py-3 border-2 border-gray-300 bg-gray-50 rounded-lg text-lg text-gray-700 font-semibold">
-                      {formatCredits(minimumBet)} credits
-                    </div>
-                    <div className="flex-1 px-4 py-3 border-2 border-gray-300 bg-gray-50 rounded-lg text-lg text-gray-700 font-semibold">
-                      {handCount} hands
-                    </div>
-                    <div className="flex-1 px-4 py-3 border-2 border-gray-300 bg-gray-50 rounded-lg text-lg text-gray-700 font-semibold">
-                      {formatCredits(totalBetCost)} credits to play
-                    </div>
+            <div className="space-y-6">
+              <div role="group">
+                <div className="flex items-center gap-3">
+                  <div className="flex-1 px-4 py-3 border-2 border-gray-300 bg-gray-50 rounded-lg text-lg text-gray-700 font-semibold">
+                    {formatCredits(minimumBet)} credits
+                  </div>
+                  <div className="flex-1 px-4 py-3 border-2 border-gray-300 bg-gray-50 rounded-lg text-lg text-gray-700 font-semibold">
+                    {handCount} hands
+                  </div>
+                  <div className="flex-1 px-4 py-3 border-2 border-gray-300 bg-gray-50 rounded-lg text-lg text-gray-700 font-semibold">
+                    {formatCredits(totalBetCost)} credits to play
                   </div>
                 </div>
+              </div>
 
-                {/* Total Cost */}
-                {/* <div className="bg-gradient-to-r from-blue-50 to-purple-50 p-6 rounded-lg border-2 border-blue-200">
+              {/* Total Cost */}
+              {/* <div className="bg-gradient-to-r from-blue-50 to-purple-50 p-6 rounded-lg border-2 border-blue-200">
                   <p className="text-lg font-semibold text-gray-700 mb-1">Total Bet Cost:</p>
                   <p className="text-4xl font-bold text-blue-600">{totalBetCost} credits</p>
                   {!canAffordBet && (
@@ -227,11 +233,11 @@ export function PreDraw({
                   )}
                 </div> */}
 
-                {/* Run Round Button */}
-                <button
-                  onClick={onDealHand}
-                  disabled={!canPlayRound}
-                  className={`
+              {/* Run Round Button */}
+              <button
+                onClick={onDealHand}
+                disabled={!canPlayRound}
+                className={`
                     w-full px-8 py-4 rounded-lg font-bold text-xl transition-colors
                     ${
                       canPlayRound
@@ -239,27 +245,26 @@ export function PreDraw({
                         : 'bg-gray-400 text-gray-600 cursor-not-allowed'
                     }
                   `}
-                  aria-label={
-                    gameOver
-                      ? 'Cannot play - game over'
-                      : `Run round with ${handCount} hands at ${formatCredits(
-                          minimumBet
-                        )} credits per hand`
-                  }
-                  aria-disabled={!canPlayRound}
-                >
-                  {gameOver ? 'Cannot Play - Game Over' : 'Run Round'}
-                </button>
+                aria-label={
+                  gameOver
+                    ? 'Cannot play - game over'
+                    : `Run round with ${handCount} hands at ${formatCredits(
+                        minimumBet
+                      )} credits per hand`
+                }
+                aria-disabled={!canPlayRound}
+              >
+                {gameOver ? 'Cannot Play - Game Over' : 'Run Round'}
+              </button>
 
-                {/* End Run Button */}
-                <button
-                  onClick={() => setShowEndRunConfirm(true)}
-                  className="w-full px-8 py-4 rounded-lg font-bold text-xl transition-colors bg-red-600 hover:bg-red-700 text-white shadow-lg hover:shadow-xl"
-                  aria-label="End current run and return to main menu"
-                >
-                  End Run
-                </button>
-              </div>
+              {/* End Run Button */}
+              <button
+                onClick={() => setShowEndRunConfirm(true)}
+                className="w-full px-8 py-4 rounded-lg font-bold text-xl transition-colors bg-red-600 hover:bg-red-700 text-white shadow-lg hover:shadow-xl"
+                aria-label="End current run and return to main menu"
+              >
+                End Run
+              </button>
             </div>
           </div>
         </div>

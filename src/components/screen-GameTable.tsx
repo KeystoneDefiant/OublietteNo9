@@ -50,6 +50,10 @@ interface GameTableProps {
   onToggleSoundEffects?: () => void;
   /** Show payout table modal callback */
   onShowPayoutTable?: () => void;
+  /** Animation speed mode (1 | 2 | 3 | 'skip') */
+  animationSpeedMode?: 1 | 2 | 3 | 'skip';
+  /** Cycle animation speed callback */
+  onCycleAnimationSpeed?: () => void;
 }
 
 /**
@@ -92,6 +96,8 @@ export function GameTable({
   onToggleMusic,
   onToggleSoundEffects,
   onShowPayoutTable,
+  animationSpeedMode = 1,
+  onCycleAnimationSpeed,
 }: GameTableProps) {
   const canDraw = parallelHands.length === 0 && playerHand.length >= 5;
   const efficiency = round > 0 ? (totalEarnings / round).toFixed(2) : '0.00';
@@ -121,6 +127,8 @@ export function GameTable({
           onToggleMusic={onToggleMusic}
           onToggleSoundEffects={onToggleSoundEffects}
           onShowPayoutTable={onShowPayoutTable}
+          animationSpeedMode={animationSpeedMode}
+          onCycleAnimationSpeed={onCycleAnimationSpeed}
         />
 
         <div className="grid grid-cols-1 gap-6">

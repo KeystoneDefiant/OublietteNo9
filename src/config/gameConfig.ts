@@ -6,6 +6,10 @@ export const gameConfig = {
   // Animation timing configuration (in milliseconds)
   animation: {
     cardFlip: 500, // Card flip animation delay
+    /** Phase B: Rolodex hand reveal - max ms per hand (smooth, up to 1s) */
+    parallelHandsRevealMsPerHand: 1000,
+    /** Phase B: Rolodex max visible hands in stack (pseudo-3D depth) */
+    parallelHandsRolodexMaxVisible: 10,
   },
 
   // Parallel hands grid thresholds (switch to 2 columns early to avoid stall at 20–21)

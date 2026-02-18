@@ -152,6 +152,71 @@
   }
 }
 
+/* Horizontal segment bar variant */
+.streak-segments {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 16px;
+  padding: 8px 16px;
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  border: 2px solid rgba(102, 126, 234, 0.3);
+  width: 320px;
+  flex-shrink: 0;
+}
+
+.segments-multiplier-badge {
+  font-size: 20px;
+  font-weight: bold;
+  color: #667eea;
+  width: 48px;
+  flex-shrink: 0;
+  text-align: center;
+}
+
+.segments-bar {
+  display: flex;
+  gap: 4px;
+  width: 160px;
+  flex-shrink: 0;
+}
+
+.segment-block {
+  flex: 1;
+  height: 20px;
+  background: rgba(102, 126, 234, 0.2);
+  border-radius: 4px;
+  transition: background 0.3s ease;
+}
+
+.segment-block.segment-filled {
+  background: linear-gradient(180deg, #10b981 0%, #34d399 100%);
+}
+
+.segments-label {
+  font-size: 14px;
+  font-weight: 700;
+  color: #333;
+  width: 48px;
+  flex-shrink: 0;
+  text-align: center;
+}
+
+.segments-current {
+  color: #667eea;
+}
+
+.segments-sep {
+  color: #999;
+  margin: 0 2px;
+}
+
+.segments-next {
+  color: #666;
+}
+
 /* Responsive adjustments */
 @media (max-width: 768px) {
   .streak-thermometer {

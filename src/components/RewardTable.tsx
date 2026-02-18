@@ -36,7 +36,12 @@ const RANK_ORDER: HandRank[] = [
   'high-card',
 ];
 
-export function RewardTable({ rewardTable, highlightedRank, payoutAmount, wildCardCount = 0 }: RewardTableProps) {
+export function RewardTable({
+  rewardTable,
+  highlightedRank,
+  payoutAmount,
+  wildCardCount = 0,
+}: RewardTableProps) {
   const [showPopup, setShowPopup] = useState(false);
   const highlightRef = useRef<HTMLDivElement>(null);
 
@@ -49,13 +54,11 @@ export function RewardTable({ rewardTable, highlightedRank, payoutAmount, wildCa
   }, [highlightedRank, payoutAmount]);
 
   // Filter ranks: only show five-of-a-kind if player has wild cards
-  const visibleRanks = wildCardCount > 0 
-    ? RANK_ORDER 
-    : RANK_ORDER.filter(rank => rank !== 'five-of-a-kind');
+  const visibleRanks =
+    wildCardCount > 0 ? RANK_ORDER : RANK_ORDER.filter((rank) => rank !== 'five-of-a-kind');
 
   return (
     <div className="bg-white rounded-lg shadow-lg p-6 h-full overflow-y-auto relative">
-      <h2 className="text-2xl font-bold mb-4 text-gray-800">Payout Table</h2>
       <div className="space-y-2">
         {visibleRanks.map((rank) => {
           const multiplier = rewardTable[rank] || 0;
@@ -66,9 +69,10 @@ export function RewardTable({ rewardTable, highlightedRank, payoutAmount, wildCa
               ref={isHighlighted ? highlightRef : null}
               className={`
                 flex justify-between items-center p-3 rounded-lg transition-all relative
-                ${isHighlighted 
-                  ? 'bg-green-200 border-2 border-green-500 payout-highlight' 
-                  : 'bg-gray-50 hover:bg-gray-100'
+                ${
+                  isHighlighted
+                    ? 'bg-green-200 border-2 border-green-500 payout-highlight'
+                    : 'bg-gray-50 hover:bg-gray-100'
                 }
               `}
             >

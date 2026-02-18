@@ -1,12 +1,19 @@
 # To Do
 
-## FIXES
+## FIXES (Phase A – completed)
 
-- When the player has purchased an increase to their maximum hand size, they do not have to hold 5 cards. They simply get more choices in their draw phase. They can still hold up to 5 cards, but can hold less if they want. Additionally, all draws will draw up to that maximum size.
+- [x] When the player has purchased an increase to their maximum hand size, they do not have to hold 5 cards. They simply get more choices in their draw phase. They can still hold up to 5 cards, but can hold less if they want. Additionally, all draws will draw up to that maximum size.
 
-- Make the maximum hand size and number of draws configurable in the game config.
+- [x] Make the maximum hand size and number of draws configurable in the game config.
 
-- Review the endgame state in round 30 and make sure that only the end game rules turned on in the config are applied. Currently round 30 looks to impose a minimum bet increase, which is outdated and is no longer a relevent end game state.
+- [x] Review the endgame state in round 30 and make sure that only the end game rules turned on in the config are applied. Currently round 30 looks to impose a minimum bet increase, which is outdated and is no longer a relevent end game state.
+
+### Additional fixes completed (Feb 2026)
+
+- [x] Shop always shows correct number of items (slot-based rendering, repeats allowed; config keys aligned: remove-single-dead-card, remove-all-dead-cards).
+- [x] Credits needed for next round recalculates after purchases.
+- [x] Draw logic refactored: maxDraws/drawsCompletedThisRound; deal counts as first draw; nextActionIsDraw for button; draws left = maxDraws - drawsCompletedThisRound - 1.
+- [x] Poker evaluator: 3 wilds + 2 queens (or any count + wilds ≥ 5) now correctly evaluates as five-of-a-kind.
 
 ## ANIMATION CHANGE
 

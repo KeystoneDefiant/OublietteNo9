@@ -2,6 +2,8 @@ import { FailureStateType, GameState } from '../types';
 import { getFailureStateDescription } from '../utils/failureConditions';
 import { formatCredits } from '../utils/format';
 
+type AnimationSpeedMode = 1 | 2 | 3 | 'skip';
+
 interface GameHeaderProps {
   credits: number;
   round?: number;
@@ -13,9 +15,11 @@ interface GameHeaderProps {
   onToggleMusic?: () => void;
   onToggleSoundEffects?: () => void;
   onShowPayoutTable?: () => void;
+  animationSpeedMode?: AnimationSpeedMode;
+  onCycleAnimationSpeed?: () => void;
 }
 
-export function GameHeader({ credits, round, efficiency, failureState, gameState, musicEnabled, soundEffectsEnabled, onToggleMusic, onToggleSoundEffects, onShowPayoutTable }: GameHeaderProps) {
+export function GameHeader({ credits, round, efficiency, failureState, gameState, musicEnabled, soundEffectsEnabled, onToggleMusic, onToggleSoundEffects, onShowPayoutTable, animationSpeedMode = 1, onCycleAnimationSpeed }: GameHeaderProps) {
   const failureDescription = failureState && gameState 
     ? getFailureStateDescription(failureState, gameState)
     : null;
@@ -52,8 +56,33 @@ export function GameHeader({ credits, round, efficiency, failureState, gameState
         )}
       </div>
       
-      {/* Audio Controls */}
+      {/* Animation speed + Audio Controls */}
       <div className="flex items-center gap-2">
+        {onCycleAnimationSpeed && (
+          <button
+            onClick={onCycleAnimationSpeed}
+            className={`font-bold py-2 px-4 rounded-lg transition-colors shadow-lg ${
+              animationSpeedMode === 1
+                ? 'bg-indigo-100 hover:bg-indigo-200 text-indigo-800'
+                : animationSpeedMode === 2
+                  ? 'bg-indigo-200 hover:bg-indigo-300 text-indigo-900'
+                  : animationSpeedMode === 3
+                    ? 'bg-indigo-400 hover:bg-indigo-500 text-white'
+                    : 'bg-red-400 hover:bg-red-500 text-white'
+            }`}
+            title={
+              animationSpeedMode === 1
+                ? 'Animation 1× (click for 2×)'
+                : animationSpeedMode === 2
+                  ? 'Animation 2× (click for 3×)'
+                  : animationSpeedMode === 3
+                    ? 'Animation 3× (click to skip)'
+                    : 'Skip animation (click for 1×)'
+            }
+          >
+            {animationSpeedMode === 1 ? '1×' : animationSpeedMode === 2 ? '2×' : animationSpeedMode === 3 ? '3×' : '⏭'}
+          </button>
+        )}
         {onShowPayoutTable && (
           <button
             onClick={onShowPayoutTable}

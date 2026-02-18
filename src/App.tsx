@@ -109,6 +109,7 @@ function App() {
     updateStreakCounter,
     toggleMusic,
     toggleSoundEffects,
+    cycleAnimationSpeed,
     setMusicVolume,
     setSoundEffectsVolume,
   } = useGameState();
@@ -177,6 +178,8 @@ function App() {
               onToggleMusic={toggleMusic}
               onToggleSoundEffects={toggleSoundEffects}
               onShowPayoutTable={() => setShowPayoutTable(true)}
+              animationSpeedMode={state.animationSpeedMode}
+              onCycleAnimationSpeed={cycleAnimationSpeed}
             />
           </div>
           </Suspense>
@@ -207,6 +210,8 @@ function App() {
               onToggleMusic={toggleMusic}
               onToggleSoundEffects={toggleSoundEffects}
               onShowPayoutTable={() => setShowPayoutTable(true)}
+              animationSpeedMode={state.animationSpeedMode}
+              onCycleAnimationSpeed={cycleAnimationSpeed}
             />
           </div>
           </Suspense>
@@ -219,11 +224,17 @@ function App() {
             <div key="animation" className="screen-enter">
               <ParallelHandsAnimation
               parallelHands={state.parallelHands}
+              playerHand={state.playerHand}
+              heldIndices={state.heldIndices}
               rewardTable={state.rewardTable}
               selectedHandCount={state.selectedHandCount}
               betAmount={state.betAmount}
               initialStreakCounter={state.streakCounter}
               audioSettings={state.audioSettings}
+              animationSpeedMode={state.animationSpeedMode}
+              onToggleMusic={toggleMusic}
+              onToggleSoundEffects={toggleSoundEffects}
+              onCycleAnimationSpeed={cycleAnimationSpeed}
               onAnimationComplete={(finalStreakCount: number) => {
                 updateStreakCounter(finalStreakCount);
                 moveToNextScreen();
@@ -257,6 +268,8 @@ function App() {
                 onToggleMusic={toggleMusic}
                 onToggleSoundEffects={toggleSoundEffects}
                 onShowPayoutTable={() => setShowPayoutTable(true)}
+                animationSpeedMode={state.animationSpeedMode}
+                onCycleAnimationSpeed={cycleAnimationSpeed}
               />
             </div>
           </Suspense>

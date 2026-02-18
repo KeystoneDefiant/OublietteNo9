@@ -157,4 +157,6 @@ export interface GameState {
     musicVolume: number; // 0.0 to 1.0
     soundEffectsVolume: number; // 0.0 to 1.0
   };
+  /** Animation speed: 1 | 2 | 3 | 'skip' - visible on all game screens */
+  animationSpeedMode: 1 | 2 | 3 | 'skip';
 }

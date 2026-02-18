@@ -75,6 +75,7 @@ const INITIAL_STATE: GameState = {
   streakCounter: 0,
   currentStreakMultiplier: 1.0,
   audioSettings: loadAudioSettings(),
+  animationSpeedMode: 1 as const,
 };
 
 export function useGameState() {
@@ -569,6 +570,14 @@ export function useGameState() {
     });
   }, []);
 
+  const cycleAnimationSpeed = useCallback(() => {
+    setState((prev) => {
+      const next: 1 | 2 | 3 | 'skip' =
+        prev.animationSpeedMode === 1 ? 2 : prev.animationSpeedMode === 2 ? 3 : prev.animationSpeedMode === 3 ? 'skip' : 1;
+      return { ...prev, animationSpeedMode: next };
+    });
+  }, []);
+
   const toggleDevilsDealHold = useCallback(() => {
     setState((prev) => {
       // Can't hold devil's deal if already holding 5 cards (hand is full)
@@ -610,5 +619,6 @@ export function useGameState() {
     toggleSoundEffects,
     setMusicVolume,
     setSoundEffectsVolume,
+    cycleAnimationSpeed,
   };
 }
