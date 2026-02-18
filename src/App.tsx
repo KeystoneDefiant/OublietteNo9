@@ -27,6 +27,12 @@ function App() {
   const [themeConfig, setThemeConfig] = useState<ThemeConfig | null>(null);
   const [isThemeLoading, setIsThemeLoading] = useState(true);
 
+  // Preload logo so it's cached before any screen needs it
+  useEffect(() => {
+    const img = new Image();
+    img.src = `${import.meta.env.BASE_URL}images/logos/number9.png`;
+  }, []);
+
   useEffect(() => {
     const loadTheme = async () => {
       try {
