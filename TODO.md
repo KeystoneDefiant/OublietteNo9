@@ -15,17 +15,19 @@
 - [x] Draw logic refactored: maxDraws/drawsCompletedThisRound; deal counts as first draw; nextActionIsDraw for button; draws left = maxDraws - drawsCompletedThisRound - 1.
 - [x] Poker evaluator: 3 wilds + 2 queens (or any count + wilds ≥ 5) now correctly evaluates as five-of-a-kind.
 
-## ANIMATION CHANGE
+## ANIMATION CHANGE ✅ (Phase B – completed Feb 2026)
 
-- We are going to completely change the animation of the hand reveal.
+- [x] **Left panel:** Held cards + running list of scored hands + accumulated score (e.g. "One Pair x 4 = 4 credits"), updating as more cards are revealed. No max-height, no scrollbar; flexible score row layout.
 
-- On the left, we are going to show the held cards, along with a list of the hands that have scored and the accumulated score, for instance "One Pair x 4 = 4 credits". The score will be updated as the player reveals more cards.
+- [x] **Right rolodex:** Vertical stack of hands with pseudo-3D effects. Max 10 hands visible per stack; opacity decreases with depth. Current hand faces player; after scoring it rotates and fades out. Speed: up to 1 s per hand, configurable (1x/2x/3x/skip).
 
-- On the right we will reveal the hands in a vertical rolodex animation with pseudo-3D effects. We will show a max of 10 hands wrapping around a central axis in the z-axis, their opacity decreasing the farther back in the stack they are. The card being scored is facing the player, and after the hand is scored and presented, the hand will rotate around the axis toward the center of the screen and fade out, being removed from the DOM when it is fully faded out. If there are more hands, the next hand will be added to the back of the stack of hands to be revealed.
+- [x] **Multi-stack layout:** 1–100 hands = 1 stack; 101–200 = 2 stacks; 201–300 = 3 stacks; 301+ = 4 stacks. Hands split evenly; cascade animation with staggered start delays (one animating in, one animating out).
 
-- The speed of the hand presentation is based on the number of hands to be revealed, with the animation taking at maximum 1 second per hand. The animation needs to be smooth and fluid, and the cards need to be revealed in a way that is easy to understand and follow.
+- [x] **Responsive grid:** Stacks in CSS grid; vertical when enough space (viewport height > 700px); 2-column layout (2x1, 2+1 centered, or 2x2) when height ≤ 700px. Stacks scale to fit container (container queries cqw/cqh when supported).
 
-- Under the cards will be the multiplier display in a horizontal bar with sections to denote how many more hands need to be scored in order to trigger the next multiplier level.
+- [x] **Bottom:** Multiplier bar with horizontal segments; static width; responsive sizing on mobile.
+
+- [x] **Mobile:** Left panel stacks above animation on narrow screens; multiplier bar scales; hand stacks scale to viewport.
 
 ## TUTORIAL MODE
 
@@ -136,10 +138,10 @@ Growth:  +171% coverage increase
 
 ## Summary
 
-**Completed**: 5/25 items from IMPROVEMENTS.md (20%)  
+**Completed**: 6/25 items from IMPROVEMENTS.md (24%)  
 **High Priority**: 3/3 complete (100%) ✅  
 **Medium Priority**: 2/10 complete (20%) 🔄  
 **Build Status**: ✅ Passing (373.83 kB main bundle, 29% smaller)  
 **Test Status**: ✅ 475+ tests passing
 
-All recommendations from IMPROVEMENTS.md are being systematically implemented. High-priority items complete, continuing with medium and low-priority enhancements.
+Phase B (animation change) complete. All recommendations from IMPROVEMENTS.md are being systematically implemented.

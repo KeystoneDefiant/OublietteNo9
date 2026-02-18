@@ -6,7 +6,7 @@
 
 This plan orders work by dependency and risk: fixes first, then config, then large features (animation, tutorial). Medium/low items from TODO.md are tracked separately.
 
-**Current status:** Phase A (fixes) complete. Additional fixes (shop, draw logic, poker evaluator) done. Next: Phase B (animation) or Phase C (tutorial).
+**Current status:** Phase A (fixes) complete. Phase B (animation) complete. Additional fixes (shop, draw logic, poker evaluator) done. Next: Phase C (tutorial).
 
 ---
 
@@ -65,25 +65,20 @@ This plan orders work by dependency and risk: fixes first, then config, then lar
 
 ---
 
-## Phase B: Animation change (hand reveal redesign)
+## Phase B: Animation change (hand reveal redesign) ✅ DONE (Feb 2026)
 
-**Scope:** Replace current grid-based parallel-hands reveal with:
+**Implemented:**
 
 - **Left:** Held cards + running list of scored hands + accumulated score (e.g. “One Pair x 4 = 4 credits”), updating as more cards are revealed.
 - **Right:** Vertical “rolodex” of hands (max 10 visible), pseudo-3D (opacity by z). Current hand faces player; after scoring it rotates around axis and fades out, then is removed from DOM; next hand added to the back. Speed: up to 1 s per hand, smooth.
 - **Bottom:** Multiplier progress bar with sections for next level.
 
-**Approach:**
-
-1. **Design:** Nail layout (left panel vs rolodex vs multiplier bar) and data flow (reveal order, score accumulation, multiplier state).
-2. **Data:** Reuse existing `parallelHands`, `rewardTable`, `betAmount`, streak multiplier; compute “hands that have scored” and “accumulated score” as you iterate reveal.
-3. **Rolodex:** New component (e.g. `RolodexHandReveal`): max 10 hands in a stack, z-index/opacity/transform for depth; one “front” hand; on “next,” animate front hand rotate + fade, remove from DOM, push next from `parallelHands`. Loop until all revealed.
+**Details:** Reuse existing `parallelHands`, `rewardTable`, `betAmount`, streak multiplier; compute “hands that have scored” and “accumulated score” as you iterate reveal.
+- **Rolodex (legacy):** New component (e.g. `RolodexHandReveal`): max 10 hands in a stack, z-index/opacity/transform for depth; one “front” hand; on “next,” animate front hand rotate + fade, remove from DOM, push next from `parallelHands`. Loop until all revealed.
 4. **Timing:** Per-hand duration = min(1000, totalDuration / handCount) or similar; drive from config.
 5. **Integration:** Replace or wrap current `ParallelHandsAnimation` with this layout; keep `onAnimationComplete` and streak/credits flow.
 
-**Files:** New component(s) under `src/components/` (e.g. `ParallelHandsRevealRolodex.tsx`), CSS, `gameConfig.ts` (timing), `App.tsx` (screen choice).
-
-**Risk:** Large UI/UX change; implement behind a feature flag or config if you want to keep old animation as fallback.
+**Files:** `screen-ParallelHandsAnimation.tsx`, `screen-ParallelHandsAnimation.css`, `StreakProgressBar.css`, `gameConfig.ts`.
 
 ---
 
@@ -128,7 +123,7 @@ This plan orders work by dependency and risk: fixes first, then config, then lar
 - [x] A.1 Hold/draw: allow hold &lt; 5; draws use max hand size; UI text. **(Done)**
 - [x] A.2 Config: max hand size and number of draws configurable. **(Done)**
 - [x] A.3 Endgame: only apply endless rules that are enabled in config (e.g. no min bet increase at 30 unless enabled). **(Done)**
-- [ ] B Animation: left (held + score list), right (rolodex), bottom (multiplier bar); timing ≤ 1 s/hand.
+- [x] B Animation: left (held + score list), right (rolodex multi-stack grid), bottom (multiplier bar); cascade; responsive; scaling. **(Done)**
 - [ ] C Tutorial: main menu entry, slides 1–7, back to menu.
 - [ ] D Clarifications, tests, docs.
 
@@ -144,6 +139,7 @@ Beyond Phase A, the following were implemented:
 | Credits needed display | Done | Recalculates after purchases. |
 | Draw logic refactor | Done | maxDraws/drawsCompletedThisRound; deal = first draw; nextActionIsDraw; draws left = maxDraws - drawsCompletedThisRound - 1. Config sets base maxDraws; extra draw purchase adds 1. |
 | Poker 5-of-a-kind | Done | 3 wilds + 2 queens (or any rank with count + wilds ≥ 5) now evaluates as five-of-a-kind. |
+| **Phase B Animation** | Done | Rolodex with multi-stack (1–4 stacks by hand count), cascade animation, responsive grid (vertical vs 2-column at 700px), container-based scaling, left panel + multiplier bar. |
 
 ---
 
