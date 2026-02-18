@@ -83,6 +83,10 @@ export const gameConfig = {
     startingCredits: 5000,
     startingBet: 2,
     startingHandCount: 10,
+    /** Maximum cards dealt per hand (5 base + extra from shop). Cap for deal/draw. */
+    maxHandSize: 8,
+    /** Maximum number of draw phases (1 = single draw, 2 = base + extra draw). */
+    maxDraws: 1,
     minimumBetIncreasePercent: 95,
     minimumBetIncreaseInterval: 5,
     shopOptionCount: 4,
@@ -99,9 +103,9 @@ export const gameConfig = {
     endlessMode: {
       startRound: 30,
       failureConditions: {
-        minimumBetMultiplier: { enabled: true, value: 2.0 },
-        minimumCreditEfficiency: { enabled: true, value: 100 },
-        minimumWinningHandsPerRound: { enabled: true, value: 20 },
+        minimumBetMultiplier: { enabled: false, value: 2.0 },
+        minimumCreditEfficiency: { enabled: false, value: 100 },
+        minimumWinningHandsPerRound: { enabled: false, value: 20 },
         minimumWinPercent: {
           enabled: true,
           startPercent: 25,
@@ -142,8 +146,8 @@ export const gameConfig = {
     ],
     shopItems: {
       'dead-card': { rarity: 1 },
-      'single-dead-card-removal': { rarity: 2 },
-      'all-dead-cards-removal': { rarity: 3 },
+      'remove-single-dead-card': { rarity: 2 },
+      'remove-all-dead-cards': { rarity: 3 },
       'parallel-hands-bundle-5': { rarity: 1 },
       'parallel-hands-bundle-10': { rarity: 1 },
       'parallel-hands-bundle-25': { rarity: 2 },

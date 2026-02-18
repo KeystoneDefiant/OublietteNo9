@@ -132,9 +132,10 @@ export interface GameState {
   totalEarnings: number;
   deckModifications: DeckModifications;
   extraDrawPurchased: boolean;
-  hasExtraDraw: boolean;
-  firstDrawComplete: boolean;
-  secondDrawAvailable: boolean;
+  /** Max number of draw steps allowed this hand (1 or 2 from config/shop). */
+  maxDraws: number;
+  /** Number of draw steps completed this hand (0, 1, or 2). */
+  drawsCompletedThisRound: number;
   wildCardCount: number;
   gameOver: boolean;
   showShopNextRound: boolean; // Flag to show shop after results

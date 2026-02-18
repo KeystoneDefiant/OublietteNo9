@@ -1,36 +1,46 @@
 # To Do
 
-## BUGS
+## FIXES
 
-- During the hand animation, the hands are scrolled off of the screen too quickly, leaving a blank screen. My guess is that as elements are removed, the height of the container changes and makes the scroll value incorrect. I'm thinking we could just remove all the elements inside the hand containers, but keep their height so the grid calculations still work. I'm open to suggestions.
+- When the player has purchased an increase to their maximum hand size, they do not have to hold 5 cards. They simply get more choices in their draw phase. They can still hold up to 5 cards, but can hold less if they want. Additionally, all draws will draw up to that maximum size.
 
-- Ace, Wild, 2, 4, 5 is not counting as a straight. The wild card would act as a 3 in that situation, making a straight, correct?
+- Make the maximum hand size and number of draws configurable in the game config.
 
-- Ace, Ace, Wild, Wild sometimes counts as a full house, when 4 of a kind ranks higher. Always score the highest possible hand.
+- Review the endgame state in round 30 and make sure that only the end game rules turned on in the config are applied. Currently round 30 looks to impose a minimum bet increase, which is outdated and is no longer a relevent end game state.
 
-## FINE TUNING
+## ANIMATION CHANGE
 
-- Add commas to any credit display
+- We are going to completely change the animation of the hand reveal.
 
-## ENHANCEMENTS
+- On the left, we are going to show the held cards, along with a list of the hands that have scored and the accumulated score, for instance "One Pair x 4 = 4 credits". The score will be updated as the player reveals more cards.
 
-- Add an end game mode wher the player must have a scoring hand with a percentage of the hands they play. This starts at 25%, and increases by 5% every round. The player will eventually lose when this hits 105% and that's ok.
+- On the right we will reveal the hands in a vertical rolodex animation with pseudo-3D effects. We will show a max of 10 hands wrapping around a central axis in the z-axis, their opacity decreasing the farther back in the stack they are. The card being scored is facing the player, and after the hand is scored and presented, the hand will rotate around the axis toward the center of the screen and fade out, being removed from the DOM when it is fully faded out. If there are more hands, the next hand will be added to the back of the stack of hands to be revealed.
 
-- During the end game, show the failure state in the pre-draw screen. For instance "You must win at least 25% of the hands played this round".
+- The speed of the hand presentation is based on the number of hands to be revealed, with the animation taking at maximum 1 second per hand. The animation needs to be smooth and fluid, and the cards need to be revealed in a way that is easy to understand and follow.
 
-- In the theme config, allow for multiple background music songs to be configured. When one song is done playing, pick another song from the list at random. Tracks should not be played back to back if there's more than 1.
+- Under the cards will be the multiplier display in a horizontal bar with sections to denote how many more hands need to be scored in order to trigger the next multiplier level.
 
-- If scoring more than 5 of the same hand type in the same round, reduce the volume of that hand's audio by 25% every additional time it comes up for the rest of the round. Reset volumes at the end of the round.
+## TUTORIAL MODE
 
-- Add volume sliders to the settings menu to control volume for music and sound effects seperately.
+- We will be adding a tutorial mode that walks the player through a hand of the game, explaining dead and wild cards, and the idea of parallel hands. This option will be available from the main menu, and when clicked, we will show a series of slides with examples of hands, how poker hands work, and how to play the game.
 
-## PROGRESSIONS
+- Slide 1 introduces the game as a single player poker game where the player is given cards, they select any number to hold, and then new cards are drawn to make up a poker hand.
 
-- Add a shop option to add an additional card to the hand that's drawn, so the player will have 6 cards to pick from instead of 5. They will still only play 5 cards, they will just have more choices That maximum will increase every time the option is purchased in the shop. Make the price, the increase per purchase and max purchases configurable in the game config.
+- Slide 2 shows the pay table for the poker hands and how each round there is an ever increasing bet amount, and the hands will pay out based on the bet size.
 
-- Rethink how our game config file looks. I think it may be best if we have a default game state based off of what we have with normalGame and the different game modes will override those options.
+- Slide 3 introduces the idea of parallel hands. After the player holds their cards, that deck of cards is cloned and shuffled, and multiple hands are drawn against the cards they've held. Also mentioned is that each parallel hand is played with the bet size, so if you're playing 5 parallel hands with a bet size of 2, you pay 10 credits to play the round. If you are playing 100 parallel hands with a bet size of 5, the round costs 500 credits to play. But with more hands comes more possibilities and chances to win, even on a bad draw! And if you have a really good set of held cards, you rake in the money!
 
-- We're going to rethink the shop. In the game config, we are going to set rarity levels (1-4, 1 being common, 4 being rare) to each purchasable item. The game config will have a setting the specify how many shop slots are available, and the maximum rarity that can be seen in those slots, and the chances of seeing those rarities per slot. For instance, shop slot 1 may only have room for common items, shop slot 2 may have room for rarity 1 and 2, with rarity level 2 items having a 40% chance to appear (with the rest of the chance going to rarity level 1 items). Slot 3 may have room for rarity up to level 2, but the level 2 items have an 80% chance to appear. When making the logic for what needs to show in a given slot, we will evaluate what level of rarity should be shown, and then randomly pick an item from the shop items list that correspond to that rarity.
+- Slide 4 introduces the multiplier system, where the more hands you score in a row, the higher the multiplier goes. When you don't score a hand, your progress to the next level of multiplier goes down.
+
+- Slide 5 introduces the store and the various things you can buy. From adding more parallel hands, buying dead cards, wild cards, additional draw phases, additional cards in your draw phase, etc. Every decision to buy has an implication to your game - while buying more hands grants more chances to win and increase the multiplier even higher, it makes each round more expensive.
+
+- Slide 6 informs the player of wild cards and dead cards.
+
+- Slide 7 mentions the end game after round 30 and losing is an eventuality. The goal is to win with as many credits as you can, but just surviving to round 30 is a success!
+
+## FINISHING UP
+
+- Ask for clarifications as needed. Update tests, update agent notes, update documentation.
 
 ---
 

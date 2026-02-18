@@ -429,6 +429,18 @@ describe('PokerEvaluator', () => {
       expect(result.rank).toBe('five-of-a-kind');
     });
 
+    it('should create five of a kind with 3 wilds and 2 matching cards', () => {
+      const hand: Card[] = [
+        createCard('Q', 'hearts'),
+        createCard('Q', 'diamonds'),
+        createCard('2', 'spades', { isWild: true }),
+        createCard('3', 'clubs', { isWild: true }),
+        createCard('4', 'hearts', { isWild: true }),
+      ];
+      const result = PokerEvaluator.evaluate(hand);
+      expect(result.rank).toBe('five-of-a-kind');
+    });
+
     it('should create one pair with wild card (Jacks or better)', () => {
       const hand: Card[] = [
         createCard('J', 'hearts'),

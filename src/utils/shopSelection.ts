@@ -17,6 +17,8 @@ export type ShopItemConfig = {
 
 /** Mode shape for rarity-based shop selection (accepts readonly config). */
 export type ShopRarityMode = {
+  /** Desired number of shop slots to fill. If omitted, uses shopSlots.length. */
+  shopOptionCount?: number;
   shopSlots?: ReadonlyArray<{ maxRarity: number; rarityChances?: ReadonlyArray<number> | number[] }>;
   shopItems?: Record<string, { rarity: number }>;
 };
@@ -54,7 +56,8 @@ function pickOne(options: ShopOptionType[]): ShopOptionType | null {
 
 /**
  * Select shop options by rarity: for each slot, determine rarity from slot config,
- * then pick an item of that rarity (by weight). No duplicate options when possible.
+ * then pick an item of that rarity (by weight). Prefers no duplicates; fills with
+ * repeats so the shop always has exactly the configured number of items.
  */
 export function selectShopOptionsByRarity(mode: ShopRarityMode): ShopOptionType[] {
   const slots = mode.shopSlots;
@@ -64,10 +67,17 @@ export function selectShopOptionsByRarity(mode: ShopRarityMode): ShopOptionType[
     return [];
   }
 
-  const selected: ShopOptionType[] = [];
   const optionKeys = Object.keys(items) as ShopOptionType[];
+  if (optionKeys.length === 0) return [];
 
-  for (const slot of slots) {
+  const targetCount = Math.max(
+    1,
+    mode.shopOptionCount ?? slots.length
+  );
+  const selected: ShopOptionType[] = [];
+
+  for (let i = 0; i < targetCount; i++) {
+    const slot = slots[i % slots.length];
     const maxRarity = Math.min(4, Math.max(1, slot.maxRarity));
     const rarity = pickRarityForSlot(maxRarity, slot.rarityChances);
 

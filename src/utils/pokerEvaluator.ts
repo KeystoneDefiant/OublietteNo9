@@ -399,33 +399,6 @@ export class PokerEvaluator {
 
     let bestHand: HandResult | null = null;
 
-    // Try 5 of a kind (needs 4 regular cards of same rank)
-    const rankCounts = this.getRankCounts(regularCards);
-    for (const [rank, count] of Object.entries(rankCounts)) {
-      if (count === 4 && numWilds >= 1) {
-        const expanded = [...regularCards];
-        const rankValue = parseInt(rank);
-        const rankStr = allRanks.find((r) => RANK_VALUES[r] === rankValue) as Card['rank'] | undefined;
-        if (rankStr) {
-          expanded.push({
-            suit: 'hearts',
-            rank: rankStr as Card['rank'],
-            id: `wild-5k`,
-            isWild: true,
-          });
-          const result = this.evaluateRegularHand(expanded);
-          // Mark this as five-of-a-kind since we forced it
-          if (result.rank === 'four-of-a-kind' || result.rank === 'five-of-a-kind') {
-            return {
-              ...result,
-              rank: 'five-of-a-kind',
-              score: 8500,
-            };
-          }
-        }
-      }
-    }
-
     // Try Royal Flush (10, J, Q, K, A of same suit)
     if (numRegular + numWilds === 5) {
       const royalRanks: Array<keyof typeof RANK_VALUES> = ['10', 'J', 'Q', 'K', 'A'];
@@ -502,6 +475,41 @@ export class PokerEvaluator {
       }
     }
     if (bestHand && bestHand.rank === 'straight-flush') {
+      return bestHand;
+    }
+
+    // Try 5 of a kind (needs count + numWilds >= 5 for some rank)
+    const rankCounts = this.getRankCounts(regularCards);
+    for (const [rank, count] of Object.entries(rankCounts)) {
+      if (count + numWilds >= 5) {
+        const rankValue = parseInt(rank);
+        const rankStr = allRanks.find((r) => RANK_VALUES[r] === rankValue) as Card['rank'] | undefined;
+        if (rankStr) {
+          const needed = 5 - count;
+          const expanded = [...regularCards];
+          for (let i = 0; i < needed; i++) {
+            expanded.push({
+              suit: 'hearts',
+              rank: rankStr as Card['rank'],
+              id: `wild-5k-${i}`,
+              isWild: true,
+            });
+          }
+          const result = this.evaluateRegularHand(expanded);
+          if (result.rank === 'four-of-a-kind' || result.rank === 'five-of-a-kind') {
+            const fiveKindResult: HandResult = {
+              ...result,
+              rank: 'five-of-a-kind',
+              score: 8500 + rankValue,
+            };
+            if (!bestHand || scoreHand(fiveKindResult) > scoreHand(bestHand)) {
+              bestHand = fiveKindResult;
+            }
+          }
+        }
+      }
+    }
+    if (bestHand && bestHand.rank === 'five-of-a-kind') {
       return bestHand;
     }
 

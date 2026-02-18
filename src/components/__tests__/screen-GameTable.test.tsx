@@ -34,7 +34,7 @@ describe('GameTable Component', () => {
     round: 1,
     totalEarnings: 500,
     firstDrawComplete: true,
-    secondDrawAvailable: false,
+    nextActionIsDraw: false,
     onToggleHold: vi.fn(),
     onToggleDevilsDealHold: vi.fn(),
     onDraw: vi.fn(),
@@ -293,9 +293,9 @@ describe('GameTable Component', () => {
 
     it('should have descriptive button text', () => {
       render(<GameTable {...mockProps} />);
-      
-      const drawButton = screen.getByRole('button', { name: /Draw/i });
-      expect(drawButton).toHaveTextContent(/Draw/i);
+      // With nextActionIsDraw false we show "Play X Parallel Hands"
+      const actionButton = screen.getByRole('button', { name: /Play.*Parallel|Draw/i });
+      expect(actionButton.textContent).toBeTruthy();
     });
   });
 });

@@ -39,6 +39,9 @@ export function useGameActions(
         return prev;
       }
 
+      const currentMode = getCurrentGameMode();
+      const maxHandSize = (currentMode as { maxHandSize?: number }).maxHandSize ?? 5 + ((currentMode.shop?.extraCardInHand as { maxPurchases?: number })?.maxPurchases ?? 3);
+      const handSize = Math.min(maxHandSize, 5 + (prev.extraCardsInHand ?? 0));
       const deck = shuffleDeck(
         createFullDeck(
           prev.deckModifications.deadCards,
@@ -46,11 +49,9 @@ export function useGameActions(
           prev.deckModifications.wildCards
         )
       );
-      const handSize = 5 + (prev.extraCardsInHand ?? 0);
       const newHand: Card[] = deck.slice(0, handSize);
 
       // Check for Devil's Deal
-      const currentMode = getCurrentGameMode();
       const devilsDealConfig = currentMode.devilsDeal;
       let devilsDealCard: Card | null = null;
       let devilsDealCost = 0;
@@ -128,9 +129,8 @@ export function useGameActions(
         credits: prev.credits - totalBet,
         screen: 'game',
         gamePhase: 'playing',
-        hasExtraDraw: prev.extraDrawPurchased,
-        firstDrawComplete: false,
-        secondDrawAvailable: false,
+        maxDraws: Math.max(1, (currentMode as { maxDraws?: number }).maxDraws ?? 1) + (prev.extraDrawPurchased ? 1 : 0),
+        drawsCompletedThisRound: 0,
         selectedHandCount: prev.selectedHandCount || prev.handCount,
         devilsDealCard,
         devilsDealCost,
@@ -184,108 +184,78 @@ export function useGameActions(
   );
 
   /**
-   * Draw parallel hands from held cards
-   * Handles extra draw mechanic if purchased
-   * Generates multiple hands and transitions to animation phase
+   * One draw step: replace non-held cards with new cards from deck, then either
+   * stay in playing (if draws left) or generate parallel hands and go to animation.
+   * Works for any hand size (5–8). Draw count is driven by maxDraws vs drawsCompletedThisRound.
    */
   const drawParallelHands = useCallback(() => {
     setState((prev) => {
       const handSize = prev.playerHand.length;
-      const canDrawFive = handSize === 5;
-      const canDrawSixPlus = handSize > 5 && prev.heldIndices.length === 5;
-      if (!canDrawFive && !canDrawSixPlus) {
+      if (handSize < 5 || prev.parallelHands.length > 0) {
         return prev;
       }
 
-      // When 6+ cards dealt, the 5 held indices form our 5-card hand (no extra-draw replacement)
-      const baseHand: Card[] =
-        handSize > 5
-          ? prev.heldIndices.slice(0, 5).map((i) => prev.playerHand[i])
-          : [...prev.playerHand];
-      const baseHeldIndices: number[] = handSize > 5 ? [0, 1, 2, 3, 4] : [...prev.heldIndices];
+      const maxDraws = prev.maxDraws ?? 1;
+      const fullDeck = createFullDeck(
+        prev.deckModifications.deadCards,
+        prev.deckModifications.removedCards,
+        prev.deckModifications.wildCards
+      );
 
-      // If this is the first draw and extra draw is available (5-card path only), redraw non-held
-      if (
-        handSize === 5 &&
-        !prev.firstDrawComplete &&
-        prev.hasExtraDraw
-      ) {
-        const deck = shuffleDeck(
-          createFullDeck(
-            prev.deckModifications.deadCards,
-            prev.deckModifications.removedCards,
-            prev.deckModifications.wildCards
-          )
-        );
-        const updatedHand = [...prev.playerHand];
-        let deckIndex = 0;
-        for (let i = 0; i < 5; i++) {
+      // When maxDraws === 1 we don't replace cards; go straight to generate from current hand
+      let updatedHand = prev.playerHand;
+      let drawsCompletedThisRound = prev.drawsCompletedThisRound ?? 0;
+
+      if (maxDraws >= 2) {
+        // One draw step: replace non-held cards with new cards (deck = full deck minus current hand)
+        drawsCompletedThisRound += 1;
+        const deckWithoutHand = removeCardsFromDeck(fullDeck, prev.playerHand);
+        const shuffled = shuffleDeck(deckWithoutHand);
+        const needCount = handSize - prev.heldIndices.length;
+        const drawn = shuffled.slice(0, needCount);
+        updatedHand = [...prev.playerHand];
+        let drawIndex = 0;
+        for (let i = 0; i < handSize; i++) {
           if (!prev.heldIndices.includes(i)) {
-            updatedHand[i] = deck[deckIndex++];
+            updatedHand[i] = drawn[drawIndex++];
           }
         }
-        let finalHand = updatedHand;
-        let finalHeldIndices = [...prev.heldIndices];
-        if (prev.devilsDealHeld && prev.devilsDealCard) {
-          const modifiedHand = [...updatedHand];
-          for (let i = 0; i < 5; i++) {
-            if (!prev.heldIndices.includes(i)) {
-              modifiedHand[i] = prev.devilsDealCard!;
-              finalHeldIndices = [...prev.heldIndices, i];
-              break;
-            }
-          }
-          finalHand = modifiedHand;
-        }
-        const parallelHands = generateParallelHands(
-          finalHand,
-          finalHeldIndices,
-          prev.selectedHandCount,
-          prev.deckModifications.deadCards,
-          prev.deckModifications.removedCards,
-          prev.deckModifications.wildCards
-        );
+      }
+
+      // If we have more draws left (only when maxDraws >= 2), stay in playing phase
+      if (maxDraws >= 2 && drawsCompletedThisRound < maxDraws) {
         return {
           ...prev,
-          playerHand: finalHand,
-          heldIndices: finalHeldIndices,
-          parallelHands,
-          firstDrawComplete: true,
-          secondDrawAvailable: true,
+          playerHand: updatedHand,
+          drawsCompletedThisRound,
         };
       }
 
-      // Second draw or no extra draw (or 6+ cards): generate parallel hands
-      let handForAnimation = baseHand;
-      let currentHeldIndices = [...baseHeldIndices];
-      if (handSize === 5 && prev.firstDrawComplete && prev.hasExtraDraw) {
-        const deck = shuffleDeck(
-          createFullDeck(
-            prev.deckModifications.deadCards,
-            prev.deckModifications.removedCards,
-            prev.deckModifications.wildCards
-          )
-        );
-        const updatedHand = [...prev.playerHand];
-        let deckIndex = 0;
-        for (let i = 0; i < 5; i++) {
-          if (!prev.heldIndices.includes(i)) {
-            updatedHand[i] = deck[deckIndex++];
-          }
-        }
-        handForAnimation = updatedHand;
-        currentHeldIndices = [...prev.heldIndices];
+      // All draws used (or single draw): build 5-card hand and generate parallel hands
+      let baseHand: Card[];
+      let baseHeldIndices: number[];
+      if (updatedHand.length === 5) {
+        baseHand = [...updatedHand];
+        baseHeldIndices = [...prev.heldIndices];
+      } else {
+        const heldCards = prev.heldIndices.map((i) => updatedHand[i]);
+        const needFromDeck = 5 - heldCards.length;
+        const deckWithoutUpdated = removeCardsFromDeck(fullDeck, updatedHand);
+        const shuffled2 = shuffleDeck(deckWithoutUpdated);
+        const fill = shuffled2.slice(0, needFromDeck);
+        baseHand = [...heldCards, ...fill];
+        baseHeldIndices = heldCards.length > 0 ? Array.from({ length: heldCards.length }, (_, i) => i) : [];
       }
 
-      let finalHand = handForAnimation;
-      let finalHeldIndices = [...currentHeldIndices];
+      let finalHand = baseHand;
+      let finalHeldIndices = [...baseHeldIndices];
       let creditsAfterDeal = prev.credits;
       if (prev.devilsDealHeld && prev.devilsDealCard) {
-        const modifiedHand = [...handForAnimation];
+        const modifiedHand = [...baseHand];
         for (let i = 0; i < 5; i++) {
-          if (!currentHeldIndices.includes(i)) {
-            modifiedHand[i] = prev.devilsDealCard;
-            finalHeldIndices = [...currentHeldIndices, i];
+          if (!baseHeldIndices.includes(i)) {
+            modifiedHand[i] = prev.devilsDealCard!;
+            finalHeldIndices = [...baseHeldIndices, i];
             break;
           }
         }
@@ -309,8 +279,7 @@ export function useGameActions(
         parallelHands,
         credits: creditsAfterDeal,
         gamePhase: 'parallelHandsAnimation',
-        firstDrawComplete: false,
-        secondDrawAvailable: false,
+        drawsCompletedThisRound: 0,
       };
     });
   }, [setState]);

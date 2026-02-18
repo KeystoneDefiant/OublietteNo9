@@ -75,6 +75,48 @@ describe('selectShopOptionsByRarity', () => {
     expect(result).toHaveLength(3);
     expect(new Set(result).size).toBe(3);
   });
+
+  it('returns exactly shopOptionCount items when set (more than slots)', () => {
+    const mode: ShopRarityMode = {
+      shopOptionCount: 5,
+      shopSlots: [{ maxRarity: 1 }, { maxRarity: 1 }],
+      shopItems: {
+        'dead-card': { rarity: 1 },
+        'wild-card': { rarity: 1 },
+      },
+    };
+    const result = selectShopOptionsByRarity(mode);
+    expect(result).toHaveLength(5);
+    // All items must be one of the two options (repeats allowed)
+    expect(result.every((opt) => opt === 'dead-card' || opt === 'wild-card')).toBe(true);
+  });
+
+  it('returns exactly shopOptionCount items when set (fewer than slots)', () => {
+    const mode: ShopRarityMode = {
+      shopOptionCount: 2,
+      shopSlots: [
+        { maxRarity: 1 },
+        { maxRarity: 1 },
+        { maxRarity: 1 },
+        { maxRarity: 1 },
+      ],
+      shopItems: {
+        'dead-card': { rarity: 1 },
+        'wild-card': { rarity: 1 },
+        'extra-draw': { rarity: 1 },
+      },
+    };
+    const result = selectShopOptionsByRarity(mode);
+    expect(result).toHaveLength(2);
+  });
+
+  it('returns empty when shopItems has no keys', () => {
+    const result = selectShopOptionsByRarity({
+      shopSlots: [{ maxRarity: 1 }],
+      shopItems: {},
+    });
+    expect(result).toEqual([]);
+  });
 });
 
 describe('selectRandomShopOptions', () => {

@@ -57,9 +57,8 @@ const INITIAL_STATE: GameState = {
     deadCardRemovalCount: 0,
   },
   extraDrawPurchased: false,
-  hasExtraDraw: false,
-  firstDrawComplete: false,
-  secondDrawAvailable: false,
+  maxDraws: 1,
+  drawsCompletedThisRound: 0,
   wildCardCount: 0,
   gameOver: false,
   showShopNextRound: false,
@@ -171,8 +170,13 @@ export function useGameState() {
         newBaseMinimumBet = prev.minimumBet;
       }
 
-      // Only increase minimum bet if it's time (based on interval)
-      if (newRound % currentMode.minimumBetIncreaseInterval === 0) {
+      // Only increase minimum bet when in/entering endless mode and the minimum-bet-multiplier rule is enabled
+      const minBetRuleEnabled = endlessConfig?.failureConditions?.minimumBetMultiplier?.enabled ?? false;
+      const shouldIncreaseMinBet =
+        minBetRuleEnabled &&
+        (shouldEnterEndlessMode || prev.isEndlessMode) &&
+        newRound % currentMode.minimumBetIncreaseInterval === 0;
+      if (shouldIncreaseMinBet) {
         const minBetMultiplier = 1 + currentMode.minimumBetIncreasePercent / 100;
         newMinimumBet = Math.floor(prev.minimumBet * minBetMultiplier);
       }
@@ -246,8 +250,7 @@ export function useGameState() {
         playerHand: [],
         heldIndices: [],
         parallelHands: [],
-        firstDrawComplete: false,
-        secondDrawAvailable: false,
+        drawsCompletedThisRound: 0,
         devilsDealCard: null,
         devilsDealCost: 0,
         devilsDealHeld: false,
@@ -288,7 +291,8 @@ export function useGameState() {
       round: 1,
       totalEarnings: 0,
       gameOver: false,
-      hasExtraDraw: false,
+      maxDraws: 1,
+      drawsCompletedThisRound: 0,
       showShopNextRound: false,
       selectedShopOptions: [],
       isEndlessMode: false,
@@ -322,7 +326,7 @@ export function useGameState() {
       heldIndices: [],
       parallelHands: [],
       additionalHandsBought: 0,
-      hasExtraDraw: false,
+      drawsCompletedThisRound: 0,
       showShopNextRound: false,
       selectedShopOptions: [],
     }));
@@ -364,7 +368,8 @@ export function useGameState() {
         parallelHands: [],
         additionalHandsBought: 0,
         credits: prev.credits - cost,
-        hasExtraDraw: prev.extraDrawPurchased,
+        maxDraws: Math.max(1, (getCurrentGameMode() as { maxDraws?: number }).maxDraws ?? 1) + (prev.extraDrawPurchased ? 1 : 0),
+        drawsCompletedThisRound: 0,
       };
     });
   }, []);
@@ -566,8 +571,8 @@ export function useGameState() {
 
   const toggleDevilsDealHold = useCallback(() => {
     setState((prev) => {
-      // Can't hold if all 5 regular cards are held
-      if (prev.heldIndices.length === 5 && !prev.devilsDealHeld) {
+      // Can't hold devil's deal if already holding 5 cards (hand is full)
+      if (prev.heldIndices.length >= 5 && !prev.devilsDealHeld) {
         return prev;
       }
       return {

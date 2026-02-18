@@ -7,7 +7,7 @@ import { gameConfig } from '../config/gameConfig';
 
 /**
  * GameTable screen component props
- * 
+ *
  * Main gameplay screen where players view their dealt hand, select cards
  * to hold, and draw parallel hands.
  */
@@ -26,10 +26,10 @@ interface GameTableProps {
   round: number;
   /** Total earnings across all rounds */
   totalEarnings: number;
-  /** Whether initial cards have been revealed */
+  /** Whether at least one draw has been performed this hand (affects card back display) */
   firstDrawComplete: boolean;
-  /** Whether second draw ability is available */
-  secondDrawAvailable: boolean;
+  /** True = next click does a draw; false = next click plays parallel hands */
+  nextActionIsDraw: boolean;
   /** Failure state for endless mode */
   failureState?: FailureStateType;
   /** Complete game state for Devil's Deal and other features */
@@ -54,16 +54,16 @@ interface GameTableProps {
 
 /**
  * GameTable screen component
- * 
+ *
  * Core gameplay screen where players:
  * - View their dealt 5-card hand
  * - Click cards to hold/unhold (max 5 total including Devil's Deal)
  * - View Devil's Deal offer if triggered
  * - Draw parallel hands when ready
- * 
+ *
  * Handles card flip animations, Devil's Deal interactions, and
  * enforces 5-card hold limit across regular and Devil's Deal cards.
- * 
+ *
  * @example
  * <GameTable
  *   playerHand={[card1, card2, card3, card4, card5]}
@@ -82,7 +82,6 @@ export function GameTable({
   round,
   totalEarnings,
   firstDrawComplete,
-  secondDrawAvailable,
   failureState,
   gameState,
   musicEnabled,
@@ -94,11 +93,9 @@ export function GameTable({
   onToggleSoundEffects,
   onShowPayoutTable,
 }: GameTableProps) {
-  const canDraw =
-    parallelHands.length === 0 &&
-    (playerHand.length === 5 || (playerHand.length > 5 && heldIndices.length === 5));
+  const canDraw = parallelHands.length === 0 && playerHand.length >= 5;
   const efficiency = round > 0 ? (totalEarnings / round).toFixed(2) : '0.00';
-  
+
   // Get random quip for Devil's Deal
   const [devilsDealQuip, setDevilsDealQuip] = useState<string>('');
   useEffect(() => {
@@ -113,9 +110,9 @@ export function GameTable({
     <div id="gameTable-screen" className="min-h-screen p-6 relative overflow-hidden select-none">
       <div className="max-w-7xl mx-auto relative z-0">
         {/* Header */}
-        <GameHeader 
-          credits={credits} 
-          round={round} 
+        <GameHeader
+          credits={credits}
+          round={round}
           efficiency={efficiency}
           failureState={failureState}
           gameState={gameState}
@@ -150,51 +147,54 @@ export function GameTable({
                     cost={gameState.devilsDealCost}
                     quip={devilsDealQuip}
                     isHeld={gameState.devilsDealHeld}
-                    isDisabled={heldIndices.length === 5 && !gameState.devilsDealHeld}
+                    isDisabled={heldIndices.length >= 5 && !gameState.devilsDealHeld}
                     onHold={onToggleDevilsDealHold}
                   />
                 )}
               </div>
-              {playerHand.length >= 5 && (
-                <div className="mt-4 text-center">
-                  {!firstDrawComplete && (
-                    <>
-                      <p className="text-gray-600 mb-2">
-                        {playerHand.length === 5
-                          ? 'Click cards to hold them.'
-                          : `Hold 5 cards to draw. (${heldIndices.length}/5 held)`}
-                      </p>
-                      <button
-                        onClick={onDraw}
-                        disabled={!canDraw}
-                        className={`
+
+              <div className="mt-4 text-center">
+                {Math.max(
+                  0,
+                  (gameState?.maxDraws ?? 0) - (gameState?.drawsCompletedThisRound ?? 0) - 1
+                ) > 0 ? (
+                  <>
+                    <p className="text-gray-600 mb-2">
+                      Hold the cards you want to keep, then draw. Draws left:{' '}
+                      {Math.max(
+                        0,
+                        (gameState?.maxDraws ?? 0) - (gameState?.drawsCompletedThisRound ?? 0) - 1
+                      )}
+                    </p>
+                    <button
+                      onClick={onDraw}
+                      disabled={!canDraw}
+                      className={`
                           px-8 py-3 rounded-lg font-bold text-lg transition-colors
-                          ${
-                            canDraw
-                              ? 'bg-green-600 hover:bg-green-700 text-white'
-                              : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                          }
+                          ${canDraw ? 'bg-blue-600 hover:bg-blue-700 text-white' : 'bg-gray-300 text-gray-500 cursor-not-allowed'}
                         `}
-                      >
-                        Play {selectedHandCount} Parallel Hands
-                      </button>
-                    </>
-                  )}
-                  {firstDrawComplete && secondDrawAvailable && (
-                    <>
-                      <p className="text-gray-600 mb-2">
-                        First draw complete! Re-hold cards if desired, then draw again.
-                      </p>
-                      <button
-                        onClick={onDraw}
-                        className="px-8 py-3 rounded-lg font-bold text-lg transition-colors bg-blue-600 hover:bg-blue-700 text-white"
-                      >
-                        Second Draw
-                      </button>
-                    </>
-                  )}
-                </div>
-              )}
+                    >
+                      Draw
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <p className="text-gray-600 mb-2">
+                      Hold the cards you want to keep, then play parallel hands.
+                    </p>
+                    <button
+                      onClick={onDraw}
+                      disabled={!canDraw}
+                      className={`
+                          px-8 py-3 rounded-lg font-bold text-lg transition-colors
+                          ${canDraw ? 'bg-green-600 hover:bg-green-700 text-white' : 'bg-gray-300 text-gray-500 cursor-not-allowed'}
+                        `}
+                    >
+                      Play {selectedHandCount} Parallel Hands
+                    </button>
+                  </>
+                )}
+              </div>
             </div>
           </div>
         </div>

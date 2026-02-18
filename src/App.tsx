@@ -195,8 +195,8 @@ function App() {
               selectedHandCount={state.selectedHandCount}
               round={state.round}
               totalEarnings={state.totalEarnings}
-              firstDrawComplete={state.firstDrawComplete}
-              secondDrawAvailable={state.secondDrawAvailable}
+              firstDrawComplete={state.drawsCompletedThisRound > 0}
+              nextActionIsDraw={state.maxDraws >= 2 && state.drawsCompletedThisRound < state.maxDraws}
               failureState={state.currentFailureState}
               gameState={state}
               onToggleHold={toggleHold}

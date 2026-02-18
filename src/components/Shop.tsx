@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, Fragment } from 'react';
 import {
   calculateWildCardCost,
   calculateSingleDeadCardRemovalCost,
@@ -141,11 +141,6 @@ export function Shop({
     devilsDealCostReductionPurchases
   );
 
-  // Helper function to check if an option should be shown
-  const isOptionAvailable = (optionType: ShopOptionType): boolean => {
-    return selectedShopOptions.includes(optionType);
-  };
-
   const devilsDealConfig = currentMode.devilsDeal;
   const effectiveChance = devilsDealConfig
     ? devilsDealConfig.baseChance +
@@ -158,6 +153,224 @@ export function Shop({
           devilsDealCostReductionPurchases * devilsDealConfig.costReductionPerPurchase
       )
     : 0;
+
+  // Recalculated every render from current props so it updates immediately after any purchase
+  const creditsNeededForNextRound = betAmount * selectedHandCount;
+
+  /** Renders one shop card for the given option type. Used to show exactly one card per slot (repeats allowed). */
+  const renderShopCard = (optionType: ShopOptionType): React.ReactNode => {
+    switch (optionType) {
+      case 'parallel-hands-bundle-5':
+        return (
+          <div className="border-2 border-white rounded-lg p-6 bg-blue-800 bg-opacity-50 hover:bg-opacity-70 transition-all">
+            <div className="flex justify-between items-center mb-3">
+              <h3 className="text-xl font-bold text-white">Parallel Hands +5</h3>
+              <span className="text-blue-200">Current: {handCount}</span>
+            </div>
+            <p className="text-blue-100 mb-4">Add 5 parallel hands to your deck</p>
+            <button
+              onClick={() => { onAddParallelHandsBundle(5); markPurchased('parallel-hands-bundle-5'); }}
+              disabled={credits < calculateBundleCost(5) || isPurchased('parallel-hands-bundle-5')}
+              className={`w-full py-3 px-4 rounded-lg font-bold transition-colors ${credits >= calculateBundleCost(5) && !isPurchased('parallel-hands-bundle-5') ? 'bg-blue-600 hover:bg-blue-700 text-white' : 'bg-gray-600 text-gray-400 cursor-not-allowed'}`}
+            >
+              {isPurchased('parallel-hands-bundle-5') ? 'Already Purchased' : `${calculateBundleCost(5)} Credits`}
+            </button>
+          </div>
+        );
+      case 'parallel-hands-bundle-10':
+        return (
+          <div className="border-2 border-white rounded-lg p-6 bg-blue-800 bg-opacity-50 hover:bg-opacity-70 transition-all">
+            <div className="flex justify-between items-center mb-3">
+              <h3 className="text-xl font-bold text-white">Parallel Hands +10</h3>
+              <span className="text-blue-200">Current: {handCount}</span>
+            </div>
+            <p className="text-blue-100 mb-4">Add 10 parallel hands to your deck</p>
+            <button
+              onClick={() => { onAddParallelHandsBundle(10); markPurchased('parallel-hands-bundle-10'); }}
+              disabled={credits < calculateBundleCost(10) || isPurchased('parallel-hands-bundle-10')}
+              className={`w-full py-3 px-4 rounded-lg font-bold transition-colors ${credits >= calculateBundleCost(10) && !isPurchased('parallel-hands-bundle-10') ? 'bg-blue-600 hover:bg-blue-700 text-white' : 'bg-gray-600 text-gray-400 cursor-not-allowed'}`}
+            >
+              {isPurchased('parallel-hands-bundle-10') ? 'Already Purchased' : `${calculateBundleCost(10)} Credits`}
+            </button>
+          </div>
+        );
+      case 'parallel-hands-bundle-25':
+        return (
+          <div className="border-2 border-white rounded-lg p-6 bg-blue-800 bg-opacity-50 hover:bg-opacity-70 transition-all">
+            <div className="flex justify-between items-center mb-3">
+              <h3 className="text-xl font-bold text-white">Parallel Hands +25</h3>
+              <span className="text-blue-200">Current: {handCount}</span>
+            </div>
+            <p className="text-blue-100 mb-4">Add 25 parallel hands to your deck</p>
+            <button
+              onClick={() => { onAddParallelHandsBundle(25); markPurchased('parallel-hands-bundle-25'); }}
+              disabled={credits < calculateBundleCost(25) || isPurchased('parallel-hands-bundle-25')}
+              className={`w-full py-3 px-4 rounded-lg font-bold transition-colors ${credits >= calculateBundleCost(25) && !isPurchased('parallel-hands-bundle-25') ? 'bg-blue-600 hover:bg-blue-700 text-white' : 'bg-gray-600 text-gray-400 cursor-not-allowed'}`}
+            >
+              {isPurchased('parallel-hands-bundle-25') ? 'Already Purchased' : `${calculateBundleCost(25)} Credits`}
+            </button>
+          </div>
+        );
+      case 'parallel-hands-bundle-50':
+        return (
+          <div className="border-2 border-white rounded-lg p-6 bg-blue-800 bg-opacity-50 hover:bg-opacity-70 transition-all">
+            <div className="flex justify-between items-center mb-3">
+              <h3 className="text-xl font-bold text-white">Parallel Hands +50</h3>
+              <span className="text-blue-200">Current: {handCount}</span>
+            </div>
+            <p className="text-blue-100 mb-4">Add 50 parallel hands to your deck</p>
+            <button
+              onClick={() => { onAddParallelHandsBundle(50); markPurchased('parallel-hands-bundle-50'); }}
+              disabled={credits < calculateBundleCost(50) || isPurchased('parallel-hands-bundle-50')}
+              className={`w-full py-3 px-4 rounded-lg font-bold transition-colors ${credits >= calculateBundleCost(50) && !isPurchased('parallel-hands-bundle-50') ? 'bg-blue-600 hover:bg-blue-700 text-white' : 'bg-gray-600 text-gray-400 cursor-not-allowed'}`}
+            >
+              {isPurchased('parallel-hands-bundle-50') ? 'Already Purchased' : `${calculateBundleCost(50)} Credits`}
+            </button>
+          </div>
+        );
+      case 'dead-card':
+        return (
+          <div className="border-2 border-white rounded-lg p-6 bg-purple-800 bg-opacity-50 hover:bg-opacity-70 transition-all">
+            <div className="flex justify-between items-center mb-3">
+              <h3 className="text-xl font-bold text-white">Add Dead Card</h3>
+              <span className="text-purple-200">{deadCards.length}/{gameConfig.deadCardLimit}</span>
+            </div>
+            <p className="text-purple-100 mb-4">
+              Add a non-counting card. Get {formatCredits(currentMode.shop.deadCard.creditReward)} credits
+            </p>
+            <button
+              onClick={() => { onAddDeadCard(); markPurchased('dead-card'); }}
+              disabled={deadCards.length >= gameConfig.deadCardLimit || isPurchased('dead-card')}
+              className={`w-full py-3 px-4 rounded-lg font-bold transition-colors ${deadCards.length < gameConfig.deadCardLimit && !isPurchased('dead-card') ? 'bg-purple-600 hover:bg-purple-700 text-white' : 'bg-gray-600 text-gray-400 cursor-not-allowed'}`}
+            >
+              {isPurchased('dead-card') ? 'Already Purchased' : deadCards.length >= gameConfig.deadCardLimit ? 'Maximum Dead Cards Reached' : `Gain ${formatCredits(currentMode.shop.deadCard.creditReward)} Credits`}
+            </button>
+          </div>
+        );
+      case 'wild-card':
+        return (
+          <div className="border-2 border-white rounded-lg p-6 bg-orange-800 bg-opacity-50 hover:bg-opacity-70 transition-all">
+            <div className="flex justify-between items-center mb-3">
+              <h3 className="text-xl font-bold text-white">Add Wild Card</h3>
+              <span className="text-orange-200">{wildCardCount}/3</span>
+            </div>
+            <p className="text-orange-100 mb-4">Add a card that counts as any rank and suit (max 3)</p>
+            <button
+              onClick={() => { onAddWildCard(); markPurchased('wild-card'); }}
+              disabled={credits < wildCardCost || wildCardCount >= currentMode.shop.wildCard.maxCount || isPurchased('wild-card')}
+              className={`w-full py-3 px-4 rounded-lg font-bold transition-colors ${credits >= wildCardCost && wildCardCount < currentMode.shop.wildCard.maxCount && !isPurchased('wild-card') ? 'bg-orange-600 hover:bg-orange-700 text-white' : 'bg-gray-600 text-gray-400 cursor-not-allowed'}`}
+            >
+              {isPurchased('wild-card') ? 'Already Purchased' : `${wildCardCost} Credits${wildCardCount >= currentMode.shop.wildCard.maxCount ? ' (Max)' : ''}`}
+            </button>
+          </div>
+        );
+      case 'extra-draw':
+        return (
+          <div className="border-2 border-white rounded-lg p-6 bg-indigo-800 bg-opacity-50 hover:bg-opacity-70 transition-all">
+            <div className="flex justify-between items-center mb-3">
+              <h3 className="text-xl font-bold text-white">Extra Draw</h3>
+            </div>
+            <p className="text-indigo-100 mb-4">Redraw 4 cards while holding 1 (one-time purchase)</p>
+            <button
+              onClick={() => { onPurchaseExtraDraw(); markPurchased('extra-draw'); }}
+              disabled={credits < currentMode.shop.extraDraw.cost || extraDrawPurchased || isPurchased('extra-draw')}
+              className={`w-full py-3 px-4 rounded-lg font-bold transition-colors ${credits >= currentMode.shop.extraDraw.cost && !extraDrawPurchased && !isPurchased('extra-draw') ? 'bg-indigo-600 hover:bg-indigo-700 text-white' : 'bg-gray-600 text-gray-400 cursor-not-allowed'}`}
+            >
+              {isPurchased('extra-draw') || extraDrawPurchased ? 'Already Purchased' : `${currentMode.shop.extraDraw.cost} Credits`}
+            </button>
+          </div>
+        );
+      case 'extra-card-in-hand':
+        return (
+          <div className="border-2 border-white rounded-lg p-6 bg-amber-800 bg-opacity-50 hover:bg-opacity-70 transition-all">
+            <div className="flex justify-between items-center mb-3">
+              <h3 className="text-xl font-bold text-white">Extra Card in Hand</h3>
+              <span className="text-amber-200">{extraCardsInHand}/{currentMode.shop.extraCardInHand.maxPurchases}</span>
+            </div>
+            <p className="text-amber-100 mb-4">Deal one more card to choose from (still play 5). More options each hand.</p>
+            <button
+              onClick={() => { onPurchaseExtraCardInHand(); markPurchased('extra-card-in-hand'); }}
+              disabled={credits < calculateExtraCardInHandCost(extraCardsInHand) || extraCardsInHand >= currentMode.shop.extraCardInHand.maxPurchases || isPurchased('extra-card-in-hand')}
+              className={`w-full py-3 px-4 rounded-lg font-bold transition-colors ${credits >= calculateExtraCardInHandCost(extraCardsInHand) && extraCardsInHand < currentMode.shop.extraCardInHand.maxPurchases && !isPurchased('extra-card-in-hand') ? 'bg-amber-600 hover:bg-amber-700 text-white' : 'bg-gray-600 text-gray-400 cursor-not-allowed'}`}
+            >
+              {extraCardsInHand >= currentMode.shop.extraCardInHand.maxPurchases ? 'Max Purchased' : isPurchased('extra-card-in-hand') ? 'Purchased This Visit' : `${formatCredits(calculateExtraCardInHandCost(extraCardsInHand))} Credits`}
+            </button>
+          </div>
+        );
+      case 'remove-single-dead-card':
+        return (
+          <div className="border-2 border-white rounded-lg p-6 bg-red-800 bg-opacity-50 hover:bg-opacity-70 transition-all">
+            <div className="flex justify-between items-center mb-3">
+              <h3 className="text-xl font-bold text-white">Remove Dead Card</h3>
+              <span className="text-red-200">{deadCards.length > 0 ? `1/${deadCards.length}` : 'None'}</span>
+            </div>
+            <p className="text-red-100 mb-4">Permanently remove one dead card from deck</p>
+            <button
+              onClick={() => { onRemoveSingleDeadCard(); markPurchased('remove-single-dead-card'); }}
+              disabled={credits < singleDeadCardRemovalCost || deadCards.length === 0 || isPurchased('remove-single-dead-card')}
+              className={`w-full py-3 px-4 rounded-lg font-bold transition-colors ${credits >= singleDeadCardRemovalCost && deadCards.length > 0 && !isPurchased('remove-single-dead-card') ? 'bg-red-600 hover:bg-red-700 text-white' : 'bg-gray-600 text-gray-400 cursor-not-allowed'}`}
+            >
+              {isPurchased('remove-single-dead-card') ? 'Already Purchased' : deadCards.length === 0 ? 'No dead cards' : `${singleDeadCardRemovalCost} Credits`}
+            </button>
+          </div>
+        );
+      case 'remove-all-dead-cards':
+        return (
+          <div className="border-2 border-white rounded-lg p-6 bg-red-800 bg-opacity-50 hover:bg-opacity-70 transition-all">
+            <div className="flex justify-between items-center mb-3">
+              <h3 className="text-xl font-bold text-white">Remove All Dead Cards</h3>
+              <span className="text-red-200">{deadCards.length} total</span>
+            </div>
+            <p className="text-red-100 mb-4">Remove all {deadCards.length} dead cards at once</p>
+            <button
+              onClick={() => { onRemoveAllDeadCards(); markPurchased('remove-all-dead-cards'); }}
+              disabled={credits < allDeadCardsRemovalCost || deadCards.length === 0 || isPurchased('remove-all-dead-cards')}
+              className={`w-full py-3 px-4 rounded-lg font-bold transition-colors ${credits >= allDeadCardsRemovalCost && deadCards.length > 0 && !isPurchased('remove-all-dead-cards') ? 'bg-red-600 hover:bg-red-700 text-white' : 'bg-gray-600 text-gray-400 cursor-not-allowed'}`}
+            >
+              {isPurchased('remove-all-dead-cards') ? 'Already Purchased' : `${allDeadCardsRemovalCost} Credits`}
+            </button>
+          </div>
+        );
+      case 'devils-deal-chance':
+        return devilsDealConfig ? (
+          <div className="border-2 border-white rounded-lg p-6 bg-purple-800 bg-opacity-50 hover:bg-opacity-70 transition-all">
+            <div className="flex justify-between items-center mb-3">
+              <h3 className="text-xl font-bold text-white">Increase Devil's Deal Chance</h3>
+              <span className="text-purple-200">{devilsDealChancePurchases}/{devilsDealConfig.maxChancePurchases}</span>
+            </div>
+            <p className="text-purple-100 mb-2">Increase chance by {devilsDealConfig.chanceIncreasePerPurchase}% per purchase</p>
+            <p className="text-purple-200 text-sm mb-4">Current chance: {effectiveChance}%</p>
+            <button
+              onClick={() => { onPurchaseDevilsDealChance(); markPurchased('devils-deal-chance'); }}
+              disabled={credits < devilsDealChanceCost || devilsDealChancePurchases >= devilsDealConfig.maxChancePurchases || isPurchased('devils-deal-chance')}
+              className={`w-full py-3 px-4 rounded-lg font-bold transition-colors ${credits >= devilsDealChanceCost && devilsDealChancePurchases < devilsDealConfig.maxChancePurchases && !isPurchased('devils-deal-chance') ? 'bg-purple-600 hover:bg-purple-700 text-white' : 'bg-gray-600 text-gray-400 cursor-not-allowed'}`}
+            >
+              {isPurchased('devils-deal-chance') ? 'Already Purchased' : devilsDealChancePurchases >= devilsDealConfig.maxChancePurchases ? 'Maximum Purchases Reached' : `${devilsDealChanceCost} Credits`}
+            </button>
+          </div>
+        ) : null;
+      case 'devils-deal-cost-reduction':
+        return devilsDealConfig ? (
+          <div className="border-2 border-white rounded-lg p-6 bg-purple-800 bg-opacity-50 hover:bg-opacity-70 transition-all">
+            <div className="flex justify-between items-center mb-3">
+              <h3 className="text-xl font-bold text-white">Reduce Devil's Deal Cost</h3>
+              <span className="text-purple-200">{devilsDealCostReductionPurchases}/{devilsDealConfig.maxCostReductionPurchases}</span>
+            </div>
+            <p className="text-purple-100 mb-2">Reduce cost by {devilsDealConfig.costReductionPerPurchase}% per purchase</p>
+            <p className="text-purple-200 text-sm mb-4">Current cost: {effectiveCostPercent}% of payout</p>
+            <button
+              onClick={() => { onPurchaseDevilsDealCostReduction(); markPurchased('devils-deal-cost-reduction'); }}
+              disabled={credits < devilsDealCostReductionCost || devilsDealCostReductionPurchases >= devilsDealConfig.maxCostReductionPurchases || isPurchased('devils-deal-cost-reduction')}
+              className={`w-full py-3 px-4 rounded-lg font-bold transition-colors ${credits >= devilsDealCostReductionCost && devilsDealCostReductionPurchases < devilsDealConfig.maxCostReductionPurchases && !isPurchased('devils-deal-cost-reduction') ? 'bg-purple-600 hover:bg-purple-700 text-white' : 'bg-gray-600 text-gray-400 cursor-not-allowed'}`}
+            >
+              {isPurchased('devils-deal-cost-reduction') ? 'Already Purchased' : devilsDealCostReductionPurchases >= devilsDealConfig.maxCostReductionPurchases ? 'Maximum Purchases Reached' : `${devilsDealCostReductionCost} Credits`}
+            </button>
+          </div>
+        ) : null;
+      default:
+        return null;
+    }
+  };
 
   return (
     <div className="min-h-screen p-6">
@@ -177,7 +390,7 @@ export function Shop({
             Credits: <span className="text-green-600">{formatCredits(credits)}</span>
           </p>
           <p className="text-sm text-gray-600">
-            Credits needed for next round: <span className="font-semibold">{formatCredits(betAmount * selectedHandCount)}</span>
+            Credits needed for next round: <span className="font-semibold">{formatCredits(creditsNeededForNextRound)}</span>
           </p>
         </div>
 
@@ -198,439 +411,12 @@ export function Shop({
           </div>
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Parallel Hands Bundle - 5 hands */}
-          {isOptionAvailable('parallel-hands-bundle-5') && (
-            <div className="border-2 border-white rounded-lg p-6 bg-blue-800 bg-opacity-50 hover:bg-opacity-70 transition-all">
-              <div className="flex justify-between items-center mb-3">
-                <h3 className="text-xl font-bold text-white">Parallel Hands +5</h3>
-                <span className="text-blue-200">Current: {handCount}</span>
-              </div>
-              <p className="text-blue-100 mb-4">Add 5 parallel hands to your deck</p>
-              <button
-                onClick={() => {
-                  onAddParallelHandsBundle(5);
-                  markPurchased('parallel-hands-bundle-5');
-                }}
-                disabled={
-                  credits < calculateBundleCost(5) || isPurchased('parallel-hands-bundle-5')
-                }
-                className={`
-                  w-full py-3 px-4 rounded-lg font-bold transition-colors
-                  ${
-                    credits >= calculateBundleCost(5) && !isPurchased('parallel-hands-bundle-5')
-                      ? 'bg-blue-600 hover:bg-blue-700 text-white'
-                      : 'bg-gray-600 text-gray-400 cursor-not-allowed'
-                  }
-                `}
-              >
-                {isPurchased('parallel-hands-bundle-5')
-                  ? 'Already Purchased'
-                  : `${calculateBundleCost(5)} Credits`}
-              </button>
-            </div>
-          )}
-
-          {/* Parallel Hands Bundle - 10 hands */}
-          {isOptionAvailable('parallel-hands-bundle-10') && (
-            <div className="border-2 border-white rounded-lg p-6 bg-blue-800 bg-opacity-50 hover:bg-opacity-70 transition-all">
-              <div className="flex justify-between items-center mb-3">
-                <h3 className="text-xl font-bold text-white">Parallel Hands +10</h3>
-                <span className="text-blue-200">Current: {handCount}</span>
-              </div>
-              <p className="text-blue-100 mb-4">Add 10 parallel hands to your deck</p>
-              <button
-                onClick={() => {
-                  onAddParallelHandsBundle(10);
-                  markPurchased('parallel-hands-bundle-10');
-                }}
-                disabled={
-                  credits < calculateBundleCost(10) || isPurchased('parallel-hands-bundle-10')
-                }
-                className={`
-                  w-full py-3 px-4 rounded-lg font-bold transition-colors
-                  ${
-                    credits >= calculateBundleCost(10) && !isPurchased('parallel-hands-bundle-10')
-                      ? 'bg-blue-600 hover:bg-blue-700 text-white'
-                      : 'bg-gray-600 text-gray-400 cursor-not-allowed'
-                  }
-                `}
-              >
-                {isPurchased('parallel-hands-bundle-10')
-                  ? 'Already Purchased'
-                  : `${calculateBundleCost(10)} Credits`}
-              </button>
-            </div>
-          )}
-
-          {/* Parallel Hands Bundle - 25 hands */}
-          {isOptionAvailable('parallel-hands-bundle-25') && (
-            <div className="border-2 border-white rounded-lg p-6 bg-blue-800 bg-opacity-50 hover:bg-opacity-70 transition-all">
-              <div className="flex justify-between items-center mb-3">
-                <h3 className="text-xl font-bold text-white">Parallel Hands +25</h3>
-                <span className="text-blue-200">Current: {handCount}</span>
-              </div>
-              <p className="text-blue-100 mb-4">Add 25 parallel hands to your deck</p>
-              <button
-                onClick={() => {
-                  onAddParallelHandsBundle(25);
-                  markPurchased('parallel-hands-bundle-25');
-                }}
-                disabled={
-                  credits < calculateBundleCost(25) || isPurchased('parallel-hands-bundle-25')
-                }
-                className={`
-                  w-full py-3 px-4 rounded-lg font-bold transition-colors
-                  ${
-                    credits >= calculateBundleCost(25) && !isPurchased('parallel-hands-bundle-25')
-                      ? 'bg-blue-600 hover:bg-blue-700 text-white'
-                      : 'bg-gray-600 text-gray-400 cursor-not-allowed'
-                  }
-                `}
-              >
-                {isPurchased('parallel-hands-bundle-25')
-                  ? 'Already Purchased'
-                  : `${calculateBundleCost(25)} Credits`}
-              </button>
-            </div>
-          )}
-
-          {/* Parallel Hands Bundle - 50 hands */}
-          {isOptionAvailable('parallel-hands-bundle-50') && (
-            <div className="border-2 border-white rounded-lg p-6 bg-blue-800 bg-opacity-50 hover:bg-opacity-70 transition-all">
-              <div className="flex justify-between items-center mb-3">
-                <h3 className="text-xl font-bold text-white">Parallel Hands +50</h3>
-                <span className="text-blue-200">Current: {handCount}</span>
-              </div>
-              <p className="text-blue-100 mb-4">Add 50 parallel hands to your deck</p>
-              <button
-                onClick={() => {
-                  onAddParallelHandsBundle(50);
-                  markPurchased('parallel-hands-bundle-50');
-                }}
-                disabled={
-                  credits < calculateBundleCost(50) || isPurchased('parallel-hands-bundle-50')
-                }
-                className={`
-                  w-full py-3 px-4 rounded-lg font-bold transition-colors
-                  ${
-                    credits >= calculateBundleCost(50) && !isPurchased('parallel-hands-bundle-50')
-                      ? 'bg-blue-600 hover:bg-blue-700 text-white'
-                      : 'bg-gray-600 text-gray-400 cursor-not-allowed'
-                  }
-                `}
-              >
-                {isPurchased('parallel-hands-bundle-50')
-                  ? 'Already Purchased'
-                  : `${calculateBundleCost(50)} Credits`}
-              </button>
-            </div>
-          )}
-
-          {/* Add Dead Card */}
-          {isOptionAvailable('dead-card') && (
-            <div className="border-2 border-white rounded-lg p-6 bg-purple-800 bg-opacity-50 hover:bg-opacity-70 transition-all">
-              <div className="flex justify-between items-center mb-3">
-                <h3 className="text-xl font-bold text-white">Add Dead Card</h3>
-                <span className="text-purple-200">
-                  {deadCards.length}/{gameConfig.deadCardLimit}
-                </span>
-              </div>
-              <p className="text-purple-100 mb-4">
-                Add a non-counting card. Get {formatCredits(currentMode.shop.deadCard.creditReward)} credits
-              </p>
-              <button
-                onClick={() => {
-                  onAddDeadCard();
-                  markPurchased('dead-card');
-                }}
-                disabled={deadCards.length >= gameConfig.deadCardLimit || isPurchased('dead-card')}
-                className={`
-                  w-full py-3 px-4 rounded-lg font-bold transition-colors
-                  ${
-                    deadCards.length < gameConfig.deadCardLimit && !isPurchased('dead-card')
-                      ? 'bg-purple-600 hover:bg-purple-700 text-white'
-                      : 'bg-gray-600 text-gray-400 cursor-not-allowed'
-                  }
-                `}
-              >
-                {isPurchased('dead-card')
-                  ? 'Already Purchased'
-                  : deadCards.length >= gameConfig.deadCardLimit
-                  ? 'Maximum Dead Cards Reached'
-                  : `Gain ${formatCredits(currentMode.shop.deadCard.creditReward)} Credits`}
-              </button>
-            </div>
-          )}
-
-          {/* Wild Card */}
-          {isOptionAvailable('wild-card') && (
-            <div className="border-2 border-white rounded-lg p-6 bg-orange-800 bg-opacity-50 hover:bg-opacity-70 transition-all">
-              <div className="flex justify-between items-center mb-3">
-                <h3 className="text-xl font-bold text-white">Add Wild Card</h3>
-                <span className="text-orange-200">{wildCardCount}/3</span>
-              </div>
-              <p className="text-orange-100 mb-4">
-                Add a card that counts as any rank and suit (max 3)
-              </p>
-              <button
-                onClick={() => {
-                  onAddWildCard();
-                  markPurchased('wild-card');
-                }}
-                disabled={
-                  credits < wildCardCost ||
-                  wildCardCount >= currentMode.shop.wildCard.maxCount ||
-                  isPurchased('wild-card')
-                }
-                className={`
-                  w-full py-3 px-4 rounded-lg font-bold transition-colors
-                  ${
-                    credits >= wildCardCost &&
-                    wildCardCount < currentMode.shop.wildCard.maxCount &&
-                    !isPurchased('wild-card')
-                      ? 'bg-orange-600 hover:bg-orange-700 text-white'
-                      : 'bg-gray-600 text-gray-400 cursor-not-allowed'
-                  }
-                `}
-              >
-                {isPurchased('wild-card')
-                  ? 'Already Purchased'
-                  : `${wildCardCost} Credits${
-                      wildCardCount >= currentMode.shop.wildCard.maxCount ? ' (Max)' : ''
-                    }`}
-              </button>
-            </div>
-          )}
-
-          {/* Extra Draw */}
-          {isOptionAvailable('extra-draw') && (
-            <div className="border-2 border-white rounded-lg p-6 bg-indigo-800 bg-opacity-50 hover:bg-opacity-70 transition-all">
-              <div className="flex justify-between items-center mb-3">
-                <h3 className="text-xl font-bold text-white">Extra Draw</h3>
-              </div>
-              <p className="text-indigo-100 mb-4">
-                Redraw 4 cards while holding 1 (one-time purchase)
-              </p>
-              <button
-                onClick={() => {
-                  onPurchaseExtraDraw();
-                  markPurchased('extra-draw');
-                }}
-                disabled={
-                  credits < currentMode.shop.extraDraw.cost ||
-                  extraDrawPurchased ||
-                  isPurchased('extra-draw')
-                }
-                className={`
-                  w-full py-3 px-4 rounded-lg font-bold transition-colors
-                  ${
-                    credits >= currentMode.shop.extraDraw.cost &&
-                    !extraDrawPurchased &&
-                    !isPurchased('extra-draw')
-                      ? 'bg-indigo-600 hover:bg-indigo-700 text-white'
-                      : 'bg-gray-600 text-gray-400 cursor-not-allowed'
-                  }
-                `}
-              >
-                {isPurchased('extra-draw') || extraDrawPurchased
-                  ? 'Already Purchased'
-                  : `${currentMode.shop.extraDraw.cost} Credits`}
-              </button>
-            </div>
-          )}
-
-          {/* Extra Card in Hand */}
-          {isOptionAvailable('extra-card-in-hand') && (
-            <div className="border-2 border-white rounded-lg p-6 bg-amber-800 bg-opacity-50 hover:bg-opacity-70 transition-all">
-              <div className="flex justify-between items-center mb-3">
-                <h3 className="text-xl font-bold text-white">Extra Card in Hand</h3>
-                <span className="text-amber-200">
-                  {extraCardsInHand}/{currentMode.shop.extraCardInHand.maxPurchases}
-                </span>
-              </div>
-              <p className="text-amber-100 mb-4">
-                Deal one more card to choose from (still play 5). More options each hand.
-              </p>
-              <button
-                onClick={() => {
-                  onPurchaseExtraCardInHand();
-                  markPurchased('extra-card-in-hand');
-                }}
-                disabled={
-                  credits < calculateExtraCardInHandCost(extraCardsInHand) ||
-                  extraCardsInHand >= currentMode.shop.extraCardInHand.maxPurchases ||
-                  isPurchased('extra-card-in-hand')
-                }
-                className={`
-                  w-full py-3 px-4 rounded-lg font-bold transition-colors
-                  ${
-                    credits >= calculateExtraCardInHandCost(extraCardsInHand) &&
-                    extraCardsInHand < currentMode.shop.extraCardInHand.maxPurchases &&
-                    !isPurchased('extra-card-in-hand')
-                      ? 'bg-amber-600 hover:bg-amber-700 text-white'
-                      : 'bg-gray-600 text-gray-400 cursor-not-allowed'
-                  }
-                `}
-              >
-                {extraCardsInHand >= currentMode.shop.extraCardInHand.maxPurchases
-                  ? 'Max Purchased'
-                  : isPurchased('extra-card-in-hand')
-                    ? 'Purchased This Visit'
-                    : `${formatCredits(calculateExtraCardInHandCost(extraCardsInHand))} Credits`}
-              </button>
-            </div>
-          )}
-
-          {/* Remove Single Dead Card */}
-          {deadCards.length > 0 && isOptionAvailable('remove-single-dead-card') && (
-            <div className="border-2 border-white rounded-lg p-6 bg-red-800 bg-opacity-50 hover:bg-opacity-70 transition-all">
-              <div className="flex justify-between items-center mb-3">
-                <h3 className="text-xl font-bold text-white">Remove Dead Card</h3>
-                <span className="text-red-200">1/{deadCards.length}</span>
-              </div>
-              <p className="text-red-100 mb-4">Permanently remove one dead card from deck</p>
-              <button
-                onClick={() => {
-                  onRemoveSingleDeadCard();
-                  markPurchased('remove-single-dead-card');
-                }}
-                disabled={
-                  credits < singleDeadCardRemovalCost || isPurchased('remove-single-dead-card')
-                }
-                className={`
-                  w-full py-3 px-4 rounded-lg font-bold transition-colors
-                  ${
-                    credits >= singleDeadCardRemovalCost && !isPurchased('remove-single-dead-card')
-                      ? 'bg-red-600 hover:bg-red-700 text-white'
-                      : 'bg-gray-600 text-gray-400 cursor-not-allowed'
-                  }
-                `}
-              >
-                {isPurchased('remove-single-dead-card')
-                  ? 'Already Purchased'
-                  : `${singleDeadCardRemovalCost} Credits`}
-              </button>
-            </div>
-          )}
-
-          {/* Remove All Dead Cards */}
-          {deadCards.length > 0 && isOptionAvailable('remove-all-dead-cards') && (
-            <div className="border-2 border-white rounded-lg p-6 bg-red-800 bg-opacity-50 hover:bg-opacity-70 transition-all">
-              <div className="flex justify-between items-center mb-3">
-                <h3 className="text-xl font-bold text-white">Remove All Dead Cards</h3>
-                <span className="text-red-200">{deadCards.length} total</span>
-              </div>
-              <p className="text-red-100 mb-4">Remove all {deadCards.length} dead cards at once</p>
-              <button
-                onClick={() => {
-                  onRemoveAllDeadCards();
-                  markPurchased('remove-all-dead-cards');
-                }}
-                disabled={credits < allDeadCardsRemovalCost || isPurchased('remove-all-dead-cards')}
-                className={`
-                  w-full py-3 px-4 rounded-lg font-bold transition-colors
-                  ${
-                    credits >= allDeadCardsRemovalCost && !isPurchased('remove-all-dead-cards')
-                      ? 'bg-red-600 hover:bg-red-700 text-white'
-                      : 'bg-gray-600 text-gray-400 cursor-not-allowed'
-                  }
-                `}
-              >
-                {isPurchased('remove-all-dead-cards')
-                  ? 'Already Purchased'
-                  : `${allDeadCardsRemovalCost} Credits`}
-              </button>
-            </div>
-          )}
-
-          {/* Increase Devil's Deal Chance */}
-          {devilsDealConfig && isOptionAvailable('devils-deal-chance') && (
-            <div className="border-2 border-white rounded-lg p-6 bg-purple-800 bg-opacity-50 hover:bg-opacity-70 transition-all">
-              <div className="flex justify-between items-center mb-3">
-                <h3 className="text-xl font-bold text-white">Increase Devil's Deal Chance</h3>
-                <span className="text-purple-200">
-                  {devilsDealChancePurchases}/{devilsDealConfig.maxChancePurchases}
-                </span>
-              </div>
-              <p className="text-purple-100 mb-2">
-                Increase chance by {devilsDealConfig.chanceIncreasePerPurchase}% per purchase
-              </p>
-              <p className="text-purple-200 text-sm mb-4">Current chance: {effectiveChance}%</p>
-              <button
-                onClick={() => {
-                  onPurchaseDevilsDealChance();
-                  markPurchased('devils-deal-chance');
-                }}
-                disabled={
-                  credits < devilsDealChanceCost ||
-                  devilsDealChancePurchases >= devilsDealConfig.maxChancePurchases ||
-                  isPurchased('devils-deal-chance')
-                }
-                className={`
-                  w-full py-3 px-4 rounded-lg font-bold transition-colors
-                  ${
-                    credits >= devilsDealChanceCost &&
-                    devilsDealChancePurchases < devilsDealConfig.maxChancePurchases &&
-                    !isPurchased('devils-deal-chance')
-                      ? 'bg-purple-600 hover:bg-purple-700 text-white'
-                      : 'bg-gray-600 text-gray-400 cursor-not-allowed'
-                  }
-                `}
-              >
-                {isPurchased('devils-deal-chance')
-                  ? 'Already Purchased'
-                  : devilsDealChancePurchases >= devilsDealConfig.maxChancePurchases
-                  ? 'Maximum Purchases Reached'
-                  : `${devilsDealChanceCost} Credits`}
-              </button>
-            </div>
-          )}
-
-          {/* Reduce Devil's Deal Cost */}
-          {devilsDealConfig && isOptionAvailable('devils-deal-cost-reduction') && (
-            <div className="border-2 border-white rounded-lg p-6 bg-purple-800 bg-opacity-50 hover:bg-opacity-70 transition-all">
-              <div className="flex justify-between items-center mb-3">
-                <h3 className="text-xl font-bold text-white">Reduce Devil's Deal Cost</h3>
-                <span className="text-purple-200">
-                  {devilsDealCostReductionPurchases}/{devilsDealConfig.maxCostReductionPurchases}
-                </span>
-              </div>
-              <p className="text-purple-100 mb-2">
-                Reduce cost by {devilsDealConfig.costReductionPerPurchase}% per purchase
-              </p>
-              <p className="text-purple-200 text-sm mb-4">
-                Current cost: {effectiveCostPercent}% of payout
-              </p>
-              <button
-                onClick={() => {
-                  onPurchaseDevilsDealCostReduction();
-                  markPurchased('devils-deal-cost-reduction');
-                }}
-                disabled={
-                  credits < devilsDealCostReductionCost ||
-                  devilsDealCostReductionPurchases >= devilsDealConfig.maxCostReductionPurchases ||
-                  isPurchased('devils-deal-cost-reduction')
-                }
-                className={`
-                  w-full py-3 px-4 rounded-lg font-bold transition-colors
-                  ${
-                    credits >= devilsDealCostReductionCost &&
-                    devilsDealCostReductionPurchases < devilsDealConfig.maxCostReductionPurchases &&
-                    !isPurchased('devils-deal-cost-reduction')
-                      ? 'bg-purple-600 hover:bg-purple-700 text-white'
-                      : 'bg-gray-600 text-gray-400 cursor-not-allowed'
-                  }
-                `}
-              >
-                {isPurchased('devils-deal-cost-reduction')
-                  ? 'Already Purchased'
-                  : devilsDealCostReductionPurchases >= devilsDealConfig.maxCostReductionPurchases
-                  ? 'Maximum Purchases Reached'
-                  : `${devilsDealCostReductionCost} Credits`}
-              </button>
-            </div>
-          )}
-        </div>
+            {selectedShopOptions.map((optionType, index) => (
+              <Fragment key={`shop-slot-${index}`}>
+                {renderShopCard(optionType)}
+              </Fragment>
+            ))}
+          </div>
         )}
       </div>
     </div>
