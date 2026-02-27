@@ -198,9 +198,11 @@ export function useShopActions(
         if (prev.credits < cost) {
           return prev;
         }
+        const newHandCount = prev.handCount + bundleSize;
         return {
           ...prev,
-          handCount: prev.handCount + bundleSize,
+          handCount: newHandCount,
+          selectedHandCount: newHandCount, // Play with all hands; round cost updates
           credits: prev.credits - cost,
         };
       });

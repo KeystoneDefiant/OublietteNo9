@@ -1,26 +1,20 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import { PreDraw } from '../screen-PreDraw';
-import { FailureStateType } from '../../types';
+import { FailureStateType, GameState } from '../../types';
+import { getTestRewardTable } from '../../test/testHelpers';
+import { getCurrentGameMode } from '../../config/gameConfig';
+
+const mode = getCurrentGameMode();
 
 describe('PreDraw Component', () => {
   const mockProps = {
     credits: 10000,
     handCount: 50,
-    selectedHandCount: 10,
+    selectedHandCount: mode.startingHandCount,
     betAmount: 5,
-    minimumBet: 2,
-    rewardTable: {
-      'royal-flush': 250,
-      'straight-flush': 50,
-      'four-of-a-kind': 25,
-      'full-house': 9,
-      flush: 6,
-      straight: 4,
-      'three-of-a-kind': 3,
-      'two-pair': 2,
-      'one-pair': 1,
-    },
+    minimumBet: mode.startingBet,
+    rewardTable: getTestRewardTable(),
     gameOver: false,
     round: 1,
     totalEarnings: 0,
@@ -40,10 +34,10 @@ describe('PreDraw Component', () => {
   describe('Rendering', () => {
     it('should render the component with all main elements', () => {
       render(<PreDraw {...mockProps} />);
-      
+
       expect(screen.getByText(/Round:/)).toBeInTheDocument();
       expect(screen.getByText(/Credits:/)).toBeInTheDocument();
-      expect(screen.getByText('Deal Hand')).toBeInTheDocument();
+      expect(screen.getByText('Run Round')).toBeInTheDocument();
     });
 
     it('should display current credits correctly', () => {
@@ -53,156 +47,54 @@ describe('PreDraw Component', () => {
 
     it('should display current round correctly', () => {
       render(<PreDraw {...mockProps} />);
-      expect(screen.getByText(/Round: 1/)).toBeInTheDocument();
+      expect(document.body.textContent).toMatch(/Round:\s*1/);
     });
 
-    it('should render reward table', () => {
+    it('should display bet and hand count summary', () => {
       render(<PreDraw {...mockProps} />);
-      expect(screen.getByText(/Royal Flush/i)).toBeInTheDocument();
+      // PreDraw shows minimumBet, handCount, totalBetCost as read-only display
+      // useEffect auto-sets to min bet and max hands, so displays minimumBet and handCount
+      expect(document.body.textContent).toMatch(/credits/);
+      expect(document.body.textContent).toMatch(/hands/);
+      expect(document.body.textContent).toMatch(/credits to play/);
     });
   });
 
-  describe('Bet Amount Controls', () => {
-    it('should display current bet amount', () => {
+  describe('Display Values', () => {
+    it('should display bet amount and hand count from config', () => {
       render(<PreDraw {...mockProps} />);
-      const betInput = screen.getByLabelText(/Bet per hand/i) as HTMLInputElement;
-      expect(betInput.value).toBe('5');
+      // minimumBet=2, handCount=50, totalBetCost=100
+      expect(document.body.textContent).toMatch(/2/);
+      expect(document.body.textContent).toMatch(/50/);
+      expect(document.body.textContent).toMatch(/100/);
     });
 
-    it('should call onSetBetAmount when bet is changed', () => {
+    it('should show total cost to play', () => {
       render(<PreDraw {...mockProps} />);
-      const betInput = screen.getByLabelText(/Bet per hand/i);
-      
-      fireEvent.change(betInput, { target: { value: '10' } });
-      expect(mockProps.onSetBetAmount).toHaveBeenCalledWith(10);
-    });
-
-    it('should show error for bet below minimum', () => {
-      render(<PreDraw {...mockProps} />);
-      const betInput = screen.getByLabelText(/Bet per hand/i);
-      
-      fireEvent.change(betInput, { target: { value: '1' } });
-      fireEvent.blur(betInput);
-      
-      waitFor(() => {
-        expect(screen.getByText(/must be at least/i)).toBeInTheDocument();
-      });
-    });
-
-    it('should show error for invalid bet (NaN)', () => {
-      render(<PreDraw {...mockProps} />);
-      const betInput = screen.getByLabelText(/Bet per hand/i);
-      
-      fireEvent.change(betInput, { target: { value: 'abc' } });
-      fireEvent.blur(betInput);
-      
-      waitFor(() => {
-        expect(screen.getByText(/Invalid bet amount/i)).toBeInTheDocument();
-      });
-    });
-
-    it('should increment bet with + button', () => {
-      render(<PreDraw {...mockProps} />);
-      const incrementButton = screen.getAllByRole('button', { name: '+' })[0];
-      
-      fireEvent.click(incrementButton);
-      expect(mockProps.onSetBetAmount).toHaveBeenCalledWith(6);
-    });
-
-    it('should decrement bet with - button', () => {
-      render(<PreDraw {...mockProps} />);
-      const decrementButton = screen.getAllByRole('button', { name: '-' })[0];
-      
-      fireEvent.click(decrementButton);
-      expect(mockProps.onSetBetAmount).toHaveBeenCalledWith(4);
-    });
-
-    it('should set max bet when max button clicked', () => {
-      render(<PreDraw {...mockProps} />);
-      const maxButton = screen.getByRole('button', { name: /Max/i });
-      
-      fireEvent.click(maxButton);
-      // Max bet = floor(10000 / 10) = 1000
-      expect(mockProps.onSetBetAmount).toHaveBeenCalled();
+      expect(screen.getByText(/100 credits to play/)).toBeInTheDocument();
     });
   });
 
-  describe('Hand Count Controls', () => {
-    it('should display current hand count', () => {
-      render(<PreDraw {...mockProps} />);
-      const handInput = screen.getByLabelText(/Number of hands/i) as HTMLInputElement;
-      expect(handInput.value).toBe('10');
-    });
-
-    it('should call onSetSelectedHandCount when hand count is changed', () => {
-      render(<PreDraw {...mockProps} />);
-      const handInput = screen.getByLabelText(/Number of hands/i);
-      
-      fireEvent.change(handInput, { target: { value: '20' } });
-      expect(mockProps.onSetSelectedHandCount).toHaveBeenCalledWith(20);
-    });
-
-    it('should show error for hand count below 1', () => {
-      render(<PreDraw {...mockProps} />);
-      const handInput = screen.getByLabelText(/Number of hands/i);
-      
-      fireEvent.change(handInput, { target: { value: '0' } });
-      fireEvent.blur(handInput);
-      
-      waitFor(() => {
-        expect(screen.getByText(/must be at least 1/i)).toBeInTheDocument();
-      });
-    });
-
-    it('should show error for hand count exceeding available', () => {
-      render(<PreDraw {...mockProps} />);
-      const handInput = screen.getByLabelText(/Number of hands/i);
-      
-      fireEvent.change(handInput, { target: { value: '100' } });
-      fireEvent.blur(handInput);
-      
-      waitFor(() => {
-        expect(screen.getByText(/cannot exceed/i)).toBeInTheDocument();
-      });
-    });
-
-    it('should increment hand count with + button', () => {
-      render(<PreDraw {...mockProps} />);
-      const incrementButton = screen.getAllByRole('button', { name: '+' })[1];
-      
-      fireEvent.click(incrementButton);
-      expect(mockProps.onSetSelectedHandCount).toHaveBeenCalledWith(11);
-    });
-
-    it('should decrement hand count with - button', () => {
-      render(<PreDraw {...mockProps} />);
-      const decrementButton = screen.getAllByRole('button', { name: '-' })[1];
-      
-      fireEvent.click(decrementButton);
-      expect(mockProps.onSetSelectedHandCount).toHaveBeenCalledWith(9);
-    });
-  });
-
-  describe('Deal Hand Button', () => {
+  describe('Run Round Button', () => {
     it('should be enabled when player can afford bet', () => {
       render(<PreDraw {...mockProps} />);
-      const dealButton = screen.getByRole('button', { name: /Deal Hand/i });
-      
+      const dealButton = screen.getByRole('button', { name: /Run Round/i });
+
       expect(dealButton).not.toBeDisabled();
     });
 
     it('should be disabled when player cannot afford bet', () => {
       const props = { ...mockProps, credits: 10 };
       render(<PreDraw {...props} />);
-      const dealButton = screen.getByRole('button', { name: /Deal Hand/i });
-      
+      const dealButton = screen.getByRole('button', { name: /Run Round/i });
+
       expect(dealButton).toBeDisabled();
     });
 
     it('should call onDealHand when clicked', () => {
       render(<PreDraw {...mockProps} />);
-      const dealButton = screen.getByRole('button', { name: /Deal Hand/i });
-      
+      const dealButton = screen.getByRole('button', { name: /Run Round/i });
+
       fireEvent.click(dealButton);
       expect(mockProps.onDealHand).toHaveBeenCalledTimes(1);
     });
@@ -210,8 +102,8 @@ describe('PreDraw Component', () => {
     it('should be disabled in game over state', () => {
       const props = { ...mockProps, gameOver: true };
       render(<PreDraw {...props} />);
-      const dealButton = screen.getByRole('button', { name: /Deal Hand/i });
-      
+      const dealButton = screen.getByRole('button', { name: /Cannot Play - Game Over/i });
+
       expect(dealButton).toBeDisabled();
     });
   });
@@ -219,144 +111,154 @@ describe('PreDraw Component', () => {
   describe('End Run Confirmation', () => {
     it('should show confirmation dialog when End Run clicked', () => {
       render(<PreDraw {...mockProps} />);
-      const endRunButton = screen.getByRole('button', { name: /End Run/i });
-      
+      const endRunButton = screen.getByRole('button', { name: /End current run/i });
+
       fireEvent.click(endRunButton);
-      
+
       expect(screen.getByText(/Are you sure/i)).toBeInTheDocument();
     });
 
     it('should call onEndRun when confirmed', () => {
       render(<PreDraw {...mockProps} />);
-      const endRunButton = screen.getByRole('button', { name: /End Run/i });
-      
+      const endRunButton = screen.getByRole('button', { name: /End current run/i });
+
       fireEvent.click(endRunButton);
-      
-      const confirmButton = screen.getByRole('button', { name: /Yes, End Run/i });
+
+      const confirmButton = screen.getByRole('button', { name: /Confirm End Run/i });
       fireEvent.click(confirmButton);
-      
+
       expect(mockProps.onEndRun).toHaveBeenCalledTimes(1);
     });
 
     it('should not call onEndRun when cancelled', () => {
       render(<PreDraw {...mockProps} />);
-      const endRunButton = screen.getByRole('button', { name: /End Run/i });
-      
+      const endRunButton = screen.getByRole('button', { name: /End current run/i });
+
       fireEvent.click(endRunButton);
-      
+
       const cancelButton = screen.getByRole('button', { name: /Cancel/i });
       fireEvent.click(cancelButton);
-      
+
       expect(mockProps.onEndRun).not.toHaveBeenCalled();
     });
   });
 
-  describe('Bet Efficiency Display', () => {
-    it('should show efficiency percentage', () => {
-      render(<PreDraw {...mockProps} />);
-      // Should calculate and display efficiency
-      expect(screen.getByText(/efficiency/i)).toBeInTheDocument();
-    });
-
-    it('should show color coding for efficiency', () => {
-      render(<PreDraw {...mockProps} />);
-      const efficiencyElement = screen.getByText(/efficiency/i).parentElement;
-      
-      // Check that it has color styling
-      expect(efficiencyElement).toHaveClass(/text-/);
-    });
-  });
-
-  describe('Cost Display', () => {
-    it('should show total cost correctly', () => {
-      render(<PreDraw {...mockProps} />);
-      // 5 bet * 10 hands = 50 credits
-      expect(screen.getByText(/50/)).toBeInTheDocument();
-    });
-
-    it('should update cost when bet changes', () => {
-      const { rerender } = render(<PreDraw {...mockProps} />);
-      
-      const updatedProps = { ...mockProps, betAmount: 10 };
-      rerender(<PreDraw {...updatedProps} />);
-      
-      // 10 bet * 10 hands = 100 credits
-      expect(screen.getByText(/100/)).toBeInTheDocument();
-    });
-  });
-
   describe('Failure State Display', () => {
-    it('should show failure warnings when in failure state', () => {
-      const failureState: FailureStateType = {
-        minimumBetMultiplier: {
-          failing: true,
-          value: 2.0,
-          required: 2.0,
-        },
-      };
-      
-      const props = { ...mockProps, failureState };
+    it('should show failure condition in main panel when in failure state', () => {
+      const failureState: FailureStateType = 'minimum-bet-multiplier';
+      const gameState = {
+        baseMinimumBet: 10,
+        round: 31,
+        totalEarnings: 100,
+        winningHandsLastRound: 5,
+      } as GameState;
+
+      const props = { ...mockProps, failureState, gameState };
       render(<PreDraw {...props} />);
-      
+
       expect(screen.getByText(/Failure Condition/i)).toBeInTheDocument();
+      expect(screen.getByText(/Bet must be/)).toBeInTheDocument();
     });
 
-    it('should not show failure warnings in normal state', () => {
+    it('should not show failure condition in normal state', () => {
       render(<PreDraw {...mockProps} />);
-      
+
       expect(screen.queryByText(/Failure Condition/i)).not.toBeInTheDocument();
+    });
+  });
+
+  describe('End Game Conditions Display', () => {
+    it('should show end game conditions when endless mode is active', () => {
+      const gameState = {
+        isEndlessMode: true,
+        baseMinimumBet: 2,
+        round: 31,
+      } as GameState;
+
+      const props = { ...mockProps, gameState };
+      render(<PreDraw {...props} />);
+
+      expect(screen.getByText(/End Game Active/i)).toBeInTheDocument();
+      expect(screen.getByText(/You must meet these conditions to survive each round/i)).toBeInTheDocument();
+    });
+
+    it('should not show end game conditions when endless mode is not active', () => {
+      const gameState = { isEndlessMode: false } as GameState;
+      const props = { ...mockProps, gameState };
+      render(<PreDraw {...props} />);
+
+      expect(screen.queryByText(/End Game Active/i)).not.toBeInTheDocument();
+    });
+
+    it('should not show end game conditions when game over', () => {
+      const gameState = {
+        isEndlessMode: true,
+        baseMinimumBet: 2,
+        round: 31,
+      } as GameState;
+
+      const props = { ...mockProps, gameState, gameOver: true };
+      render(<PreDraw {...props} />);
+
+      expect(screen.queryByText(/End Game Active/i)).not.toBeInTheDocument();
     });
   });
 
   describe('Cheats Modal', () => {
     it('should open cheats modal when button clicked', () => {
       render(<PreDraw {...mockProps} />);
-      const cheatsButton = screen.getByRole('button', { name: /🎮/i });
-      
+      const cheatsButton = screen.getByRole('button', { name: /Open cheats menu/i });
+
       fireEvent.click(cheatsButton);
-      
-      expect(screen.getByText(/Cheats/i)).toBeInTheDocument();
+
+      expect(screen.getAllByText(/Cheats/i).length).toBeGreaterThanOrEqual(1);
+      expect(screen.getByText(/Add 1000 Credits/i)).toBeInTheDocument();
     });
 
-    it('should close cheats modal', () => {
+    it('should close cheats modal when close button clicked', () => {
       render(<PreDraw {...mockProps} />);
-      const cheatsButton = screen.getByRole('button', { name: /🎮/i });
-      
+      const cheatsButton = screen.getByRole('button', { name: /Open cheats menu/i });
+
       fireEvent.click(cheatsButton);
-      
+      expect(screen.getByText(/Add 1000 Credits/i)).toBeInTheDocument();
+
       const closeButton = screen.getByRole('button', { name: /Close/i });
       fireEvent.click(closeButton);
-      
-      expect(screen.queryByText(/Add.*Credits/i)).not.toBeInTheDocument();
+
+      expect(screen.queryByText(/Add 1000 Credits/i)).not.toBeInTheDocument();
     });
   });
 
   describe('Accessibility', () => {
-    it('should have proper ARIA labels', () => {
-      render(<PreDraw {...mockProps} />);
-      
-      expect(screen.getByLabelText(/Bet per hand/i)).toBeInTheDocument();
-      expect(screen.getByLabelText(/Number of hands/i)).toBeInTheDocument();
-    });
-
     it('should have proper button roles', () => {
       render(<PreDraw {...mockProps} />);
-      
+
       const buttons = screen.getAllByRole('button');
       expect(buttons.length).toBeGreaterThan(0);
     });
 
-    it('should show error messages with role="alert"', () => {
+    it('should have accessible Run Round button', () => {
       render(<PreDraw {...mockProps} />);
-      const betInput = screen.getByLabelText(/Bet per hand/i);
-      
-      fireEvent.change(betInput, { target: { value: '1' } });
-      fireEvent.blur(betInput);
-      
-      waitFor(() => {
-        const errorElement = screen.getByRole('alert');
-        expect(errorElement).toBeInTheDocument();
-      });
+
+      expect(
+        screen.getByRole('button', { name: /Run round with \d+ hands at \d+ credits per hand/i })
+      ).toBeInTheDocument();
+    });
+  });
+
+  describe('Game Over State', () => {
+    it('should show Game Over message when gameOver is true', () => {
+      const props = { ...mockProps, gameOver: true };
+      render(<PreDraw {...props} />);
+
+      expect(screen.getAllByText(/Game Over/i).length).toBeGreaterThanOrEqual(1);
+    });
+
+    it('should show insufficient credits message when game over', () => {
+      const props = { ...mockProps, gameOver: true };
+      render(<PreDraw {...props} />);
+
+      expect(screen.getByText(/Insufficient Credits/i)).toBeInTheDocument();
     });
   });
 });

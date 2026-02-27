@@ -42,6 +42,12 @@ npm run test:ui
 
 # Run tests with coverage
 npm run test:coverage
+
+# Run E2E tests (Playwright - run `npx playwright install` once)
+npm run test:e2e
+
+# Analyze bundle size (generates dist/stats.html)
+npm run build:analyze
 ```
 
 ### Docker Development

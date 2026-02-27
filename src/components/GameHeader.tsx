@@ -10,6 +10,8 @@ interface GameHeaderProps {
   efficiency?: string;
   failureState?: FailureStateType;
   gameState?: GameState; // Optional full state for failure state description
+  /** When true, hide failure condition in header (e.g. PreDraw shows it in main panel) */
+  hideFailureInHeader?: boolean;
   musicEnabled?: boolean;
   soundEffectsEnabled?: boolean;
   onToggleMusic?: () => void;
@@ -19,7 +21,7 @@ interface GameHeaderProps {
   onCycleAnimationSpeed?: () => void;
 }
 
-export function GameHeader({ credits, round, efficiency, failureState, gameState, musicEnabled, soundEffectsEnabled, onToggleMusic, onToggleSoundEffects, onShowPayoutTable, animationSpeedMode = 1, onCycleAnimationSpeed }: GameHeaderProps) {
+export function GameHeader({ credits, round, efficiency, failureState, gameState, hideFailureInHeader, musicEnabled, soundEffectsEnabled, onToggleMusic, onToggleSoundEffects, onShowPayoutTable, animationSpeedMode = 1, onCycleAnimationSpeed }: GameHeaderProps) {
   const failureDescription = failureState && gameState 
     ? getFailureStateDescription(failureState, gameState)
     : null;
@@ -43,12 +45,12 @@ export function GameHeader({ credits, round, efficiency, failureState, gameState
             </p>
           )}
           {efficiency !== undefined && (
-            <p className="text-lg font-bold text-gray-800">
+            <p className="text-lg font-bold text-gray-800" title="Average credits earned per round (total earnings ÷ rounds played)">
               Efficiency: <span className="text-purple-600">{efficiency}</span>
             </p>
           )}
         </div>
-        {failureState && failureDescription && (
+        {!hideFailureInHeader && failureState && failureDescription && (
           <div className="bg-red-50 border-2 border-red-400 rounded-lg shadow-lg px-6 py-3">
             <p className="text-sm font-semibold text-red-800 mb-1">⚠️ Failure Condition</p>
             <p className="text-sm font-medium text-red-700">{failureDescription}</p>

@@ -381,6 +381,18 @@ describe('PokerEvaluator', () => {
       expect(result.rank).toBe('four-of-a-kind');
     });
 
+    it('should use wild card with three 5s to create four of a kind (not three of a kind)', () => {
+      const hand: Card[] = [
+        createCard('5', 'hearts'),
+        createCard('5', 'diamonds'),
+        createCard('5', 'clubs'),
+        createCard('A', 'spades', { isWild: true }),
+        createCard('2', 'hearts'),
+      ];
+      const result = PokerEvaluator.evaluate(hand);
+      expect(result.rank).toBe('four-of-a-kind');
+    });
+
     it('should use wild card to create royal flush', () => {
       const hand: Card[] = [
         createCard('A', 'hearts'),

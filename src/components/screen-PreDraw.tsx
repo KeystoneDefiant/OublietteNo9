@@ -1,8 +1,9 @@
 import { useState, useEffect, useMemo } from 'react';
 import { CheatsModal } from './CheatsModal';
 import { GameHeader } from './GameHeader';
-import { FailureStateType, GameState } from '../types';
+import { FailureStateType, GameOverReason, GameState } from '../types';
 import { formatCredits } from '../utils/format';
+import { getFailureStateDescription, getEndlessModeConditions } from '../utils/failureConditions';
 
 /**
  * PreDraw screen component props
@@ -10,6 +11,9 @@ import { formatCredits } from '../utils/format';
  * Screen where players configure their bet amount and number of parallel hands
  * before dealing. Includes validation, affordability checks, and bet efficiency
  * calculations.
+ *
+ * **Keyboard**: Enter or Space triggers Run Round when the round can be played
+ * (no modal open, sufficient credits).
  */
 interface PreDrawProps {
   /** Current player credits */
@@ -40,8 +44,8 @@ interface PreDrawProps {
   onSetSelectedHandCount: (count: number) => void;
   /** Callback to deal initial hand */
   onDealHand: () => void;
-  /** Callback to end current run */
-  onEndRun: () => void;
+  /** Callback to end current run; pass reason when auto-triggered (e.g. insufficient credits) */
+  onEndRun: (reason?: GameOverReason) => void;
   /** Cheat callback to add credits */
   onCheatAddCredits: (amount: number) => void;
   /** Cheat callback to add hands */
@@ -128,17 +132,19 @@ export function PreDraw({
     }
   }, [handCount, minimumBet, selectedHandCount, betAmount, onSetSelectedHandCount, onSetBetAmount]);
 
-  // Check if player can afford the minimum cost
+  // When game over (from returnToPreDraw: insufficient credits or failure condition),
+  // go immediately to game over screen instead of leaving player stuck on PreDraw
   useEffect(() => {
     if (gameOver) {
+      onEndRun();
       return;
     }
 
     const minCost = minimumBet * handCount;
 
-    // If can't afford minimum, trigger game over
+    // If can't afford minimum, trigger game over with specific reason
     if (credits < minCost) {
-      onEndRun();
+      onEndRun('insufficient-credits');
     }
   }, [credits, minimumBet, handCount, gameOver, onEndRun]);
 
@@ -146,6 +152,22 @@ export function PreDraw({
   const totalBetCost = useMemo(() => minimumBet * handCount, [minimumBet, handCount]);
   const canAffordBet = useMemo(() => credits >= totalBetCost, [credits, totalBetCost]);
   const canPlayRound = useMemo(() => !gameOver && canAffordBet, [gameOver, canAffordBet]);
+
+  // Keyboard: Enter/Space to run round when can play
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (showCheats || showEndRunConfirm) return;
+      if ((e.key === 'Enter' || e.key === ' ') && canPlayRound) {
+        const target = e.target as HTMLElement;
+        if (!target.matches('input, textarea, [contenteditable]')) {
+          e.preventDefault();
+          onDealHand();
+        }
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [canPlayRound, onDealHand, showCheats, showEndRunConfirm]);
   const efficiency = useMemo(
     () => (round > 0 ? (totalEarnings / round).toFixed(2) : '0.00'),
     [round, totalEarnings]
@@ -166,6 +188,7 @@ export function PreDraw({
             efficiency={efficiency}
             failureState={failureState}
             gameState={gameState}
+            hideFailureInHeader
             musicEnabled={musicEnabled}
             soundEffectsEnabled={soundEffectsEnabled}
             onToggleMusic={onToggleMusic}
@@ -192,6 +215,35 @@ export function PreDraw({
               {gameOver ? 'Game Over' : 'Ready to Play?'}
             </h1>
 
+            {gameState?.isEndlessMode &&
+              !gameOver &&
+              (() => {
+                const conditions = getEndlessModeConditions(gameState);
+                if (conditions.length === 0) return null;
+                return (
+                  <div className="bg-amber-50 border-2 border-amber-400 rounded-lg p-6 mb-8">
+                    <p className="text-sm font-semibold text-amber-900 mb-2">End Game Active</p>
+                    <p className="text-sm text-amber-800 mb-3">
+                      You must meet these conditions to survive each round:
+                    </p>
+                    <ul className="list-disc list-inside space-y-1 text-sm font-medium text-amber-800">
+                      {conditions.map((condition, i) => (
+                        <li key={i}>{condition}</li>
+                      ))}
+                    </ul>
+                  </div>
+                );
+              })()}
+
+            {failureState && gameState && !gameOver && (
+              <div className="bg-red-50 border-2 border-red-400 rounded-lg p-6 mb-8">
+                <p className="text-sm font-semibold text-red-800 mb-1">⚠️ Failure Condition</p>
+                <p className="text-sm font-medium text-red-700">
+                  {getFailureStateDescription(failureState, gameState)}
+                </p>
+              </div>
+            )}
+
             {gameOver && (
               <div className="bg-red-50 border-2 border-red-300 rounded-lg p-6 mb-8">
                 <p className="text-lg font-semibold text-red-700 mb-2">Insufficient Credits</p>
@@ -199,7 +251,7 @@ export function PreDraw({
                   You need at least {formatCredits(minimumBet * handCount)} credits to play.
                 </p>
                 <p className="text-red-600">
-                  The game has ended because you cannot afford the minimum bet with maximum hands.
+                  The game has ended because you cannot afford the next round.
                 </p>
               </div>
             )}

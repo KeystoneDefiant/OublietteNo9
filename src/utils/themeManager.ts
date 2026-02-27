@@ -1,81 +1,17 @@
 import { ThemeConfig } from '../types/index';
 import { logger } from './logger';
 
-const THEME_STORAGE_KEY = 'pokerthing-selected-theme';
-const DEFAULT_THEME = 'Classic';
 const THEME_CONFIG_CACHE: Map<string, ThemeConfig | null> = new Map();
-let AVAILABLE_THEMES: string[] | null = null;
+
+/** Classic is the only theme; theme selection is disabled. */
+const ACTIVE_THEME = 'Classic';
 
 /**
- * Automatically discover available themes by scanning the themes directory
- * Uses Vite's import.meta.glob to find all config.ts files
- */
-async function discoverThemes(): Promise<string[]> {
-  if (AVAILABLE_THEMES !== null) {
-    return AVAILABLE_THEMES;
-  }
-
-  try {
-    // Use Vite's glob to find all theme config files
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const configModules = (import.meta as any).glob('../themes/*/config.ts') as Record<
-      string,
-      () => Promise<unknown>
-    >;
-    const themes: string[] = [];
-
-    // Extract theme names from the module paths
-    for (const path of Object.keys(configModules)) {
-      // Path format: '../themes/ThemeName/config.ts'
-      const match = path.match(/\.\.\/themes\/([^/]+)\/config\.ts/);
-      if (match && match[1]) {
-        themes.push(match[1]);
-      }
-    }
-
-    // Sort themes alphabetically, with Classic first if present
-    themes.sort((a, b) => {
-      if (a === DEFAULT_THEME) return -1;
-      if (b === DEFAULT_THEME) return 1;
-      return a.localeCompare(b);
-    });
-
-    AVAILABLE_THEMES = themes.length > 0 ? themes : [DEFAULT_THEME];
-    return AVAILABLE_THEMES;
-  } catch (error) {
-    logger.warn(`Failed to discover themes: ${error}`);
-    AVAILABLE_THEMES = [DEFAULT_THEME];
-    return AVAILABLE_THEMES;
-  }
-}
-
-/**
- * Get available themes from the themes directory
- * Automatically discovers all themes on first call
- */
-export async function getAvailableThemes(): Promise<string[]> {
-  return discoverThemes();
-}
-
-/**
- * Get the currently selected theme from localStorage
+ * Get the active theme (always Classic).
+ * Theme selection is disabled; this is kept for compatibility with existing theme loading logic.
  */
 export function getSelectedTheme(): string {
-  if (typeof window === 'undefined') {
-    return DEFAULT_THEME;
-  }
-  const stored = localStorage.getItem(THEME_STORAGE_KEY);
-  return stored || DEFAULT_THEME;
-}
-
-/**
- * Save the selected theme to localStorage
- */
-export function saveSelectedTheme(themeName: string): void {
-  if (typeof window === 'undefined') {
-    return;
-  }
-  localStorage.setItem(THEME_STORAGE_KEY, themeName);
+  return ACTIVE_THEME;
 }
 
 /**

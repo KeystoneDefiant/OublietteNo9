@@ -395,17 +395,13 @@ Define your theme's colors and styles for cards, buttons, text, etc.
 
 ### Step 6: Register Theme
 
-Add your theme to `src/utils/themeManager.ts`:
+**Note:** Theme selection is currently disabled. Classic is the only active theme. The steps below are for future reference if theme selection is re-enabled.
 
-```typescript
-export function getAvailableThemes(): string[] {
-  return ['Classic', 'Bokeh', 'Neon', 'MyTheme'];
-}
-```
+To add a new theme when selection is enabled, you would register it in `themeManager.ts` (e.g. via `getAvailableThemes()`).
 
 ### Step 7: Test
 
-Launch the game and switch to your theme from Settings to verify:
+Launch the game to verify (theme selection is disabled; only Classic is used):
 
 - Background animates smoothly
 - Screen transitions use your specified timing

@@ -111,3 +111,55 @@ export function getFailureStateDescription(
       return '';
   }
 }
+
+/**
+ * Gets human-readable descriptions of all enabled end-game conditions.
+ * Used to inform the player what they must meet to survive when endless mode is active.
+ *
+ * @param state - Current game state
+ * @returns Array of condition descriptions, or empty if endless mode is not active
+ */
+export function getEndlessModeConditions(state: GameState): string[] {
+  const mode = getCurrentGameMode();
+  const endlessConfig = mode.endlessMode;
+
+  if (!state.isEndlessMode || !endlessConfig) {
+    return [];
+  }
+
+  const conditions = endlessConfig.failureConditions;
+  const result: string[] = [];
+
+  if (conditions.minimumBetMultiplier?.enabled) {
+    const requiredBet = Math.ceil(state.baseMinimumBet * conditions.minimumBetMultiplier!.value);
+    result.push(
+      `Bet must be ≥ ${requiredBet} (${conditions.minimumBetMultiplier!.value}x base minimum)`
+    );
+  }
+
+  if (conditions.minimumCreditEfficiency?.enabled) {
+    result.push(
+      `Efficiency must be ≥ ${conditions.minimumCreditEfficiency!.value} credits/round`
+    );
+  }
+
+  if (conditions.minimumWinningHandsPerRound?.enabled) {
+    result.push(
+      `Win ≥ ${conditions.minimumWinningHandsPerRound!.value} hands per round`
+    );
+  }
+
+  if (conditions.minimumWinPercent?.enabled) {
+    const minWinPct = conditions.minimumWinPercent;
+    const roundsCompletedInEndless = endlessConfig.startRound
+      ? Math.max(0, state.round - endlessConfig.startRound)
+      : 0;
+    const requiredPercent = Math.min(
+      minWinPct.startPercent + (roundsCompletedInEndless - 1) * minWinPct.incrementPerRound,
+      minWinPct.maxPercent
+    );
+    result.push(`Win at least ${requiredPercent}% of hands this round`);
+  }
+
+  return result;
+}

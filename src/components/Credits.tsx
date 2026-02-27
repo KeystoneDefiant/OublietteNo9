@@ -30,24 +30,7 @@ export function Credits({ onClose }: CreditsProps) {
               <li>Kelsey, for the Devil's Deal idea. Blame her.</li>
             </ul>
           </div>
-
-          <div>
-            <h3 className="text-xl font-bold text-gray-800 mb-2">Stuff I'm working on</h3>
-            <ul className="text-gray-600">
-              <li>Shop will only give you 3 options, with rarity percentages</li>
-              <li>
-                Pricing will be adjusted for single vs bundle parallel hands - she real screwed at
-                the moment
-              </li>
-              <li>Special game modes that alter the starting configuration, deck, and balance</li>
-              <li>Art?</li>
-              <li>Better animations when seeing your hands</li>
-              <li>More themes!</li>
-              <li>Sound effects and music</li>
-            </ul>
-          </div>
         </div>
-
         <div className="mt-8 text-center">
           <button
             onClick={onClose}

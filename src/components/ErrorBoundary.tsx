@@ -4,6 +4,8 @@ interface ErrorBoundaryProps {
   children: ReactNode;
   fallback?: ReactNode;
   onError?: (error: Error, errorInfo: ErrorInfo) => void;
+  /** When provided, shows "Return to Menu" button to reset app state */
+  onReturnToMenu?: () => void;
 }
 
 interface ErrorBoundaryState {
@@ -72,13 +74,23 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
                 <pre className="mt-2 text-xs overflow-auto">{this.state.error.toString()}</pre>
               </details>
             )}
-            <div className="flex gap-3">
+            <div className="flex flex-col sm:flex-row gap-3">
               <button
                 onClick={this.handleReset}
                 className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg transition-colors"
               >
                 Try Again
               </button>
+              {this.props.onReturnToMenu && (
+                <button
+                  onClick={() => {
+                    this.props.onReturnToMenu?.();
+                  }}
+                  className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-6 rounded-lg transition-colors"
+                >
+                  Return to Menu
+                </button>
+              )}
               <button
                 onClick={() => window.location.reload()}
                 className="flex-1 bg-gray-600 hover:bg-gray-700 text-white font-bold py-3 px-6 rounded-lg transition-colors"

@@ -2,7 +2,7 @@
 
 ## Overview
 
-The theme system now supports injecting custom HTML and CSS for background animations. This allows themes to define unique, animated backgrounds that are dynamically loaded and applied when the theme is selected.
+The theme system supports injecting custom HTML and CSS for background animations. **Theme selection is disabled**; Classic is the only active theme. The system loads the Classic theme's background animation on app startup.
 
 ## Architecture
 
@@ -48,9 +48,7 @@ The theme system now supports injecting custom HTML and CSS for background anima
    - Applies theme background animation globally
 
 4. **`src/components/Settings.tsx`**
-   - Integrates `useThemeBackgroundAnimation` hook
-   - Loads theme config when user selects a different theme
-   - Updates background animation on theme preview/change
+   - Theme selection has been removed. Settings now only shows Audio volume controls.
 
 5. **`src/components/PreDraw.tsx`**
    - Removed hardcoded background animation (now provided by theme)
@@ -214,10 +212,9 @@ The App component now:
 
 The Settings component now:
 
-1. Detects theme selection changes
-2. Loads the selected theme's config (dynamically fetching files if `fromFiles: true`)
-3. Uses `useThemeBackgroundAnimation` to update background
-4. Saves preference and applies globally
+1. Loads Classic theme config on app startup (theme selection is disabled)
+2. Uses `useThemeBackgroundAnimation` to apply background
+3. Applies theme class to body
 
 ## File Structure
 
@@ -231,10 +228,8 @@ src/themes/Classic/
 
 The Settings component now:
 
-1. Detects theme selection changes
-2. Loads the selected theme's config
-3. Uses `useThemeBackgroundAnimation` to update background
-4. Saves preference and applies globally
+1. Loads Classic theme config
+2. Uses `useThemeBackgroundAnimation` to update background
 
 ## Best Practices for Theme Developers
 

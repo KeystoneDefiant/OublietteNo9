@@ -1,9 +1,9 @@
 # Codebase Evaluation for Future AI Agents
 
 **Project**: Parallel Poker Roguelike (Oubliette-9)  
-**Last Evaluated**: January 26, 2026 (Complete Session)  
+**Last Evaluated**: Phase 2 (Finishing Up)  
 **Tech Stack**: React 18, TypeScript, Vite, Tailwind CSS, React Virtuoso  
-**Status**: ✅ Production Ready - 36% of IMPROVEMENTS.md complete, all high-priority done
+**Status**: ✅ Production Ready - Phase 1 fixes complete (failure placement, wild+three 5s)
 
 ---
 
@@ -100,7 +100,7 @@ When adding to Recent Improvements sections, use this format:
 A web-first poker game featuring:
 - **Parallel Hand Mechanics**: Hold cards and draw multiple parallel hands from fresh decks
 - **Roguelike Progression**: Shop system, upgrades, deck modifications
-- **Theme System**: Customizable themes with animations and audio
+- **Theme System**: Classic theme with animations and audio (theme selection disabled)
 - **Pure Functional Core**: Immutable state management with zero side effects
 
 ### Game Flow
@@ -182,7 +182,7 @@ src/
 │   ├── parallelHands.ts         # Parallel hand generation
 │   ├── pokerEvaluator.ts        # Hand evaluation (784 lines)
 │   ├── shopSelection.ts         # Shop option selection
-│   ├── themeManager.ts          # Theme loading/management
+│   ├── themeManager.ts          # Classic theme loading (selection disabled)
 │   └── __tests__/               # ✨ NEW - Test suites
 │       ├── pokerEvaluator.test.ts
 │       ├── parallelHands.test.ts
@@ -245,6 +245,7 @@ src/
 - Handles 0 active cards (all dead) → returns high-card with 0 score
 - Wild cards evaluated by trying all possible optimal combinations
 - Straight detection includes wheel (A-2-3-4-5)
+- Three of a rank + 1 wild: adds kicker when needed so four-of-a-kind evaluates correctly (not three-of-a-kind)
 
 ### `generateParallelHands` (`src/utils/parallelHands.ts`)
 **Purpose**: Generate N parallel hands from base hand
@@ -598,6 +599,20 @@ These are potential future enhancements, not critical issues:
 
 ---
 
+## Recent Improvements (February 2026)
+
+### Theme Selection Disabled (February 26, 2026) ✅
+   - **Problem**: Theme selection added complexity; user requested Classic-only experience
+   - **Solution**: Disabled theme selection; Classic is now the default and only theme
+   - **Changes**:
+     - `themeManager.ts`: Removed `getAvailableThemes`, `saveSelectedTheme`; `getSelectedTheme()` always returns `'Classic'`
+     - `Settings.tsx`: Removed theme selection UI; Settings now only shows Audio volume sliders
+     - `App.tsx`: Simplified theme loading to always load Classic
+   - **Impact**: Simpler codebase, no localStorage for theme preference
+   - **Files Modified**: `themeManager.ts`, `Settings.tsx`, `App.tsx`, `CLAUDE.md`, `TODO.md`, `src/themes/THEME_SYSTEM_IMPLEMENTATION.md`
+
+---
+
 ## Recent Improvements (January 2026)
 
 ### Critical Fixes Completed ✅
@@ -695,6 +710,26 @@ These are potential future enhancements, not critical issues:
 
 **Status**: Production ready and deployable 🚀
 
+### Recent Improvements (Phase 2 - Finishing Up)
+
+**Phase 1 Fixes Documented:**
+
+1. **Failure Condition Placement** ✅
+   - **Problem**: Failure condition appeared at top of screen (in GameHeader) during pre-draw
+   - **Solution**: Added `hideFailureInHeader` prop to GameHeader; PreDraw now shows failure in main panel (white card area) via `getFailureStateDescription`
+   - **Impact**: Better UX - failure message is contextual within the main content area
+   - **Files Modified**: `GameHeader.tsx`, `screen-PreDraw.tsx`
+
+2. **Wild + Three 5s Hand Evaluation** ✅
+   - **Problem**: Hand with three 5s + wild card incorrectly scored as three-of-a-kind instead of four-of-a-kind
+   - **Solution**: In `evaluateWithWildCards` Four of a Kind block, add kicker card when 3 of rank + wild yields only 4 cards (need 5 for evaluation)
+   - **Impact**: Correct payout for four-of-a-kind hands
+   - **Files Modified**: `pokerEvaluator.ts`, `pokerEvaluator.test.ts`
+
+**Tests Updated**: PreDraw Failure State Display tests now use correct `FailureStateType` (string) and `gameState`; added poker evaluator test for three 5s + wild case.
+
+---
+
 ### Recent Improvements (January 26, 2026)
 
 **Major Enhancements Completed:**
@@ -766,15 +801,8 @@ Following the TODO completion, high-priority items from `IMPROVEMENTS.md` were i
    - **Impact**: Game modes can now have different animation speeds and grid behaviors without code changes
    - **Files Modified**: `gameConfig.ts` (+17 lines), `screen-ParallelHandsAnimation.tsx` (refactored to use config)
 
-**8. Theme Fallback Enhancement (Phase 2)** ✅
-   - **Problem**: Theme loading failures could leave app with broken visuals or degraded experience
-   - **Solution**: Automatic fallback chain in `App.tsx`
-     1. Attempt to load user's selected theme
-     2. If fails, automatically fall back to Classic theme
-     3. If Classic fails, continue with null theme (app still functional)
-     4. User sees warning message in console
-   - **Impact**: Zero broken experiences from theme issues, graceful degradation
-   - **Files Modified**: `App.tsx` (enhanced theme loading with fallback logic)
+**8. Theme Fallback Enhancement (Phase 2)** ✅ (Superseded by Theme Selection Removal)
+   - **Note**: Theme selection has been disabled. Classic is now the only theme (see Recent Improvements below).
 
 **9. Documentation Maintenance** ✅
    - Created `IMPROVEMENTS_APPLIED.md` (215 lines) documenting applied fixes
@@ -966,7 +994,7 @@ This codebase has evolved from a solid foundation to a **production-ready applic
 - ✅ **Clean build** - Zero errors, zero warnings
 - ✅ **CSS consolidation** - Single source of truth, no duplication
 - ✅ **Configurable behavior** - Animation timing and grid thresholds in config
-- ✅ **Fallback handling** - Graceful theme loading with Classic fallback
+- ✅ **Classic theme only** - Theme selection disabled; Classic is the default and only theme
 - ✅ **Code splitting** - 29% bundle size reduction with lazy loading
 - ✅ **Virtual scrolling** - Performance optimized for 100+ parallel hands
 - ✅ **Comprehensive testing** - 475+ test cases across utils and components

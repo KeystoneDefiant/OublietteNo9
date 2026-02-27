@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { Results } from '../screen-Results';
 import { Card as CardType, Hand } from '../../types';
+import { getTestRewardTable } from '../../test/testHelpers';
 
 describe('Results Component', () => {
   const createMockCard = (rank: string, suit: string, id: string): CardType => ({
@@ -32,10 +33,7 @@ describe('Results Component', () => {
     credits: 10000,
     round: 5,
     totalEarnings: 5000,
-    rewardTable: {
-      'royal-flush': 250,
-      'straight-flush': 50,
-    },
+    rewardTable: getTestRewardTable(),
     onReturnToPreDraw: vi.fn(),
   };
 
@@ -53,7 +51,7 @@ describe('Results Component', () => {
     it('should display round number', () => {
       render(<Results {...mockProps} />);
       
-      expect(screen.getByText(/Round: 5/i)).toBeInTheDocument();
+      expect(document.body.textContent).toMatch(/Round:\s*5/);
     });
 
     it('should display current credits', () => {
@@ -68,7 +66,7 @@ describe('Results Component', () => {
       render(<Results {...mockProps} />);
       
       // 3 royal flushes * 250 * 10 = 7500 total payout (with streak)
-      expect(screen.getByText(/7,500/)).toBeInTheDocument();
+      expect(screen.getAllByText(/7,500/).length).toBeGreaterThanOrEqual(1);
     });
 
     it('should display bet cost', () => {
@@ -195,11 +193,11 @@ describe('Results Component', () => {
 
     it('should show all held cards', () => {
       render(<Results {...mockProps} />);
-      expect(screen.getByText(/A/)).toBeInTheDocument();
-      expect(screen.getByText(/K/)).toBeInTheDocument();
-      expect(screen.getByText(/Q/)).toBeInTheDocument();
-      expect(screen.getByText(/J/)).toBeInTheDocument();
-      expect(screen.getByText(/10/)).toBeInTheDocument();
+      expect(screen.getAllByText(/^A$/).length).toBeGreaterThanOrEqual(1);
+      expect(screen.getAllByText(/^K$/).length).toBeGreaterThanOrEqual(1);
+      expect(screen.getAllByText(/^Q$/).length).toBeGreaterThanOrEqual(1);
+      expect(screen.getAllByText(/^J$/).length).toBeGreaterThanOrEqual(1);
+      expect(screen.getAllByText(/^10$/).length).toBeGreaterThanOrEqual(1);
     });
 
     it('should not show Cards Held section when no cards held', () => {
@@ -213,7 +211,7 @@ describe('Results Component', () => {
     it('should show Round Summary with payouts', () => {
       render(<Results {...mockProps} />);
       expect(screen.getByText(/Round Summary/i)).toBeInTheDocument();
-      expect(screen.getByText(/7,500/)).toBeInTheDocument();
+      expect(screen.getAllByText(/7,500/).length).toBeGreaterThanOrEqual(1);
     });
 
     it('should show Total Payout and Round Cost', () => {

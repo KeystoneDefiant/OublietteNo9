@@ -1,79 +1,39 @@
-import { describe, it, expect } from 'vitest';
-import { GameState } from '../../types';
+import { describe, it, expect, vi } from 'vitest';
 import { getCurrentGameMode } from '../../config/gameConfig';
 import { checkFailureConditions } from '../failureConditions';
+
+vi.mock('../../config/gameConfig', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../config/gameConfig')>();
+  return {
+    ...actual,
+    getCurrentGameMode: () => {
+      const mode = actual.getCurrentGameMode();
+      return {
+        ...mode,
+        endlessMode: mode.endlessMode
+          ? {
+              ...mode.endlessMode,
+              failureConditions: {
+                ...mode.endlessMode.failureConditions,
+                minimumBetMultiplier: { enabled: true, value: 2.0 },
+                minimumCreditEfficiency: { enabled: true, value: 100 },
+                minimumWinningHandsPerRound: { enabled: true, value: 20 },
+              },
+            }
+          : undefined,
+      };
+    },
+  };
+});
 import { PokerEvaluator } from '../pokerEvaluator';
-import { Card, Hand } from '../../types';
+import {
+  createTestGameState,
+  createTestCard,
+  createTestHand,
+  testFailureConfig,
+} from '../../test/testHelpers';
 
-// Get config values
-const mode = getCurrentGameMode();
-const betMultiplier = mode.endlessMode?.failureConditions.minimumBetMultiplier?.value || 2.0;
-const minEfficiency = mode.endlessMode?.failureConditions.minimumCreditEfficiency?.value || 100;
-const minWinningHands = mode.endlessMode?.failureConditions.minimumWinningHandsPerRound?.value || 20;
-
-// Helper to create a minimal game state
-function createGameState(overrides: Partial<GameState> = {}): GameState {
-  const baseState: GameState = {
-    screen: 'game',
-    gamePhase: 'preDraw',
-    playerHand: [],
-    heldIndices: [],
-    parallelHands: [],
-    handCount: 10,
-    rewardTable: {},
-    credits: 5000,
-    currentRun: 1,
-    additionalHandsBought: 0,
-    betAmount: 1,
-    selectedHandCount: 10,
-    minimumBet: 1,
-    baseMinimumBet: 1,
-    round: 1,
-    totalEarnings: 0,
-    deckModifications: {
-      deadCards: [],
-      wildCards: [],
-      removedCards: [],
-      deadCardRemovalCount: 0,
-    },
-    extraDrawPurchased: false,
-    maxDraws: 1,
-    drawsCompletedThisRound: 0,
-    wildCardCount: 0,
-    gameOver: false,
-    showShopNextRound: false,
-    selectedShopOptions: [],
-    isEndlessMode: false,
-    currentFailureState: null,
-    winningHandsLastRound: 0,
-    audioSettings: {
-      musicEnabled: true,
-      soundEffectsEnabled: true,
-      musicVolume: 0.7,
-      soundEffectsVolume: 1.0,
-    },
-  };
-
-  return { ...baseState, ...overrides };
-}
-
-// Helper to create a card
-function createCard(rank: Card['rank'], suit: Card['suit'], options?: Partial<Card>): Card {
-  return {
-    rank,
-    suit,
-    id: `${rank}-${suit}-${Math.random()}`,
-    ...options,
-  };
-}
-
-// Helper to create a hand
-function createHand(cards: Card[], id?: string): Hand {
-  return {
-    cards,
-    id: id || `hand-${Math.random()}`,
-  };
-}
+const { betMultiplier, minEfficiency, minWinningHands } = testFailureConfig;
 
 describe('Game State Logic - Minimum Bet Increase Intervals', () => {
   const mode = getCurrentGameMode();
@@ -83,7 +43,7 @@ describe('Game State Logic - Minimum Bet Increase Intervals', () => {
     const increasePercent = mode.minimumBetIncreasePercent;
     const multiplier = 1 + increasePercent / 100;
 
-    let state = createGameState({ minimumBet: 100, round: 1 }); // Use larger starting bet to see increases
+    let state = createTestGameState({ minimumBet: 100, round: 1 }); // Use larger starting bet to see increases
 
     // Simulate rounds (newRound is incremented first, then checked)
     for (let newRound = 2; newRound <= 10; newRound++) {
@@ -103,7 +63,7 @@ describe('Game State Logic - Minimum Bet Increase Intervals', () => {
 
   it('should not increase minimum bet on non-interval rounds', () => {
     const interval = mode.minimumBetIncreaseInterval;
-    const state = createGameState({ minimumBet: 10, round: 1 });
+    const state = createTestGameState({ minimumBet: 10, round: 1 });
 
     // Check rounds that are NOT multiples of interval
     for (let round = 2; round <= 10; round++) {
@@ -132,7 +92,7 @@ describe('Game State Logic - Endless Mode Entry', () => {
 
   it('should enter endless mode at or above startRound', () => {
     const startRound = endlessConfig.startRound;
-    let state = createGameState({ round: startRound - 1, isEndlessMode: false });
+    let state = createTestGameState({ round: startRound - 1, isEndlessMode: false });
 
     // Before start round: not in endless mode
     expect(state.isEndlessMode).toBe(false);
@@ -146,7 +106,7 @@ describe('Game State Logic - Endless Mode Entry', () => {
     const startRound = endlessConfig.startRound;
     const currentMinimumBet = 15;
 
-    const state = createGameState({
+    const state = createTestGameState({
       round: startRound - 1,
       minimumBet: currentMinimumBet,
       baseMinimumBet: 1, // Old base
@@ -166,7 +126,7 @@ describe('Game State Logic - Endless Mode Entry', () => {
 
   it('should not enter endless mode before startRound', () => {
     const startRound = endlessConfig.startRound;
-    const stateBeforeStartRound = createGameState({ round: startRound - 1, isEndlessMode: false });
+    const stateBeforeStartRound = createTestGameState({ round: startRound - 1, isEndlessMode: false });
 
     expect(stateBeforeStartRound.isEndlessMode).toBe(false);
   });
@@ -190,28 +150,28 @@ describe('Game State Logic - Winning Hands Counting', () => {
     const betAmount = 10;
 
     // Create hands with different ranks
-    const winningHand1 = createHand([
-      createCard('A', 'hearts'),
-      createCard('A', 'diamonds'),
-      createCard('A', 'clubs'),
-      createCard('A', 'spades'),
-      createCard('K', 'hearts'),
+    const winningHand1 = createTestHand([
+      createTestCard('A', 'hearts'),
+      createTestCard('A', 'diamonds'),
+      createTestCard('A', 'clubs'),
+      createTestCard('A', 'spades'),
+      createTestCard('K', 'hearts'),
     ]); // Four of a kind - payout > 0
 
-    const winningHand2 = createHand([
-      createCard('K', 'hearts'),
-      createCard('K', 'diamonds'),
-      createCard('Q', 'hearts'),
-      createCard('Q', 'diamonds'),
-      createCard('J', 'hearts'),
+    const winningHand2 = createTestHand([
+      createTestCard('K', 'hearts'),
+      createTestCard('K', 'diamonds'),
+      createTestCard('Q', 'hearts'),
+      createTestCard('Q', 'diamonds'),
+      createTestCard('J', 'hearts'),
     ]); // Two pair - payout > 0
 
-    const losingHand = createHand([
-      createCard('2', 'hearts'),
-      createCard('5', 'diamonds'),
-      createCard('8', 'clubs'),
-      createCard('J', 'spades'),
-      createCard('K', 'hearts'),
+    const losingHand = createTestHand([
+      createTestCard('2', 'hearts'),
+      createTestCard('5', 'diamonds'),
+      createTestCard('8', 'clubs'),
+      createTestCard('J', 'spades'),
+      createTestCard('K', 'hearts'),
     ]); // High card - payout = 0
 
     const parallelHands = [winningHand1, winningHand2, losingHand];
@@ -234,20 +194,20 @@ describe('Game State Logic - Winning Hands Counting', () => {
 
     const betAmount = 10;
 
-    const losingHand1 = createHand([
-      createCard('2', 'hearts'),
-      createCard('5', 'diamonds'),
-      createCard('8', 'clubs'),
-      createCard('J', 'spades'),
-      createCard('K', 'hearts'),
+    const losingHand1 = createTestHand([
+      createTestCard('2', 'hearts'),
+      createTestCard('5', 'diamonds'),
+      createTestCard('8', 'clubs'),
+      createTestCard('J', 'spades'),
+      createTestCard('K', 'hearts'),
     ]);
 
-    const losingHand2 = createHand([
-      createCard('3', 'hearts'),
-      createCard('6', 'diamonds'),
-      createCard('9', 'clubs'),
-      createCard('Q', 'spades'),
-      createCard('A', 'hearts'),
+    const losingHand2 = createTestHand([
+      createTestCard('3', 'hearts'),
+      createTestCard('6', 'diamonds'),
+      createTestCard('9', 'clubs'),
+      createTestCard('Q', 'spades'),
+      createTestCard('A', 'hearts'),
     ]);
 
     const parallelHands = [losingHand1, losingHand2];
@@ -269,20 +229,20 @@ describe('Game State Logic - Winning Hands Counting', () => {
 
     const betAmount = 10;
 
-    const winningHand1 = createHand([
-      createCard('A', 'hearts'),
-      createCard('A', 'diamonds'),
-      createCard('2', 'clubs'),
-      createCard('3', 'spades'),
-      createCard('4', 'hearts'),
+    const winningHand1 = createTestHand([
+      createTestCard('A', 'hearts'),
+      createTestCard('A', 'diamonds'),
+      createTestCard('2', 'clubs'),
+      createTestCard('3', 'spades'),
+      createTestCard('4', 'hearts'),
     ]);
 
-    const winningHand2 = createHand([
-      createCard('K', 'hearts'),
-      createCard('K', 'diamonds'),
-      createCard('5', 'clubs'),
-      createCard('6', 'spades'),
-      createCard('7', 'hearts'),
+    const winningHand2 = createTestHand([
+      createTestCard('K', 'hearts'),
+      createTestCard('K', 'diamonds'),
+      createTestCard('5', 'clubs'),
+      createTestCard('6', 'spades'),
+      createTestCard('7', 'hearts'),
     ]);
 
     const parallelHands = [winningHand1, winningHand2];
@@ -302,7 +262,7 @@ describe('Game State Logic - Failure Condition Integration', () => {
   it('should trigger game over when failure condition is detected', () => {
     const baseMinBet = 10;
     const requiredBet = Math.ceil(baseMinBet * betMultiplier);
-    const state = createGameState({
+    const state = createTestGameState({
       isEndlessMode: true,
       baseMinimumBet: baseMinBet,
       betAmount: requiredBet - 5, // Fails minimum bet multiplier
@@ -322,7 +282,7 @@ describe('Game State Logic - Failure Condition Integration', () => {
   it('should not trigger game over when no failure conditions', () => {
     const baseMinBet = 10;
     const requiredBet = Math.ceil(baseMinBet * betMultiplier);
-    const state = createGameState({
+    const state = createTestGameState({
       isEndlessMode: true,
       baseMinimumBet: baseMinBet,
       betAmount: requiredBet, // Passes
@@ -341,7 +301,7 @@ describe('Game State Logic - Failure Condition Integration', () => {
   it('should update currentFailureState when condition fails', () => {
     const baseMinBet = 10;
     const requiredBet = Math.ceil(baseMinBet * betMultiplier);
-    const state = createGameState({
+    const state = createTestGameState({
       isEndlessMode: true,
       baseMinimumBet: baseMinBet,
       betAmount: requiredBet - 5,
@@ -360,7 +320,7 @@ describe('Game State Logic - Failure Condition Integration', () => {
     const baseMinBet = 10;
     const requiredBet = Math.ceil(baseMinBet * betMultiplier);
     // Create state with failure condition
-    createGameState({
+    createTestGameState({
       isEndlessMode: true,
       baseMinimumBet: baseMinBet,
       betAmount: requiredBet - 5,
@@ -371,7 +331,7 @@ describe('Game State Logic - Failure Condition Integration', () => {
     });
 
     // Then, passing state
-    const passingState = createGameState({
+    const passingState = createTestGameState({
       isEndlessMode: true,
       baseMinimumBet: baseMinBet,
       betAmount: requiredBet, // Now passes
@@ -395,7 +355,7 @@ describe('Game State Logic - Round Progression Scenarios', () => {
     const increasePercent = mode.minimumBetIncreasePercent;
     const multiplier = 1 + increasePercent / 100;
 
-    let state = createGameState({
+    let state = createTestGameState({
       minimumBet: mode.startingBet,
       baseMinimumBet: mode.startingBet,
       round: 1,
@@ -435,7 +395,7 @@ describe('Game State Logic - Round Progression Scenarios', () => {
     const mode = getCurrentGameMode();
     const startRound = mode.endlessMode!.startRound;
 
-    let state = createGameState({
+    let state = createTestGameState({
       minimumBet: 15,
       baseMinimumBet: 1,
       round: startRound - 1,

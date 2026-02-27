@@ -10,6 +10,9 @@ import { gameConfig } from '../config/gameConfig';
  *
  * Main gameplay screen where players view their dealt hand, select cards
  * to hold, and draw parallel hands.
+ *
+ * **Keyboard navigation**: Arrow keys move between cards; Enter/Space toggles hold
+ * on focused card or triggers Draw/Play when focused on the action button.
  */
 interface GameTableProps {
   /** The player's current 5-card hand */
@@ -102,6 +105,39 @@ export function GameTable({
   const canDraw = parallelHands.length === 0 && playerHand.length >= 5;
   const efficiency = round > 0 ? (totalEarnings / round).toFixed(2) : '0.00';
 
+  // Keyboard navigation: arrow keys for cards, Enter/Space for actions
+  const [focusedIndex, setFocusedIndex] = useState<number>(0);
+  const cardCount = playerHand.length + (gameState?.devilsDealCard ? 1 : 0);
+  const maxIndex = cardCount; // cardCount = draw button focus position
+
+  useEffect(() => {
+    setFocusedIndex((prev) => Math.min(prev, maxIndex));
+  }, [maxIndex]);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (cardCount === 0) return;
+      if (e.key === 'ArrowLeft') {
+        e.preventDefault();
+        setFocusedIndex((prev) => Math.max(0, prev - 1));
+      } else if (e.key === 'ArrowRight') {
+        e.preventDefault();
+        setFocusedIndex((prev) => Math.min(maxIndex, prev + 1));
+      } else if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        if (focusedIndex < playerHand.length) {
+          onToggleHold(focusedIndex);
+        } else if (focusedIndex < cardCount && gameState?.devilsDealCard && heldIndices.length < 5) {
+          onToggleDevilsDealHold();
+        } else if (focusedIndex === cardCount && canDraw) {
+          onDraw();
+        }
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [focusedIndex, cardCount, maxIndex, playerHand.length, canDraw, onToggleHold, onToggleDevilsDealHold, onDraw, gameState?.devilsDealCard, heldIndices.length]);
+
   // Get random quip for Devil's Deal
   const [devilsDealQuip, setDevilsDealQuip] = useState<string>('');
   useEffect(() => {
@@ -137,16 +173,21 @@ export function GameTable({
             {/* Player Hand - Card Selection Screen */}
             <div className="bg-white rounded-lg shadow-lg p-6">
               <h2 className="text-2xl font-bold mb-4 text-gray-800">Your Hand</h2>
-              <div className="flex gap-4 justify-center flex-wrap relative">
+              <div className="flex gap-4 justify-center flex-wrap relative" role="group" aria-label="Your hand - use arrow keys to select, Enter or Space to hold">
                 {playerHand.map((card, index) => (
                   <Card
                     key={card.id}
                     card={card}
                     isHeld={heldIndices.includes(index)}
-                    onClick={() => onToggleHold(index)}
+                    onClick={() => {
+                      setFocusedIndex(index);
+                      onToggleHold(index);
+                    }}
                     size="large"
                     showBack={!firstDrawComplete}
                     flipDelay={index * 100}
+                    tabIndex={index === focusedIndex ? 0 : -1}
+                    data-focused={index === focusedIndex}
                   />
                 ))}
                 {gameState?.devilsDealCard && (
@@ -177,9 +218,11 @@ export function GameTable({
                     <button
                       onClick={onDraw}
                       disabled={!canDraw}
+                      tabIndex={focusedIndex === cardCount ? 0 : -1}
                       className={`
                           px-8 py-3 rounded-lg font-bold text-lg transition-colors
                           ${canDraw ? 'bg-blue-600 hover:bg-blue-700 text-white' : 'bg-gray-300 text-gray-500 cursor-not-allowed'}
+                          ${focusedIndex === cardCount ? 'ring-2 ring-blue-500 ring-offset-2' : ''}
                         `}
                     >
                       Draw
@@ -193,9 +236,11 @@ export function GameTable({
                     <button
                       onClick={onDraw}
                       disabled={!canDraw}
+                      tabIndex={focusedIndex === cardCount ? 0 : -1}
                       className={`
                           px-8 py-3 rounded-lg font-bold text-lg transition-colors
                           ${canDraw ? 'bg-green-600 hover:bg-green-700 text-white' : 'bg-gray-300 text-gray-500 cursor-not-allowed'}
+                          ${focusedIndex === cardCount ? 'ring-2 ring-blue-500 ring-offset-2' : ''}
                         `}
                     >
                       Play {selectedHandCount} Parallel Hands

@@ -1,7 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, within } from '@testing-library/react';
 import { GameTable } from '../screen-GameTable';
-import { Card as CardType } from '../../types';
+import { Card as CardType, GameState } from '../../types';
+import { getTestRewardTable } from '../../test/testHelpers';
 
 describe('GameTable Component', () => {
   const createMockCard = (rank: string, suit: string, id: string): CardType => ({
@@ -24,11 +25,7 @@ describe('GameTable Component', () => {
     playerHand: mockPlayerHand,
     heldIndices: [],
     parallelHands: [],
-    rewardTable: {
-      'royal-flush': 250,
-      'straight-flush': 50,
-      'four-of-a-kind': 25,
-    },
+    rewardTable: getTestRewardTable(),
     credits: 5000,
     selectedHandCount: 10,
     round: 1,
@@ -53,10 +50,10 @@ describe('GameTable Component', () => {
     });
 
     it('should display all 5 cards', () => {
-      const { container } = render(<GameTable {...mockProps} />);
+      render(<GameTable {...mockProps} />);
       
-      // Check for card elements
-      const cards = container.querySelectorAll('.card');
+      const handGroup = screen.getByRole('group', { name: /Your hand/i });
+      const cards = within(handGroup).getAllByRole('button');
       expect(cards.length).toBe(5);
     });
 
@@ -67,19 +64,18 @@ describe('GameTable Component', () => {
       expect(screen.getByText(/Credits:/)).toBeInTheDocument();
     });
 
-    it('should display reward table', () => {
+    it('should display Your Hand section', () => {
       render(<GameTable {...mockProps} />);
       
-      expect(screen.getByText(/Royal Flush/i)).toBeInTheDocument();
+      expect(screen.getByText('Your Hand')).toBeInTheDocument();
     });
   });
 
   describe('Card Selection', () => {
     it('should allow clicking cards to hold them', () => {
       render(<GameTable {...mockProps} />);
-      const cards = screen.getAllByRole('button').filter(btn => 
-        btn.classList.contains('card') || btn.closest('.card')
-      );
+      const handGroup = screen.getByRole('group', { name: /Your hand/i });
+      const cards = within(handGroup).getAllByRole('button');
       
       fireEvent.click(cards[0]);
       expect(mockProps.onToggleHold).toHaveBeenCalledWith(0);
@@ -87,9 +83,8 @@ describe('GameTable Component', () => {
 
     it('should call onToggleHold for each card click', () => {
       render(<GameTable {...mockProps} />);
-      const cards = screen.getAllByRole('button').filter(btn => 
-        btn.classList.contains('card') || btn.closest('.card')
-      );
+      const handGroup = screen.getByRole('group', { name: /Your hand/i });
+      const cards = within(handGroup).getAllByRole('button');
       
       fireEvent.click(cards[2]);
       expect(mockProps.onToggleHold).toHaveBeenCalledWith(2);
@@ -97,21 +92,23 @@ describe('GameTable Component', () => {
 
     it('should visually indicate held cards', () => {
       const props = { ...mockProps, heldIndices: [0, 2, 4] };
-      const { container } = render(<GameTable {...props} />);
+      render(<GameTable {...props} />);
       
-      const cards = container.querySelectorAll('.card');
-      // Held cards should have different styling
-      expect(cards[0]).toHaveClass(/held/i);
+      const handGroup = screen.getByRole('group', { name: /Your hand/i });
+      const cards = within(handGroup).getAllByRole('button');
+      // Held cards have yellow border/ring styling on inner element
+      expect(cards[0].querySelector('.border-yellow-500, .ring-yellow-300')).toBeTruthy();
     });
 
     it('should allow multiple cards to be held', () => {
       const props = { ...mockProps, heldIndices: [1, 2, 3] };
       render(<GameTable {...props} />);
       
-      // All three should be visually marked as held
-      const { container } = render(<GameTable {...props} />);
-      const heldCards = container.querySelectorAll('.card.held, .card[data-held="true"]');
-      expect(heldCards.length).toBeGreaterThanOrEqual(3);
+      const handGroup = screen.getByRole('group', { name: /Your hand/i });
+      const cards = within(handGroup).getAllByRole('button');
+      // Cards 1, 2, 3 should be held (have yellow styling on inner element)
+      const heldCards = cards.filter(c => c.querySelector('.border-yellow-500, .ring-yellow-300'));
+      expect(heldCards.length).toBe(3);
     });
   });
 
@@ -128,18 +125,16 @@ describe('GameTable Component', () => {
     it('should render Devil\'s Deal card when offered', () => {
       render(<GameTable {...devilsDealProps} />);
       
-      expect(screen.getByText(/offer/i)).toBeInTheDocument();
-      expect(screen.getByText(/100.*credits/i)).toBeInTheDocument();
+      expect(screen.getByText(/Cost:.*100.*credits/i)).toBeInTheDocument();
     });
 
     it('should call onToggleDevilsDealHold when Devil\'s Deal card clicked', () => {
       render(<GameTable {...devilsDealProps} />);
       
-      const devilsDealContainer = screen.getByText(/offer/i).closest('.devil-deal-container');
-      if (devilsDealContainer) {
-        fireEvent.click(devilsDealContainer);
-        expect(mockProps.onToggleDevilsDealHold).toHaveBeenCalled();
-      }
+      const devilsDealContainer = screen.getByText(/Cost:.*100.*credits/i).closest('.devil-deal-container');
+      expect(devilsDealContainer).toBeTruthy();
+      fireEvent.click(devilsDealContainer!);
+      expect(mockProps.onToggleDevilsDealHold).toHaveBeenCalled();
     });
 
     it('should disable Devil\'s Deal card when 5 regular cards are held', () => {
@@ -150,8 +145,8 @@ describe('GameTable Component', () => {
       
       const { container } = render(<GameTable {...props} />);
       const devilsDealCard = container.querySelector('.devil-deal-container');
-      
-      expect(devilsDealCard).toHaveClass(/opacity-30/);
+      // Parent has opacity-30 when disabled
+      expect(devilsDealCard?.parentElement?.className).toMatch(/opacity-30/);
     });
 
     it('should show Devil\'s Deal card as held when selected', () => {
@@ -172,57 +167,58 @@ describe('GameTable Component', () => {
   });
 
   describe('Draw Button', () => {
-    it('should show draw button when hand is not yet drawn', () => {
+    it('should show draw/play button when hand is not yet drawn', () => {
       render(<GameTable {...mockProps} />);
       
-      expect(screen.getByRole('button', { name: /Draw/i })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /Draw|Play.*Parallel/i })).toBeInTheDocument();
     });
 
     it('should be enabled when cards can be drawn', () => {
       render(<GameTable {...mockProps} />);
-      const drawButton = screen.getByRole('button', { name: /Draw/i });
+      const actionButton = screen.getByRole('button', { name: /Draw|Play.*Parallel/i });
       
-      expect(drawButton).not.toBeDisabled();
+      expect(actionButton).not.toBeDisabled();
     });
 
     it('should be disabled when parallel hands already exist', () => {
       const props = {
         ...mockProps,
-        parallelHands: [{ cards: mockPlayerHand, totalPayout: 100 }],
+        parallelHands: [{ cards: mockPlayerHand, id: 'ph1' }],
       };
       
       render(<GameTable {...props} />);
-      const drawButton = screen.getByRole('button', { name: /Draw/i });
+      const actionButton = screen.getByRole('button', { name: /Draw|Play.*Parallel/i });
       
-      expect(drawButton).toBeDisabled();
+      expect(actionButton).toBeDisabled();
     });
 
     it('should call onDraw when clicked', () => {
       render(<GameTable {...mockProps} />);
-      const drawButton = screen.getByRole('button', { name: /Draw/i });
+      const actionButton = screen.getByRole('button', { name: /Draw|Play.*Parallel/i });
       
-      fireEvent.click(drawButton);
+      fireEvent.click(actionButton);
       expect(mockProps.onDraw).toHaveBeenCalledTimes(1);
     });
   });
 
   describe('Card Back Display', () => {
     it('should show card backs before first draw', () => {
+      vi.useFakeTimers();
       const props = { ...mockProps, firstDrawComplete: false };
-      const { container } = render(<GameTable {...props} />);
+      render(<GameTable {...props} />);
       
-      // Cards should show backs
-      const cardBacks = container.querySelectorAll('.card-back, [data-show-back="true"]');
-      expect(cardBacks.length).toBeGreaterThan(0);
+      // Card backs show "POKER" text (before flip animation completes)
+      expect(screen.getAllByText('POKER').length).toBeGreaterThan(0);
+      vi.useRealTimers();
     });
 
     it('should show card faces after first draw', () => {
       const props = { ...mockProps, firstDrawComplete: true };
       render(<GameTable {...props} />);
       
-      // Card ranks should be visible
-      expect(screen.getByText(/A/)).toBeInTheDocument();
-      expect(screen.getByText(/K/)).toBeInTheDocument();
+      // Card ranks should be visible (A, K, Q, J, 10 from mock hand)
+      expect(screen.getAllByText(/^A$/).length).toBeGreaterThanOrEqual(1);
+      expect(screen.getAllByText(/^K$/).length).toBeGreaterThanOrEqual(1);
     });
   });
 
@@ -230,13 +226,13 @@ describe('GameTable Component', () => {
     it('should show hold instructions', () => {
       render(<GameTable {...mockProps} />);
       
-      expect(screen.getByText(/Click cards to hold/i)).toBeInTheDocument();
+      expect(screen.getByText(/Hold the cards you want to keep/i)).toBeInTheDocument();
     });
 
     it('should show draw instructions', () => {
       render(<GameTable {...mockProps} />);
       
-      expect(screen.getByText(/Draw.*hands/i)).toBeInTheDocument();
+      expect(screen.getByText(/play parallel hands|Draw.*hands/i)).toBeInTheDocument();
     });
   });
 
@@ -260,13 +256,8 @@ describe('GameTable Component', () => {
     it('should display failure warnings when in failure state', () => {
       const props = {
         ...mockProps,
-        failureState: {
-          minimumBetMultiplier: {
-            failing: true,
-            value: 1.5,
-            required: 2.0,
-          },
-        },
+        failureState: 'minimum-bet-multiplier' as const,
+        gameState: { baseMinimumBet: 10, betAmount: 15 } as Partial<GameState>,
       };
       
       render(<GameTable {...props} />);

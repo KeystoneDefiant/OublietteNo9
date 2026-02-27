@@ -1,14 +1,17 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, within } from '@testing-library/react';
 import { Shop } from '../Shop';
 import { ShopOptionType } from '../../types';
+import { getCurrentGameMode } from '../../config/gameConfig';
+
+const mode = getCurrentGameMode();
 
 describe('Shop Component', () => {
   const mockProps = {
     credits: 10000,
     handCount: 50,
-    betAmount: 5,
-    selectedHandCount: 10,
+    betAmount: mode.startingBet,
+    selectedHandCount: mode.startingHandCount,
     deadCards: [],
     deadCardRemovalCount: 0,
     wildCards: [],
@@ -51,24 +54,25 @@ describe('Shop Component', () => {
       render(<Shop {...mockProps} />);
       const label = screen.getByText(/Credits needed for next round/i);
       expect(label).toBeInTheDocument();
-      // Next round cost = betAmount 5 * selectedHandCount 10 = 50
-      expect(label.closest('div')?.textContent).toMatch(/50/);
+      // Next round cost = betAmount * selectedHandCount (from config)
+      const expectedCost = mode.startingBet * mode.startingHandCount;
+      expect(label.closest('div')?.textContent).toMatch(new RegExp(String(expectedCost)));
     });
 
     it('should display all shop options', () => {
       render(<Shop {...mockProps} />);
       
-      // One card per slot; mock has 3 slots (dead-card, wild-card, extra-draw). Exclude Close button.
+      // One card per slot; mock has 3 slots (dead-card, wild-card, extra-draw). Exclude Close Shop buttons.
       const allButtons = screen.getAllByRole('button');
-      const closeButton = allButtons.find(btn => /Close/i.test(btn.textContent ?? ''));
-      const optionButtons = allButtons.filter(btn => btn !== closeButton);
+      const optionButtons = allButtons.filter(btn => !/Close/i.test(btn.textContent ?? ''));
       expect(optionButtons.length).toBe(3);
     });
 
     it('should have a close button', () => {
       render(<Shop {...mockProps} />);
       
-      expect(screen.getByRole('button', { name: /Close/i })).toBeInTheDocument();
+      const closeButtons = screen.getAllByRole('button', { name: /Close Shop/i });
+      expect(closeButtons.length).toBeGreaterThanOrEqual(1);
     });
   });
 
@@ -79,10 +83,10 @@ describe('Shop Component', () => {
       expect(screen.getByText(/Add Dead Card/i)).toBeInTheDocument();
     });
 
-    it('should show dead card cost', () => {
+    it('should show dead card credit reward', () => {
       render(<Shop {...mockProps} />);
-      
-      expect(screen.getAllByText(/2,500.*credit/i).length).toBeGreaterThanOrEqual(1);
+      const reward = mode.shop.deadCard.creditReward;
+      expect(screen.getAllByText(new RegExp(`${reward.toLocaleString()}.*credit`, 'i')).length).toBeGreaterThanOrEqual(1);
     });
 
     it('should call onAddDeadCard when purchased', () => {
@@ -317,8 +321,8 @@ describe('Shop Component', () => {
     it('should call onClose when close button clicked', () => {
       render(<Shop {...mockProps} />);
       
-      const closeButton = screen.getByRole('button', { name: /Close/i });
-      fireEvent.click(closeButton);
+      const closeButtons = screen.getAllByRole('button', { name: /Close Shop/i });
+      fireEvent.click(closeButtons[0]);
       
       expect(mockProps.onClose).toHaveBeenCalledTimes(1);
     });
@@ -404,13 +408,78 @@ describe('Shop Component', () => {
     });
   });
 
+  describe('Affordability Warning Modal', () => {
+    it('should show warning modal when purchase would leave player unable to afford next round', () => {
+      // credits: 25, round cost: 2*10=20. Wild card costs 5000 - but we need a cheaper item.
+      // Extra draw costs 10000. Parallel hands +5 costs 50. So with credits 60, bet 2, selected 10,
+      // round cost = 20. Buying parallel hands +5 (cost 50) -> credits after = 10, round cost after = 2*15=30.
+      // 10 < 30, so warning should show.
+      const props = {
+        ...mockProps,
+        credits: 60,
+        betAmount: 2,
+        selectedHandCount: 10,
+        handCount: 10,
+        selectedShopOptions: ['parallel-hands-bundle-5' as ShopOptionType],
+      };
+      render(<Shop {...props} />);
+
+      const card = screen.getByRole('heading', { name: /Parallel Hands \+5/i }).closest('.border-2');
+      const handsButton = within(card!).getByRole('button', { name: /50 Credits/i });
+      fireEvent.click(handsButton);
+
+      expect(screen.getByText(/Warning: Cannot Afford Next Round/i)).toBeInTheDocument();
+      expect(screen.getByText(/Complete Purchase Anyway/i)).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /Cancel/i })).toBeInTheDocument();
+    });
+
+    it('should complete purchase when user confirms in warning modal', () => {
+      const props = {
+        ...mockProps,
+        credits: 60,
+        betAmount: 2,
+        selectedHandCount: 10,
+        handCount: 10,
+        selectedShopOptions: ['parallel-hands-bundle-5' as ShopOptionType],
+      };
+      render(<Shop {...props} />);
+
+      const card = screen.getByRole('heading', { name: /Parallel Hands \+5/i }).closest('.border-2');
+      fireEvent.click(within(card!).getByRole('button', { name: /50 Credits/i }));
+      fireEvent.click(screen.getByRole('button', { name: /Complete Purchase Anyway/i }));
+
+      expect(mockProps.onAddParallelHandsBundle).toHaveBeenCalledWith(5);
+      expect(screen.queryByText(/Warning: Cannot Afford Next Round/i)).not.toBeInTheDocument();
+    });
+
+    it('should cancel purchase when user clicks Cancel in warning modal', () => {
+      const props = {
+        ...mockProps,
+        credits: 60,
+        betAmount: 2,
+        selectedHandCount: 10,
+        handCount: 10,
+        selectedShopOptions: ['parallel-hands-bundle-5' as ShopOptionType],
+      };
+      render(<Shop {...props} />);
+
+      const card = screen.getByRole('heading', { name: /Parallel Hands \+5/i }).closest('.border-2');
+      fireEvent.click(within(card!).getByRole('button', { name: /50 Credits/i }));
+      fireEvent.click(screen.getByRole('button', { name: /Cancel/i }));
+
+      expect(mockProps.onAddParallelHandsBundle).not.toHaveBeenCalled();
+      expect(screen.queryByText(/Warning: Cannot Afford Next Round/i)).not.toBeInTheDocument();
+    });
+  });
+
   describe('Edge Cases', () => {
     it('should handle empty selectedShopOptions', () => {
       const props = { ...mockProps, selectedShopOptions: [] };
       render(<Shop {...props} />);
       
       // Should still render without errors
-      expect(screen.getByRole('button', { name: /Close/i })).toBeInTheDocument();
+      const closeButtons = screen.getAllByRole('button', { name: /Close Shop/i });
+      expect(closeButtons.length).toBeGreaterThanOrEqual(1);
     });
 
     it('should handle zero credits', () => {

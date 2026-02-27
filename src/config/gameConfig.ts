@@ -20,6 +20,14 @@ export const gameConfig = {
     eightColumn: { min: 101 },
   },
 
+  // UI layout constants (extracted from hardcoded values)
+  ui: {
+    modalMaxWidth: 'max-w-md', // Tailwind class for modal width
+    contentMaxWidth: 'max-w-7xl', // Main content area
+    defaultPadding: 'p-6',
+    cardPadding: 'p-8',
+  },
+
   // Audio configuration
   audio: {
     musicVolume: 0.7, // Background music volume multiplier (0.0 to 1.0)
@@ -101,8 +109,8 @@ export const gameConfig = {
       baseCostPercent: 300,
       chanceIncreasePerPurchase: 20,
       maxChancePurchases: 3,
-      costReductionPerPurchase: 6,
-      maxCostReductionPurchases: 5,
+      costReductionPerPurchase: 15,
+      maxCostReductionPurchases: 6,
     },
     endlessMode: {
       startRound: 30,

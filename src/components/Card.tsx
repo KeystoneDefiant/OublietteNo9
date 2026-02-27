@@ -9,6 +9,10 @@ interface CardProps {
   size?: 'small' | 'medium' | 'large';
   showBack?: boolean;
   flipDelay?: number;
+  /** For keyboard nav: 0 = focusable, -1 = not in tab order */
+  tabIndex?: number;
+  /** When true, shows focus ring for keyboard navigation */
+  'data-focused'?: boolean;
 }
 
 const SUIT_SYMBOLS: { [key: string]: string } = {
@@ -38,6 +42,8 @@ export function Card({
   size = 'medium',
   showBack = false,
   flipDelay = 0,
+  tabIndex,
+  'data-focused': dataFocused,
 }: CardProps) {
   const [isFlipped, setIsFlipped] = useState(showBack);
   const suitSymbol = SUIT_SYMBOLS[card.suit];
@@ -58,13 +64,26 @@ export function Card({
 
   return (
     <div
+      role={onClick ? 'button' : undefined}
+      tabIndex={tabIndex}
       className={`
         ${sizeClass}
         relative
         cursor-pointer transition-all
         ${onClick ? 'hover:scale-105 hover:shadow-lg' : ''}
+        ${dataFocused ? 'ring-2 ring-blue-500 ring-offset-2 outline-none' : ''}
       `}
       onClick={onClick}
+      onKeyDown={
+        onClick && tabIndex === 0
+          ? (e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                onClick();
+              }
+            }
+          : undefined
+      }
       style={{ perspective: '1000px' }}
     >
       {/* Card Front */}

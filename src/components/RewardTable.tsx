@@ -22,6 +22,20 @@ const RANK_LABELS: { [key in HandRank]: string } = {
   'high-card': 'High Card',
 };
 
+const RANK_TOOLTIPS: { [key in HandRank]: string } = {
+  'royal-flush': '10, J, Q, K, A of same suit',
+  'straight-flush': '5 consecutive cards of same suit',
+  'five-of-a-kind': '5 of same rank (requires wild cards)',
+  'four-of-a-kind': '4 cards of same rank',
+  'full-house': '3 of a kind + pair',
+  flush: '5 cards of same suit',
+  straight: '5 consecutive cards (any suit)',
+  'three-of-a-kind': '3 cards of same rank',
+  'two-pair': '2 pairs of same rank',
+  'one-pair': '2 cards of same rank (Jacks or higher)',
+  'high-card': 'Highest card when no other hand',
+};
+
 const RANK_ORDER: HandRank[] = [
   'royal-flush',
   'five-of-a-kind',
@@ -67,6 +81,7 @@ export function RewardTable({
             <div
               key={rank}
               ref={isHighlighted ? highlightRef : null}
+              title={RANK_TOOLTIPS[rank]}
               className={`
                 flex justify-between items-center p-3 rounded-lg transition-all relative
                 ${

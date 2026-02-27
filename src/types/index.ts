@@ -112,6 +112,12 @@ export type FailureStateType =
   | 'minimum-win-percent'
   | null;
 
+/** Reason the run ended; used for game over screen messaging. */
+export type GameOverReason =
+  | 'voluntary'
+  | 'insufficient-credits'
+  | Exclude<FailureStateType, null>;
+
 export interface GameState {
   screen: GameScreen;
   gamePhase: GamePhase;
@@ -138,6 +144,8 @@ export interface GameState {
   drawsCompletedThisRound: number;
   wildCardCount: number;
   gameOver: boolean;
+  /** Why the run ended; set when transitioning to game over screen. */
+  gameOverReason: GameOverReason | null;
   showShopNextRound: boolean; // Flag to show shop after results
   selectedShopOptions: ShopOptionType[]; // Selected shop options for this round
   isEndlessMode: boolean; // Whether endless mode is active

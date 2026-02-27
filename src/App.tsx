@@ -4,7 +4,7 @@ import { useThemeBackgroundAnimation } from './hooks/useThemeBackgroundAnimation
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { LoadingSpinner } from './components/LoadingSpinner';
 import { RewardTable } from './components/RewardTable';
-import { initializeTheme, getSelectedTheme, loadThemeConfig } from './utils/themeManager';
+import { initializeTheme, loadThemeConfig } from './utils/themeManager';
 import { ThemeConfig } from './types/index';
 
 // Code splitting: Lazy load screen components for better performance
@@ -39,23 +39,9 @@ function App() {
         setIsThemeLoading(true);
         initializeTheme();
 
-        // Load the initial theme config for background animation
-        const theme = getSelectedTheme();
-        let config = await loadThemeConfig(theme);
-
-        // Fallback to Classic theme if selected theme fails to load
-        if (!config && theme !== 'Classic') {
-          console.warn(`Failed to load theme "${theme}", falling back to Classic theme`);
-          config = await loadThemeConfig('Classic');
-          if (config) {
-            // Update saved theme to Classic since original failed
-            initializeTheme(); // Apply Classic theme to body
-          }
-        }
-
+        const config = await loadThemeConfig('Classic');
         setThemeConfig(config);
 
-        // Set theme transition duration as CSS custom property
         const transitionDuration = config?.animation?.transitionDuration ?? 300;
         document.documentElement.style.setProperty(
           '--transition-duration',
@@ -63,7 +49,6 @@ function App() {
         );
       } catch (error) {
         console.error('Failed to load theme:', error);
-        // Continue with null theme config - app will still function
       } finally {
         setIsThemeLoading(false);
       }
@@ -128,7 +113,7 @@ function App() {
   return (
     <div className="min-h-screen">
       {state.screen === 'menu' && (
-        <ErrorBoundary>
+        <ErrorBoundary onReturnToMenu={returnToMenu}>
           <div key="menu" className="screen-enter">
             <MainMenu
               onStartRun={startNewRun}
@@ -157,7 +142,7 @@ function App() {
       )}
 
       {state.screen === 'game' && state.gamePhase === 'preDraw' && !state.showShopNextRound && (
-        <ErrorBoundary>
+        <ErrorBoundary onReturnToMenu={returnToMenu}>
           <Suspense fallback={<LoadingSpinner />}>
             <div key="preDraw" className="screen-enter">
               <PreDraw
@@ -193,7 +178,7 @@ function App() {
       )}
 
       {state.screen === 'game' && state.gamePhase === 'playing' && (
-        <ErrorBoundary>
+        <ErrorBoundary onReturnToMenu={returnToMenu}>
           <Suspense fallback={<LoadingSpinner />}>
             <div key="gameTable" className="screen-enter">
               <GameTable
@@ -225,7 +210,7 @@ function App() {
       )}
 
       {state.screen === 'game' && state.gamePhase === 'parallelHandsAnimation' && (
-        <ErrorBoundary>
+        <ErrorBoundary onReturnToMenu={returnToMenu}>
           <Suspense fallback={<LoadingSpinner />}>
             <div key="animation" className="screen-enter">
               <ParallelHandsAnimation
@@ -252,7 +237,7 @@ function App() {
       )}
 
       {state.screen === 'game' && state.gamePhase === 'results' && (
-        <ErrorBoundary>
+        <ErrorBoundary onReturnToMenu={returnToMenu}>
           <Suspense fallback={<LoadingSpinner />}>
             <div key="results" className="screen-enter">
               <Results
@@ -283,7 +268,7 @@ function App() {
       )}
 
       {state.screen === 'game' && state.showShopNextRound && (
-        <ErrorBoundary>
+        <ErrorBoundary onReturnToMenu={returnToMenu}>
           <Suspense fallback={<LoadingSpinner />}>
             <div key="shop" className="screen-enter">
               <Shop
@@ -317,13 +302,15 @@ function App() {
       )}
 
       {state.screen === 'gameOver' && (
-        <ErrorBoundary>
+        <ErrorBoundary onReturnToMenu={returnToMenu}>
           <Suspense fallback={<LoadingSpinner />}>
             <div key="gameOver" className="screen-enter">
               <GameOver
               round={state.round}
               totalEarnings={state.totalEarnings}
               credits={state.credits}
+              gameOverReason={state.gameOverReason}
+              gameState={state}
               onReturnToMenu={returnToMenu}
             />
           </div>

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useMemo } from 'react';
 import { Card as CardType, Hand, FailureStateType, GameState } from '../types';
 import { Card } from './Card';
 import { GameHeader } from './GameHeader';
@@ -102,42 +102,48 @@ export function Results({
   animationSpeedMode = 1,
   onCycleAnimationSpeed,
 }: ResultsProps) {
-  const [showSummary, setShowSummary] = useState(false);
   const efficiency = round > 0 ? (totalEarnings / round).toFixed(2) : '0.00';
 
-  // Calculate total payouts WITH STREAK MULTIPLIERS
-  // This must match the calculation in ParallelHandsAnimation
-  const handPayouts = parallelHands.map((hand, index) => {
-    // Calculate streak multiplier at the time this hand was evaluated
-    let streakForThisHand = 0; // Rounds always start with streak = 0
+  // Single O(n) pass: compute payouts and rank data with streak multipliers.
+  // Previously O(n²) - re-evaluating all previous hands per hand caused multi-second stalls.
+  const { totalPayout, rankData, handsPlayed, handsWon, winPercent } = useMemo(() => {
+    const payouts: number[] = [];
+    const rankMap = new Map<string, { rank: string; totalPayout: number; count: number }>();
+    let streak = 0;
 
-    // Apply streak changes from all PREVIOUS hands
-    for (let i = 0; i < index; i++) {
-      const prevHand = parallelHands[i];
-      const prevResult = PokerEvaluator.evaluate(prevHand.cards);
-      const prevWithRewards = PokerEvaluator.applyRewards(prevResult, rewardTable);
-      const prevScored = prevWithRewards.multiplier > 0;
-      streakForThisHand = prevScored ? streakForThisHand + 1 : Math.max(0, streakForThisHand - 1);
+    for (let i = 0; i < parallelHands.length; i++) {
+      const hand = parallelHands[i];
+      const result = PokerEvaluator.evaluate(hand.cards);
+      const withRewards = PokerEvaluator.applyRewards(result, rewardTable);
+      const streakMultiplier = calculateStreakMultiplier(streak, gameConfig.streakMultiplier);
+      const handPayout = Math.round(betAmount * withRewards.multiplier * streakMultiplier);
+
+      streak = withRewards.multiplier > 0 ? streak + 1 : Math.max(0, streak - 1);
+      payouts.push(handPayout);
+
+      const rankKey = result.rank;
+      if (rankMap.has(rankKey)) {
+        const existing = rankMap.get(rankKey)!;
+        existing.totalPayout += handPayout;
+        existing.count += 1;
+      } else {
+        rankMap.set(rankKey, { rank: result.rank, totalPayout: handPayout, count: 1 });
+      }
     }
 
-    // Calculate multiplier for THIS hand (before evaluating it)
-    const streakMultiplier = calculateStreakMultiplier(
-      streakForThisHand,
-      gameConfig.streakMultiplier
+    const handsWon = Array.from(rankMap.values()).reduce(
+      (sum, item) => sum + (item.totalPayout > 0 ? item.count : 0),
+      0
     );
 
-    // Evaluate this hand and apply rewards + streak
-    const result = PokerEvaluator.evaluate(hand.cards);
-    const withRewards = PokerEvaluator.applyRewards(result, rewardTable);
-    return Math.round(betAmount * withRewards.multiplier * streakMultiplier);
-  });
-
-  const totalPayout = handPayouts.reduce((sum, payout) => sum + payout, 0);
-
-  // Show summary immediately (animation happens in screen-ParallelHandsAnimation)
-  useEffect(() => {
-    setShowSummary(true);
-  }, []);
+    return {
+      totalPayout: payouts.reduce((sum, p) => sum + p, 0),
+      rankData: Array.from(rankMap.values()),
+      handsPlayed: parallelHands.length,
+      handsWon,
+      winPercent: parallelHands.length > 0 ? (handsWon / parallelHands.length) * 100 : 0,
+    };
+  }, [parallelHands, rewardTable, betAmount]);
 
   return (
     <div id="results-screen" className="min-h-screen p-6 relative overflow-hidden select-none">
@@ -161,116 +167,66 @@ export function Results({
         <div className="">
           {/* Main Content */}
           <div className="lg:col-span-3 space-y-6">
-            {/* Hand Summary - Always visible */}
-            <div className="bg-white rounded-lg shadow-lg p-6">
-              <h2 className="text-2xl font-bold mb-4 text-gray-800">Hand Summary</h2>
+            {/* Hand Summary and Win Stats - side by side */}
+            <div className="flex flex-col lg:flex-row gap-6">
+              {/* Hand Summary */}
+              <div className="bg-white rounded-lg shadow-lg p-6 flex-1">
+                <h2 className="text-2xl font-bold mb-4 text-gray-800">Hand Summary</h2>
 
-              {/* Held Cards */}
-              {heldIndices.length > 0 && (
-                <div className="mb-4">
-                  <p className="text-sm font-medium text-gray-600 mb-2">Cards Held:</p>
-                  <div className="flex gap-2">
-                    {heldIndices.map((index) => (
-                      <Card key={playerHand[index].id} card={playerHand[index]} size="small" />
-                    ))}
+                {/* Held Cards */}
+                {heldIndices.length > 0 && (
+                  <div className="mb-4">
+                    <p className="text-sm font-medium text-gray-600 mb-2">Cards Held:</p>
+                    <div className="flex gap-2">
+                      {heldIndices.map((index) => (
+                        <Card key={playerHand[index].id} card={playerHand[index]} size="small" />
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Win Stats */}
+              <div className="bg-white rounded-lg shadow-lg p-6 lg:w-72 shrink-0">
+                <h2 className="text-2xl font-bold mb-4 text-gray-800">Win Stats</h2>
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm font-medium text-gray-600">Hands Played</span>
+                    <span className="text-xl font-bold text-gray-800">{handsPlayed}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm font-medium text-gray-600">Hands Won</span>
+                    <span className="text-xl font-bold text-green-600">{handsWon}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm font-medium text-gray-600">Win %</span>
+                    <span className="text-xl font-bold text-blue-600">
+                      {winPercent.toFixed(1)}%
+                    </span>
                   </div>
                 </div>
-              )}
-
-              {/* Individual Payouts */}
-              {/* <div>
-                <p className="text-sm font-medium text-gray-600 mb-2">Individual Hand Payouts:</p>
-                <div className="space-y-1">
-                  {parallelHands.map((hand) => {
-                    const result = PokerEvaluator.evaluate(hand.cards);
-                    const withRewards = PokerEvaluator.applyRewards(result, rewardTable);
-                    const payout = betAmount * withRewards.multiplier;
-                    return (
-                      <div key={hand.id} className="flex justify-between items-center text-sm">
-                        <span className="text-gray-700 capitalize">
-                          {result.rank.replace(/-/g, ' ')}
-                        </span>
-                        <span className="text-gray-800 font-semibold">
-                          ×{withRewards.multiplier} = {payout} credits
-                        </span>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div> */}
+              </div>
             </div>
 
             {/* Results Summary */}
-            {showSummary && (
-              <div className="bg-gradient-to-r from-green-50 to-blue-50 rounded-lg shadow-lg p-8 border-2 border-green-300 animate-fadeIn">
-                <h2 className="text-3xl font-bold mb-6 text-gray-800">Round Summary</h2>
+            <div className="bg-gradient-to-r from-green-50 to-blue-50 rounded-lg shadow-lg p-8 border-2 border-green-300 animate-fadeIn">
+              <h2 className="text-3xl font-bold mb-6 text-gray-800">Round Summary</h2>
 
-                <div className="space-y-4 mb-8">
-                  {(() => {
-                    // Calculate payouts for each hand WITH streak multipliers
-                    // Group by rank and accumulate actual payouts
-                    const rankData = new Map<
-                      string,
-                      { rank: string; totalPayout: number; count: number }
-                    >();
-
-                    parallelHands.forEach((hand, index) => {
-                      // Calculate streak for this hand (same logic as above)
-                      let streakForThisHand = 0;
-                      for (let i = 0; i < index; i++) {
-                        const prevHand = parallelHands[i];
-                        const prevResult = PokerEvaluator.evaluate(prevHand.cards);
-                        const prevWithRewards = PokerEvaluator.applyRewards(
-                          prevResult,
-                          rewardTable
-                        );
-                        const prevScored = prevWithRewards.multiplier > 0;
-                        streakForThisHand = prevScored
-                          ? streakForThisHand + 1
-                          : Math.max(0, streakForThisHand - 1);
-                      }
-
-                      const streakMultiplier = calculateStreakMultiplier(
-                        streakForThisHand,
-                        gameConfig.streakMultiplier
-                      );
-                      const result = PokerEvaluator.evaluate(hand.cards);
-                      const withRewards = PokerEvaluator.applyRewards(result, rewardTable);
-                      const handPayout = Math.round(
-                        betAmount * withRewards.multiplier * streakMultiplier
-                      );
-                      const rankKey = result.rank;
-
-                      if (rankData.has(rankKey)) {
-                        const existing = rankData.get(rankKey)!;
-                        existing.totalPayout += handPayout;
-                        existing.count += 1;
-                      } else {
-                        rankData.set(rankKey, {
-                          rank: result.rank,
-                          totalPayout: handPayout,
-                          count: 1,
-                        });
-                      }
-                    });
-
-                    return Array.from(rankData.values()).map((item) => {
-                      return (
-                        <div key={item.rank} className="flex justify-between items-center text-lg">
-                          <span className="text-gray-700 capitalize font-medium">
-                            {item.rank.replace(/-/g, ' ')} ×{item.count}
-                          </span>
-                          <span
-                            className={`font-bold ${item.totalPayout > 0 ? 'text-green-600' : 'text-gray-500'}`}
-                          >
-                            = {formatCredits(Math.round(item.totalPayout))} credit
-                            {Math.round(item.totalPayout) !== 1 ? 's' : ''}
-                          </span>
-                        </div>
-                      );
-                    });
-                  })()}
-                </div>
+              <div className="space-y-4 mb-8">
+                {rankData.map((item) => (
+                  <div key={item.rank} className="flex justify-between items-center text-lg">
+                    <span className="text-gray-700 capitalize font-medium">
+                      {item.rank.replace(/-/g, ' ')} ×{item.count}
+                    </span>
+                    <span
+                      className={`font-bold ${item.totalPayout > 0 ? 'text-green-600' : 'text-gray-500'}`}
+                    >
+                      = {formatCredits(Math.round(item.totalPayout))} credit
+                      {Math.round(item.totalPayout) !== 1 ? 's' : ''}
+                    </span>
+                  </div>
+                ))}
+              </div>
 
                 <div className="bg-white rounded-lg p-6 border-2 border-green-400 mb-8">
                   <div className="space-y-3">
@@ -345,7 +301,6 @@ export function Results({
                   {showShopNextRound ? 'Continue to Shop' : 'Continue'}
                 </button>
               </div>
-            )}
           </div>
         </div>
       </div>

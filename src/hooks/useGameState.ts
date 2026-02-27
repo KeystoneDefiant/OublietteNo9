@@ -1,5 +1,5 @@
-import { useState, useCallback, useEffect, useRef } from 'react';
-import { GameState, HandRank, Card } from '../types';
+import { useState, useCallback, useEffect, useRef, startTransition } from 'react';
+import { GameState, GameOverReason, HandRank, Card } from '../types';
 import { createFullDeck, shuffleDeck } from '../utils/deck';
 import { selectShopOptionsByRarity } from '../utils/shopSelection';
 import { getCurrentGameMode } from '../config/gameConfig';
@@ -8,6 +8,7 @@ import { useShopActions } from './useShopActions';
 import { checkFailureConditions } from '../utils/failureConditions';
 import { PokerEvaluator } from '../utils/pokerEvaluator';
 import { useThemeAudio } from '../hooks/useThemeAudio';
+import { parseAudioSettings } from '../utils/typeGuards';
 
 const currentMode = getCurrentGameMode();
 
@@ -20,14 +21,16 @@ const DEFAULT_AUDIO_SETTINGS = {
 
 // Load audio settings from localStorage if available
 function loadAudioSettings(): GameState['audioSettings'] {
-  try {
-    const stored = localStorage.getItem('audioSettings');
-    if (stored) {
-      const parsed = JSON.parse(stored);
-      return { ...DEFAULT_AUDIO_SETTINGS, ...parsed };
-    }
-  } catch {
-    // Ignore errors
+  const stored = typeof window !== 'undefined' ? localStorage.getItem('audioSettings') : null;
+  const parsed = parseAudioSettings(stored);
+  if (parsed) {
+    return {
+      ...DEFAULT_AUDIO_SETTINGS,
+      musicEnabled: parsed.musicEnabled ?? DEFAULT_AUDIO_SETTINGS.musicEnabled,
+      soundEffectsEnabled: parsed.soundEffectsEnabled ?? DEFAULT_AUDIO_SETTINGS.soundEffectsEnabled,
+      musicVolume: typeof parsed.musicVolume === 'number' ? parsed.musicVolume : DEFAULT_AUDIO_SETTINGS.musicVolume,
+      soundEffectsVolume: typeof parsed.soundEffectsVolume === 'number' ? parsed.soundEffectsVolume : DEFAULT_AUDIO_SETTINGS.soundEffectsVolume,
+    };
   }
   return { ...DEFAULT_AUDIO_SETTINGS };
 }
@@ -61,6 +64,7 @@ const INITIAL_STATE: GameState = {
   drawsCompletedThisRound: 0,
   wildCardCount: 0,
   gameOver: false,
+  gameOverReason: null,
   showShopNextRound: false,
   selectedShopOptions: [],
   isEndlessMode: false,
@@ -134,7 +138,9 @@ export function useGameState() {
   }, []);
 
   const returnToMenu = useCallback(() => {
-    setState(INITIAL_STATE);
+    startTransition(() => {
+      setState(INITIAL_STATE);
+    });
   }, []);
 
   const returnToPreDraw = useCallback((payout: number = 0) => {
@@ -206,8 +212,10 @@ export function useGameState() {
       }
 
       // Step 3: If still can't afford, trigger game over
+      let gameOverReason: GameOverReason | null = null;
       if (newCredits < adjustedBet * adjustedHandCount) {
         gameOver = true;
+        gameOverReason = 'insufficient-credits';
       }
 
       // Check if we're in endless mode (or should enter it)
@@ -233,6 +241,7 @@ export function useGameState() {
         // If a failure condition is active, trigger game over
         if (currentFailureState !== null) {
           gameOver = true;
+          gameOverReason = currentFailureState;
         }
       }
 
@@ -260,6 +269,7 @@ export function useGameState() {
         betAmount: adjustedBet,
         selectedHandCount: adjustedHandCount,
         gameOver,
+        gameOverReason,
         showShopNextRound,
         selectedShopOptions,
         isEndlessMode,
@@ -295,6 +305,7 @@ export function useGameState() {
       selectedShopOptions: [],
       isEndlessMode: false,
       currentFailureState: null,
+      gameOverReason: null,
       winningHandsLastRound: 0,
       devilsDealCard: null,
       devilsDealCost: 0,
@@ -306,20 +317,18 @@ export function useGameState() {
   }, [playMusic]);
 
   /**
-   * End the current run and show game over summary screen
-   * Preserves stats (round, totalEarnings, credits) for display
+   * End the current run and show game over summary screen.
+   * Preserves stats (round, totalEarnings, credits) for display.
+   * @param reason - Why the run ended; if omitted, uses state.gameOverReason or 'voluntary'
    */
-  const endRun = useCallback(() => {
+  const endRun = useCallback((reason?: GameOverReason) => {
     stopMusic();
     setState((prev) => ({
       ...prev,
       screen: 'gameOver',
       gamePhase: 'preDraw',
       gameOver: true,
-      // Preserve stats for game over screen
-      // round: prev.round (kept as is)
-      // totalEarnings: prev.totalEarnings (kept as is)
-      // credits: prev.credits (kept as is)
+      gameOverReason: reason ?? prev.gameOverReason ?? 'voluntary',
       playerHand: [],
       heldIndices: [],
       parallelHands: [],
@@ -463,6 +472,7 @@ export function useGameState() {
       ...prev,
       credits: prev.credits + amount,
       gameOver: false,
+      gameOverReason: null,
     }));
   }, []);
 

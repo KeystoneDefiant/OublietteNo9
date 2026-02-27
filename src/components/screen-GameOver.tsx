@@ -1,9 +1,15 @@
 import { formatCredits } from '../utils/format';
+import { getGameOverDisplay } from '../utils/gameOverDisplay';
+import { GameOverReason, GameState } from '../types';
 
 interface GameOverProps {
   round: number;
   totalEarnings: number;
   credits: number;
+  /** Why the run ended; used for specific messaging */
+  gameOverReason?: GameOverReason | null;
+  /** Full state for failure condition descriptions */
+  gameState?: GameState | null;
   onReturnToMenu: () => void;
 }
 
@@ -11,22 +17,26 @@ export function GameOver({
   round,
   totalEarnings,
   credits,
+  gameOverReason,
+  gameState,
   onReturnToMenu,
 }: GameOverProps) {
   const efficiency = round > 0 ? (totalEarnings / round).toFixed(2) : '0.00';
-  const isVoluntaryEnd = credits > 0;
+  const display = getGameOverDisplay(
+    gameOverReason ?? null,
+    gameState ?? null,
+    gameState ? { minimumBet: gameState.minimumBet, handCount: gameState.handCount } : undefined
+  );
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-red-900 via-red-800 to-red-900 flex items-center justify-center p-6">
       <div className="bg-white rounded-lg shadow-2xl p-8 max-w-2xl w-full">
         <div className="text-center mb-6">
           <h1 className="text-4xl font-bold text-gray-800 mb-2">
-            {isVoluntaryEnd ? 'Run Complete!' : 'Game Over'}
+            {display.title}
           </h1>
           <p className="text-gray-600">
-            {isVoluntaryEnd 
-              ? 'You ended your run successfully' 
-              : 'You ran out of credits'}
+            {display.subtitle}
           </p>
         </div>
         
@@ -56,18 +66,18 @@ export function GameOver({
               <p className="text-xs text-gray-500 mt-1">credits/round</p>
             </div>
             
-            <div className={`${isVoluntaryEnd ? 'bg-amber-50 border-amber-200' : 'bg-red-50 border-red-200'} rounded-lg p-4 border-2`}>
+            <div className={`${display.isVoluntaryEnd ? 'bg-amber-50 border-amber-200' : 'bg-red-50 border-red-200'} rounded-lg p-4 border-2`}>
               <p className="text-sm text-gray-600 font-medium">Final Credits</p>
-              <p className={`text-3xl font-bold ${isVoluntaryEnd ? 'text-amber-600' : 'text-red-600'}`}>
+              <p className={`text-3xl font-bold ${display.isVoluntaryEnd ? 'text-amber-600' : 'text-red-600'}`}>
                 {formatCredits(credits)}
               </p>
-              {isVoluntaryEnd && (
+              {display.isVoluntaryEnd && (
                 <p className="text-xs text-green-600 font-semibold mt-1">✓ Finished with credits!</p>
               )}
             </div>
           </div>
 
-          {isVoluntaryEnd && credits > 100 && (
+          {display.isVoluntaryEnd && credits > 100 && (
             <div className="bg-gradient-to-r from-yellow-50 to-amber-50 rounded-lg p-4 border-2 border-amber-300">
               <p className="text-center text-amber-800 font-semibold">
                 🏆 Excellent run! You finished with {formatCredits(credits)} credits!
@@ -75,10 +85,10 @@ export function GameOver({
             </div>
           )}
 
-          {!isVoluntaryEnd && (
+          {display.tip && (
             <div className="bg-gray-50 rounded-lg p-4 border-2 border-gray-300">
               <p className="text-center text-gray-600 text-sm">
-                Tip: Buy upgrades in the shop to increase your earnings and survive longer!
+                {display.tip}
               </p>
             </div>
           )}

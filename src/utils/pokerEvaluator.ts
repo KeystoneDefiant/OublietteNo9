@@ -527,13 +527,23 @@ export class PokerEvaluator {
             isWild: true,
           });
         }
-        // Fill remaining
+        // Fill remaining wilds
         for (let i = needed; i < numWilds; i++) {
           expanded.push({
             suit: 'hearts',
             rank: 'A',
             id: `wild-4k-fill-${i}`,
             isWild: true,
+          });
+        }
+        // Add kicker if needed (e.g. 3 fives + 1 wild = 4 cards; need 5th for evaluation)
+        const kickerRank = allRanks.find((r) => r !== rank) ?? '2';
+        while (expanded.length < 5) {
+          expanded.push({
+            suit: 'hearts',
+            rank: kickerRank as Card['rank'],
+            id: `wild-4k-kicker-${expanded.length}`,
+            isWild: false,
           });
         }
         if (expanded.length === 5) {
