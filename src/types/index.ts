@@ -178,4 +178,6 @@ export interface GameState {
   };
   /** Animation speed: 0.5 to 7 (multiplier), or 'skip' to skip animations */
   animationSpeedMode: number | 'skip';
+  /** Card visual theme: 'light' (white cards) or 'dark' (dark cards) */
+  cardTheme: 'light' | 'dark';
 }

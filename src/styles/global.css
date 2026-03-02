@@ -75,14 +75,114 @@ code {
   --game-text-muted: #8a8279;
   --game-text-dim: #5c564f;
 
-  /* Cards */
+  /* Cards - default dark theme; overridden by [data-card-theme] */
   --game-card-background: #1a1418;
   --game-card-border: #2a1f24;
+  --game-card-back-bg: linear-gradient(
+    145deg,
+    var(--game-bg-elevated) 0%,
+    var(--game-bg-panel) 100%
+  );
+  --game-card-back-text: var(--game-text-muted);
+  --game-card-suit-red: #dc2626;
+  --game-card-suit-black: #cbd5e1;
+  --game-card-small-bg: var(--game-bg-panel);
+  --game-card-small-border: var(--game-border);
+  --game-card-panel-bg: var(--game-bg-card);
+  --game-card-held-border: var(--game-accent-gold);
+  --game-card-held-border-width: 3px;
+  --game-card-held-border-style: solid;
+  --game-card-held-glow: var(--game-accent-gold-glow);
+  --game-card-wild-color: #ea580c;
+  --game-card-back-text-offset-y: 0.15em;
 
   /* Button shadows */
   --game-btn-shadow: 0 4px 0 rgba(0, 0, 0, 0.4);
   --game-btn-shadow-hover: 0 6px 0 rgba(0, 0, 0, 0.5);
   --game-btn-inset: inset 0 2px 0 rgba(255, 255, 255, 0.08);
+}
+
+/* ============================================
+   Card Themes - Light (traditional) and Dark (casino)
+   ============================================ */
+
+/* Dark theme - current default: dark cards, red/light suit text */
+[data-card-theme='dark'],
+:root:not([data-card-theme]) {
+  --game-card-background: #1a1418;
+  --game-card-border: #2a1f24;
+  --game-card-back-bg: linear-gradient(
+    145deg,
+    var(--game-bg-elevated) 0%,
+    var(--game-bg-panel) 100%
+  );
+  --game-card-back-text: var(--game-text-muted);
+  --game-card-suit-red: #dc2626;
+  --game-card-suit-black: #cbd5e1;
+  --game-card-small-bg: var(--game-bg-panel);
+  --game-card-small-border: var(--game-border);
+  --game-card-panel-bg: var(--game-bg-card);
+  --game-card-held-border: var(--game-accent-gold);
+  --game-card-held-border-width: 3px;
+  --game-card-held-border-style: solid;
+  --game-card-held-glow: var(--game-accent-gold-glow);
+  --game-card-wild-color: #ea580c;
+  --game-card-back-text-offset-y: 0.15em;
+}
+
+/* Light theme - white cards, traditional red and black suits */
+[data-card-theme='light'] {
+  --game-card-background: #ffffff;
+  --game-card-border: #e5e7eb;
+  --game-card-back-bg: linear-gradient(145deg, #f3f4f6 0%, #e5e7eb 100%);
+  --game-card-back-text: #6b7280;
+  --game-card-suit-red: #dc2626;
+  --game-card-suit-black: #1f2937;
+  --game-card-small-bg: #ffffff;
+  --game-card-small-border: #d1d5db;
+  --game-card-panel-bg: #f9fafb;
+  --game-card-held-border: var(--game-accent-gold);
+  --game-card-held-border-width: 3px;
+  --game-card-held-border-style: solid;
+  --game-card-held-glow: rgba(201, 162, 39, 0.35);
+  --game-card-wild-color: #ea580c;
+  --game-card-back-text-offset-y: 0.15em;
+}
+
+/* Card back - gradient background and "POKER" text */
+.card-back {
+  background: var(--game-card-back-bg);
+  border-color: var(--game-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: absolute !important;
+}
+
+.card-back-text {
+  color: var(--game-card-back-text);
+  margin-top: var(--game-card-back-text-offset-y);
+}
+
+/* Card held/selected state - border style and width configurable */
+.card-held {
+  border-width: var(--game-card-held-border-width);
+  border-style: var(--game-card-held-border-style);
+  border-color: var(--game-card-held-border);
+  box-shadow: 0 0 12px var(--game-card-held-glow);
+}
+
+/* Card suit colors - red (hearts, diamonds) and black (clubs, spades) */
+.card-suit-red {
+  color: var(--game-card-suit-red);
+}
+
+.card-suit-black {
+  color: var(--game-card-suit-black);
+}
+
+.card-wild {
+  color: var(--game-card-wild-color);
 }
 
 /* ============================================
@@ -135,7 +235,11 @@ code {
 
 /* Primary - crimson */
 .btn-game-primary {
-  background: linear-gradient(180deg, var(--game-accent-red-bright) 0%, var(--game-accent-red) 100%);
+  background: linear-gradient(
+    180deg,
+    var(--game-accent-red-bright) 0%,
+    var(--game-accent-red) 100%
+  );
   color: var(--game-text);
   box-shadow: var(--game-btn-shadow), var(--game-btn-inset);
   border: 1px solid rgba(255, 255, 255, 0.1);
@@ -251,56 +355,110 @@ h2 {
    ============================================ */
 
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 @keyframes fadeOut {
-  from { opacity: 1; }
-  to { opacity: 0; }
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
 }
 
 @keyframes gradientShift {
-  0%, 100% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
+  0%,
+  100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
 }
 
 @keyframes patternMove {
-  0% { transform: translateX(0) translateY(0); }
-  100% { transform: translateX(20px) translateY(20px); }
+  0% {
+    transform: translateX(0) translateY(0);
+  }
+  100% {
+    transform: translateX(20px) translateY(20px);
+  }
 }
 
 @keyframes pulse {
-  0%, 100% { opacity: 0.1; }
-  50% { opacity: 0.2; }
+  0%,
+  100% {
+    opacity: 0.1;
+  }
+  50% {
+    opacity: 0.2;
+  }
 }
 
 @keyframes slideInFromRight {
-  from { opacity: 0; transform: translateX(100px); }
-  to { opacity: 1; transform: translateX(0); }
+  from {
+    opacity: 0;
+    transform: translateX(100px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
 }
 
 @keyframes slideLeftAndFade {
-  0% { opacity: 1; transform: translateX(0); }
-  100% { opacity: 0; transform: translateX(-200px); }
+  0% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(-200px);
+  }
 }
 
 @keyframes floatUpAndFade {
-  0% { opacity: 1; transform: translateY(0); }
-  100% { opacity: 0; transform: translateY(-60px); }
+  0% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-60px);
+  }
 }
 
 /* Devil's Deal Component Animations */
 @keyframes devilsDealBob {
-  0%, 100% { transform: translate(0, 0); }
-  25% { transform: translate(8px, -6px); }
-  50% { transform: translate(-6px, 8px); }
-  75% { transform: translate(-8px, -4px); }
+  0%,
+  100% {
+    transform: translate(0, 0);
+  }
+  25% {
+    transform: translate(8px, -6px);
+  }
+  50% {
+    transform: translate(-6px, 8px);
+  }
+  75% {
+    transform: translate(-8px, -4px);
+  }
 }
 
 @keyframes devilsDealOpacity {
-  0%, 100% { opacity: 0.5; }
-  50% { opacity: 0.75; }
+  0%,
+  100% {
+    opacity: 0.5;
+  }
+  50% {
+    opacity: 0.75;
+  }
 }
 
 .devil-deal-container {

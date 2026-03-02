@@ -101,6 +101,7 @@ function App() {
     toggleMusic,
     toggleSoundEffects,
     setAnimationSpeed,
+    setCardTheme,
     setMusicVolume,
     setSoundEffectsVolume,
     setHandScoringMinVolumePercent,
@@ -316,6 +317,8 @@ function App() {
               onToggleSoundEffects={toggleSoundEffects}
               animationSpeedMode={state.animationSpeedMode}
               onAnimationSpeedChange={setAnimationSpeed}
+              cardTheme={state.cardTheme}
+              onCardThemeChange={setCardTheme}
               onCheatAddCredits={cheatAddCredits}
               onCheatAddHands={cheatAddHands}
               onCheatSetDevilsDeal={cheatSetDevilsDeal}

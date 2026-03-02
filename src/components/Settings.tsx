@@ -19,6 +19,8 @@ interface SettingsProps {
   onToggleSoundEffects?: () => void;
   animationSpeedMode?: AnimationSpeedMode;
   onAnimationSpeedChange?: (speed: number | 'skip') => void;
+  cardTheme?: 'light' | 'dark';
+  onCardThemeChange?: (theme: 'light' | 'dark') => void;
   onCheatAddCredits?: (amount: number) => void;
   onCheatAddHands?: (amount: number) => void;
   onCheatSetDevilsDeal?: () => void;
@@ -38,6 +40,8 @@ export function Settings({
   onToggleSoundEffects,
   animationSpeedMode = 1,
   onAnimationSpeedChange,
+  cardTheme = 'dark',
+  onCardThemeChange,
   onCheatAddCredits,
   onCheatAddHands,
   onCheatSetDevilsDeal,
@@ -244,6 +248,53 @@ export function Settings({
                     Skip animations
                   </span>
                 </label>
+              </div>
+            </div>
+          )}
+
+          {/* Card Theme */}
+          {onCardThemeChange != null && (
+            <div
+              className="rounded-xl p-4 sm:p-6 border border-[var(--game-border)]"
+              style={{ background: 'var(--game-bg-panel)' }}
+            >
+              <h3 className="text-lg font-bold mb-4" style={{ color: 'var(--game-accent-gold)' }}>
+                Card Style
+              </h3>
+              <div className="space-y-3">
+                {[
+                  { id: 'light' as const, label: 'Light', desc: 'White cards, traditional red and black' },
+                  { id: 'dark' as const, label: 'Dark', desc: 'Dark cards with red and light suit text' },
+                ].map(({ id, label, desc }) => (
+                  <label
+                    key={id}
+                    className={`flex items-start gap-3 p-3 rounded-lg cursor-pointer transition-colors border-2 ${
+                      cardTheme === id ? 'border-[var(--game-accent-gold)]' : 'border-transparent'
+                    }`}
+                    style={{
+                      background: cardTheme === id ? 'rgba(201, 162, 39, 0.1)' : 'transparent',
+                    }}
+                  >
+                    <input
+                      type="radio"
+                      name="cardTheme"
+                      value={id}
+                      checked={cardTheme === id}
+                      onChange={() => onCardThemeChange(id)}
+                      className="mt-1 w-4 h-4"
+                      style={{ accentColor: 'var(--game-accent-gold)' }}
+                      aria-label={`Card style: ${label}`}
+                    />
+                    <div>
+                      <span className="font-semibold" style={{ color: 'var(--game-text)' }}>
+                        {label}
+                      </span>
+                      <p className="text-sm mt-0.5" style={{ color: 'var(--game-text-muted)' }}>
+                        {desc}
+                      </p>
+                    </div>
+                  </label>
+                ))}
               </div>
             </div>
           )}

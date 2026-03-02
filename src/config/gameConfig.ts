@@ -26,7 +26,7 @@ export const gameConfig = {
         'parallel-hands-bundle-25': { rarity: 2 },
         'parallel-hands-bundle-50': { rarity: 3 },
         'wild-card': { rarity: 3 },
-        'extra-draw': { rarity: 3 },
+        'extra-draw': { rarity: 4 },
         'extra-card-in-hand': { rarity: 3 },
         'devils-deal-chance': { rarity: 2 },
         'devils-deal-cost-reduction': { rarity: 2 },

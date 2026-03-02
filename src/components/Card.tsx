@@ -23,10 +23,10 @@ const SUIT_SYMBOLS: { [key: string]: string } = {
 };
 
 const SUIT_COLORS: { [key: string]: string } = {
-  hearts: 'text-red-600',
-  diamonds: 'text-red-600',
-  clubs: 'text-slate-300',
-  spades: 'text-slate-300',
+  hearts: 'card-suit-red',
+  diamonds: 'card-suit-red',
+  clubs: 'card-suit-black',
+  spades: 'card-suit-black',
 };
 
 const SIZE_CLASSES = {
@@ -88,26 +88,17 @@ export function Card({
     >
       {/* Card Front */}
       <div
-          className={`
+        className={`
           absolute inset-0
           border rounded-lg shadow-md
           flex flex-col items-center justify-center
           transition-transform duration-500
-          ${isHeld ? 'ring-2 ring-[var(--game-accent-gold)]' : ''}
+          ${isHeld ? 'card-held' : ''}
         `}
         data-held={isHeld}
         style={{
-          ...(isHeld
-            ? {
-                borderColor: 'var(--game-accent-gold)',
-                backgroundColor: 'var(--game-card-background)',
-                boxShadow: '0 0 12px var(--game-accent-gold-glow)',
-                '--tw-ring-color': 'var(--game-accent-gold)',
-              }
-            : {
-                borderColor: 'var(--game-border)',
-                backgroundColor: 'var(--game-card-background)',
-              }),
+          ...(isHeld ? {} : { borderColor: 'var(--game-card-border)' }),
+          backgroundColor: 'var(--game-card-background)',
           transform: isFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)',
           transformStyle: 'preserve-3d',
           zIndex: isFlipped ? 1 : 2,
@@ -117,7 +108,7 @@ export function Card({
           {card.isDead ? (
             <div className="text-4xl">💀</div>
           ) : card.isWild ? (
-            <div className="text-orange-600 font-bold text-lg">WILD</div>
+            <div className="font-bold text-lg" style={{ color: 'var(--game-card-wild-color)' }}>WILD</div>
           ) : (
             <>
               <div className={`font-bold ${suitColor}`}>{card.rank}</div>
@@ -134,16 +125,15 @@ export function Card({
           border rounded-lg shadow-md
           flex items-center justify-center
           transition-transform duration-500
-          border-[var(--game-border)]
+          card-back
         `}
         style={{
-          background: 'linear-gradient(145deg, var(--game-bg-elevated) 0%, var(--game-bg-panel) 100%)',
           transform: isFlipped ? 'rotateY(0deg)' : 'rotateY(180deg)',
           transformStyle: 'preserve-3d',
           zIndex: isFlipped ? 2 : 1,
         }}
       >
-        <div className="text-xs font-bold" style={{ color: 'var(--game-text-muted)' }}>POKER</div>
+        <div className="text-xs font-bold card-back-text">POKER</div>
       </div>
     </div>
   );

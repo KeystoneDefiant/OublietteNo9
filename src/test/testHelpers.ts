@@ -73,6 +73,7 @@ export function createTestGameState(overrides: Partial<GameState> = {}): GameSta
       handScoringMinVolumePercent: 0,
     },
     animationSpeedMode: 1,
+    cardTheme: 'dark',
   };
 
   return { ...baseState, ...overrides };

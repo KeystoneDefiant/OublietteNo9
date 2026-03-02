@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useRef, startTransition } from 'react';
+import { useState, useCallback, useEffect, useLayoutEffect, useRef, startTransition } from 'react';
 import { GameState, GameOverReason, HandRank, Card } from '../types';
 import { createFullDeck, shuffleDeck } from '../utils/deck';
 import { selectShopOptionsByRarity } from '../utils/shopSelection';
@@ -9,6 +9,7 @@ import { checkFailureConditions } from '../utils/failureConditions';
 import { PokerEvaluator } from '../utils/pokerEvaluator';
 import { useThemeAudio } from '../hooks/useThemeAudio';
 import { parseAudioSettings, parseAnimationSettings } from '../utils/typeGuards';
+import { getStoredCardTheme, setStoredCardTheme } from '../config/cardThemes';
 
 const currentMode = getCurrentGameMode();
 
@@ -96,6 +97,7 @@ const INITIAL_STATE: GameState = {
   currentStreakMultiplier: 1.0,
   audioSettings: loadAudioSettings(),
   animationSpeedMode: loadAnimationSettings(),
+  cardTheme: getStoredCardTheme(),
 };
 
 export function useGameState() {
@@ -631,6 +633,22 @@ export function useGameState() {
     });
   }, []);
 
+  const setCardTheme = useCallback((theme: 'light' | 'dark') => {
+    setState((prev) => {
+      try {
+        setStoredCardTheme(theme);
+      } catch {
+        // Ignore storage errors
+      }
+      return { ...prev, cardTheme: theme };
+    });
+  }, []);
+
+  // Apply card theme to DOM for CSS variable overrides (useLayoutEffect to avoid flash)
+  useLayoutEffect(() => {
+    document.documentElement.setAttribute('data-card-theme', state.cardTheme);
+  }, [state.cardTheme]);
+
   const toggleDevilsDealHold = useCallback(() => {
     setState((prev) => {
       // Can't hold devil's deal if already holding 5 cards (hand is full)
@@ -674,5 +692,6 @@ export function useGameState() {
     setSoundEffectsVolume,
     setHandScoringMinVolumePercent,
     setAnimationSpeed,
+    setCardTheme,
   };
 }

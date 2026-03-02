@@ -163,11 +163,11 @@
   align-items: center;
   gap: 12px;
   padding: 20px 24px;
-  background: var(--game-bg-card);
+  background: var(--game-card-panel-bg);
   border-radius: 16px;
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
   backdrop-filter: blur(10px);
-  border: 2px solid var(--game-border);
+  border: 2px solid var(--game-card-small-border);
   width: 100%;
 }
 
@@ -182,8 +182,8 @@
 .hand-card-small {
   width: 32px;
   height: 48px;
-  background: var(--game-bg-panel);
-  border: 2px solid var(--game-border);
+  background: var(--game-card-small-bg);
+  border: 2px solid var(--game-card-small-border);
   border-radius: 4px;
   display: flex;
   flex-direction: column;
@@ -780,11 +780,11 @@
 }
 
 .rolodex-hand-content {
-  background: var(--game-bg-card);
+  background: var(--game-card-panel-bg);
   border-radius: 14px;
   padding: 20px 24px;
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
-  border: 2px solid var(--game-border);
+  border: 2px solid var(--game-card-small-border);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -802,8 +802,8 @@
 .rolodex-card-small {
   width: 42px;
   height: 60px;
-  background: var(--game-bg-panel);
-  border: 2px solid var(--game-border);
+  background: var(--game-card-small-bg);
+  border: 2px solid var(--game-card-small-border);
   border-radius: 6px;
   display: flex;
   flex-direction: column;

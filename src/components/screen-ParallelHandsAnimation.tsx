@@ -92,12 +92,12 @@ const RolodexHandCard = React.memo(function RolodexHandCard({
             if (card.isWild) {
               return (
                 <div key={cardIndex} className="rolodex-card-small" title="Wild Card">
-                  <span className="text-orange-600 font-bold text-xs">WILD</span>
+                  <span className="card-wild font-bold text-xs">WILD</span>
                 </div>
               );
             }
             const isRedSuit = card.suit === 'hearts' || card.suit === 'diamonds';
-            const suitColorClass = isRedSuit ? 'text-red-600' : 'text-white';
+            const suitColorClass = isRedSuit ? 'card-suit-red' : 'card-suit-black';
             return (
               <div
                 key={cardIndex}
