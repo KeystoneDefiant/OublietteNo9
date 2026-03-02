@@ -196,7 +196,7 @@ export const gameConfig = {
       wildCard: { baseCost: 5000, increasePercent: 100, maxCount: 3 },
       singleDeadCardRemoval: { baseCost: 5000, increasePercent: 10 },
       parallelHandsBundles: { basePricePerHand: 10, bundles: [5, 10, 25, 50] },
-      extraDraw: { cost: 10000, increasePercent: 150, maxPurchases: 2 },
+      extraDraw: { cost: 250000, increasePercent: 150, maxPurchases: 2 },
       extraCardInHand: { baseCost: 10000, increasePercent: 125, maxPurchases: 3 },
       devilsDealChance: { baseCost: 5000, increasePercent: 50 },
       devilsDealCostReduction: { baseCost: 10000, increasePercent: 25 },
