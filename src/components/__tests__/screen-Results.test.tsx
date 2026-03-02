@@ -83,11 +83,13 @@ describe('Results Component', () => {
       expect(screen.getByText(/7,470/)).toBeInTheDocument();
     });
 
-    it('should show positive profit in green', () => {
+    it('should show positive profit in green/gold accent', () => {
       render(<Results {...mockProps} />);
       
       const profitElement = screen.getByText(/7,470/).closest('span');
-      expect(profitElement).toHaveClass('text-green-600');
+      expect(profitElement).toBeTruthy();
+      // Dark theme uses CSS variable for positive profit color
+      expect(profitElement?.getAttribute('style') ?? '').toMatch(/game-accent-gold|#[fF]/);
     });
 
     it('should show negative profit in red', () => {
@@ -107,8 +109,10 @@ describe('Results Component', () => {
         parallelHands: [highCardHand, highCardHand, highCardHand],
       };
       const { container } = render(<Results {...lossProps} />);
-      const profitElements = container.querySelectorAll('.text-red-600');
-      expect(profitElements.length).toBeGreaterThan(0);
+      // Dark theme uses inline style for negative profit color
+      const profitSpan = screen.getByText(/-30/).closest('span');
+      expect(profitSpan).toBeTruthy();
+      expect(profitSpan?.getAttribute('style') ?? '').toMatch(/game-accent-red|#[dDbB]/);
     });
   });
 

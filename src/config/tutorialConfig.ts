@@ -31,7 +31,7 @@ export const tutorialSlides: TutorialSlide[] = [
   {
     title: 'The Shop',
     content:
-      "Between specific rounds, you can buy upgrades in the fancy shop! \n\nMore Parallel Hands, dead cards, wild cards, extra draws, extra cards in your hand, and more. \n\nEvery purchase affects your game - more hands means more chances to win and boost the multiplier, but each round costs more credits. The shop is randomly generated each round, so you never know what you'll find!",
+      "Between specific rounds, you can buy upgrades in the fancy shop! \n\nMore Parallel Hands, dead cards, wild cards, extra draws, extra cards in your hand, and more. \n\nEvery purchase affects your game - more hands means more chances to win and boost the multiplier, but each round costs more credits. The shop is randomly generated each round, so you never know what you'll find!\n\nOnce you have enough credits, you will upgrade to the VIP Shop. You're no longer a peasant, so you'll get access to some premium items and more premium selections, but there's not as many... and when you are buying those name brand Parallel Hands, you'll be paying a premium price!",
   },
   {
     title: 'Wild Cards & Dead Cards',

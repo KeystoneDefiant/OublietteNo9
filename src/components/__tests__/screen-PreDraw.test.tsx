@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { PreDraw } from '../screen-PreDraw';
+import { Settings } from '../Settings';
 import { FailureStateType, GameState } from '../../types';
 import { getTestRewardTable } from '../../test/testHelpers';
 import { getCurrentGameMode } from '../../config/gameConfig';
@@ -52,11 +53,10 @@ describe('PreDraw Component', () => {
 
     it('should display bet and hand count summary', () => {
       render(<PreDraw {...mockProps} />);
-      // PreDraw shows minimumBet, handCount, totalBetCost as read-only display
-      // useEffect auto-sets to min bet and max hands, so displays minimumBet and handCount
-      expect(document.body.textContent).toMatch(/credits/);
-      expect(document.body.textContent).toMatch(/hands/);
-      expect(document.body.textContent).toMatch(/credits to play/);
+      // PreDraw shows Credits (header), Bet/Hands/Cost panels
+      expect(document.body.textContent).toMatch(/Credits/i);
+      expect(document.body.textContent).toMatch(/Hands/i);
+      expect(document.body.textContent).toMatch(/Cost/i);
     });
   });
 
@@ -71,7 +71,9 @@ describe('PreDraw Component', () => {
 
     it('should show total cost to play', () => {
       render(<PreDraw {...mockProps} />);
-      expect(screen.getByText(/100 credits to play/)).toBeInTheDocument();
+      // Cost panel shows total (minimumBet * handCount = 2 * 50 = 100)
+      expect(screen.getByText(/^100$/)).toBeInTheDocument();
+      expect(screen.getByText(/Cost/i)).toBeInTheDocument();
     });
   });
 
@@ -204,28 +206,27 @@ describe('PreDraw Component', () => {
     });
   });
 
-  describe('Cheats Modal', () => {
-    it('should open cheats modal when button clicked', () => {
-      render(<PreDraw {...mockProps} />);
-      const cheatsButton = screen.getByRole('button', { name: /Open cheats menu/i });
-
-      fireEvent.click(cheatsButton);
-
-      expect(screen.getAllByText(/Cheats/i).length).toBeGreaterThanOrEqual(1);
-      expect(screen.getByText(/Add 1000 Credits/i)).toBeInTheDocument();
+  describe('Cheats (via Settings)', () => {
+    it('should show settings button when onShowSettings is provided', () => {
+      const propsWithSettings = { ...mockProps, onShowSettings: vi.fn() };
+      render(<PreDraw {...propsWithSettings} />);
+      const settingsButton = screen.getByRole('button', { name: /Open settings/i });
+      expect(settingsButton).toBeInTheDocument();
     });
 
-    it('should close cheats modal when close button clicked', () => {
-      render(<PreDraw {...mockProps} />);
-      const cheatsButton = screen.getByRole('button', { name: /Open cheats menu/i });
-
-      fireEvent.click(cheatsButton);
+    it('should show cheats in Settings when opened with cheat callbacks', () => {
+      const onClose = vi.fn();
+      render(
+        <Settings
+          onClose={onClose}
+          onCheatAddCredits={mockProps.onCheatAddCredits}
+          onCheatAddHands={mockProps.onCheatAddHands}
+          onCheatSetDevilsDeal={mockProps.onCheatSetDevilsDeal}
+        />
+      );
+      const cheatsAccordion = screen.getByRole('button', { name: /Cheats/i });
+      fireEvent.click(cheatsAccordion);
       expect(screen.getByText(/Add 1000 Credits/i)).toBeInTheDocument();
-
-      const closeButton = screen.getByRole('button', { name: /Close/i });
-      fireEvent.click(closeButton);
-
-      expect(screen.queryByText(/Add 1000 Credits/i)).not.toBeInTheDocument();
     });
   });
 

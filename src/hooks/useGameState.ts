@@ -2,13 +2,13 @@ import { useState, useCallback, useEffect, useRef, startTransition } from 'react
 import { GameState, GameOverReason, HandRank, Card } from '../types';
 import { createFullDeck, shuffleDeck } from '../utils/deck';
 import { selectShopOptionsByRarity } from '../utils/shopSelection';
-import { getCurrentGameMode } from '../config/gameConfig';
+import { getCurrentGameMode, getShopModeForCredits } from '../config/gameConfig';
 import { useGameActions } from './useGameActions';
 import { useShopActions } from './useShopActions';
 import { checkFailureConditions } from '../utils/failureConditions';
 import { PokerEvaluator } from '../utils/pokerEvaluator';
 import { useThemeAudio } from '../hooks/useThemeAudio';
-import { parseAudioSettings } from '../utils/typeGuards';
+import { parseAudioSettings, parseAnimationSettings } from '../utils/typeGuards';
 
 const currentMode = getCurrentGameMode();
 
@@ -17,6 +17,7 @@ const DEFAULT_AUDIO_SETTINGS = {
   soundEffectsEnabled: true,
   musicVolume: 0.7,
   soundEffectsVolume: 1.0,
+  handScoringMinVolumePercent: 0,
 };
 
 // Load audio settings from localStorage if available
@@ -24,15 +25,28 @@ function loadAudioSettings(): GameState['audioSettings'] {
   const stored = typeof window !== 'undefined' ? localStorage.getItem('audioSettings') : null;
   const parsed = parseAudioSettings(stored);
   if (parsed) {
+    const minVol = typeof parsed.handScoringMinVolumePercent === 'number'
+      ? Math.max(0, Math.min(10, parsed.handScoringMinVolumePercent))
+      : DEFAULT_AUDIO_SETTINGS.handScoringMinVolumePercent;
     return {
       ...DEFAULT_AUDIO_SETTINGS,
       musicEnabled: parsed.musicEnabled ?? DEFAULT_AUDIO_SETTINGS.musicEnabled,
       soundEffectsEnabled: parsed.soundEffectsEnabled ?? DEFAULT_AUDIO_SETTINGS.soundEffectsEnabled,
       musicVolume: typeof parsed.musicVolume === 'number' ? parsed.musicVolume : DEFAULT_AUDIO_SETTINGS.musicVolume,
       soundEffectsVolume: typeof parsed.soundEffectsVolume === 'number' ? parsed.soundEffectsVolume : DEFAULT_AUDIO_SETTINGS.soundEffectsVolume,
+      handScoringMinVolumePercent: minVol,
     };
   }
   return { ...DEFAULT_AUDIO_SETTINGS };
+}
+
+const DEFAULT_ANIMATION_SPEED: GameState['animationSpeedMode'] = 1;
+
+// Load animation settings from localStorage if available
+function loadAnimationSettings(): GameState['animationSpeedMode'] {
+  const stored = typeof window !== 'undefined' ? localStorage.getItem('animationSettings') : null;
+  const parsed = parseAnimationSettings(stored);
+  return parsed?.animationSpeedMode ?? DEFAULT_ANIMATION_SPEED;
 }
 
 const INITIAL_STATE: GameState = {
@@ -67,6 +81,8 @@ const INITIAL_STATE: GameState = {
   gameOverReason: null,
   showShopNextRound: false,
   selectedShopOptions: [],
+  creditsAtShopOpen: null,
+  prevRoundMinimumBet: null,
   isEndlessMode: false,
   currentFailureState: null,
   winningHandsLastRound: 0,
@@ -79,7 +95,7 @@ const INITIAL_STATE: GameState = {
   streakCounter: 0,
   currentStreakMultiplier: 1.0,
   audioSettings: loadAudioSettings(),
-  animationSpeedMode: 1 as const,
+  animationSpeedMode: loadAnimationSettings(),
 };
 
 export function useGameState() {
@@ -248,7 +264,7 @@ export function useGameState() {
       // Check if shop should appear next round and generate options if so
       const showShopNextRound = newRound % currentMode.shopFrequency === 0;
       const selectedShopOptions = showShopNextRound
-        ? selectShopOptionsByRarity(currentMode)
+        ? selectShopOptionsByRarity(getShopModeForCredits(newCredits))
         : [];
 
       return {
@@ -272,6 +288,8 @@ export function useGameState() {
         gameOverReason,
         showShopNextRound,
         selectedShopOptions,
+        creditsAtShopOpen: showShopNextRound ? newCredits : null,
+        prevRoundMinimumBet: showShopNextRound ? prev.minimumBet : null,
         isEndlessMode,
         currentFailureState,
         winningHandsLastRound: winningHandsCount,
@@ -303,6 +321,7 @@ export function useGameState() {
       drawsCompletedThisRound: 0,
       showShopNextRound: false,
       selectedShopOptions: [],
+      creditsAtShopOpen: null,
       isEndlessMode: false,
       currentFailureState: null,
       gameOverReason: null,
@@ -336,6 +355,8 @@ export function useGameState() {
       drawsCompletedThisRound: 0,
       showShopNextRound: false,
       selectedShopOptions: [],
+      creditsAtShopOpen: null,
+      prevRoundMinimumBet: null,
     }));
   }, [stopMusic]);
 
@@ -463,33 +484,42 @@ export function useGameState() {
         gamePhase: 'preDraw',
         showShopNextRound: false,
         selectedShopOptions: [],
+        creditsAtShopOpen: null,
+        prevRoundMinimumBet: null,
       };
     });
   }, []);
 
   const cheatAddCredits = useCallback((amount: number) => {
+    playSound('cheater');
     setState((prev) => ({
       ...prev,
       credits: prev.credits + amount,
       gameOver: false,
       gameOverReason: null,
     }));
-  }, []);
+  }, [playSound]);
 
   const cheatAddHands = useCallback((amount: number) => {
-    setState((prev) => ({
-      ...prev,
-      handCount: prev.handCount + amount,
-    }));
-  }, []);
+    playSound('cheater');
+    setState((prev) => {
+      const newHandCount = prev.handCount + amount;
+      return {
+        ...prev,
+        handCount: newHandCount,
+        selectedHandCount: newHandCount,
+      };
+    });
+  }, [playSound]);
 
   const cheatSetDevilsDeal = useCallback(() => {
+    playSound('cheater');
     setState((prev) => ({
       ...prev,
       devilsDealChancePurchases: 19, // 5% * 19 = 95%, base 5% = 100%
       devilsDealCostReductionPurchases: 15, // 6% * 15 = 90%, base 10% - 90% = 1%
     }));
-  }, []);
+  }, [playSound]);
 
   const updateStreakCounter = useCallback((newStreakCount: number) => {
     setState((prev) => ({
@@ -577,11 +607,27 @@ export function useGameState() {
     });
   }, []);
 
-  const cycleAnimationSpeed = useCallback(() => {
+  const setHandScoringMinVolumePercent = useCallback((handScoringMinVolumePercent: number) => {
+    const clamped = Math.max(0, Math.min(10, handScoringMinVolumePercent));
     setState((prev) => {
-      const next: 1 | 2 | 3 | 'skip' =
-        prev.animationSpeedMode === 1 ? 2 : prev.animationSpeedMode === 2 ? 3 : prev.animationSpeedMode === 3 ? 'skip' : 1;
-      return { ...prev, animationSpeedMode: next };
+      const next = { ...prev, audioSettings: { ...prev.audioSettings, handScoringMinVolumePercent: clamped } };
+      try {
+        localStorage.setItem('audioSettings', JSON.stringify(next.audioSettings));
+      } catch {
+        // Ignore storage errors
+      }
+      return next;
+    });
+  }, []);
+
+  const setAnimationSpeed = useCallback((speed: number | 'skip') => {
+    setState((prev) => {
+      try {
+        localStorage.setItem('animationSettings', JSON.stringify({ animationSpeedMode: speed }));
+      } catch {
+        // Ignore storage errors
+      }
+      return { ...prev, animationSpeedMode: speed };
     });
   }, []);
 
@@ -626,6 +672,7 @@ export function useGameState() {
     toggleSoundEffects,
     setMusicVolume,
     setSoundEffectsVolume,
-    cycleAnimationSpeed,
+    setHandScoringMinVolumePercent,
+    setAnimationSpeed,
   };
 }

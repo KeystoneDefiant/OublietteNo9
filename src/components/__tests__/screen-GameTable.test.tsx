@@ -96,8 +96,8 @@ describe('GameTable Component', () => {
       
       const handGroup = screen.getByRole('group', { name: /Your hand/i });
       const cards = within(handGroup).getAllByRole('button');
-      // Held cards have yellow border/ring styling on inner element
-      expect(cards[0].querySelector('.border-yellow-500, .ring-yellow-300')).toBeTruthy();
+      // Held cards have data-held and card-held styling
+      expect(cards[0].querySelector('[data-held="true"], .card-held')).toBeTruthy();
     });
 
     it('should allow multiple cards to be held', () => {
@@ -106,8 +106,8 @@ describe('GameTable Component', () => {
       
       const handGroup = screen.getByRole('group', { name: /Your hand/i });
       const cards = within(handGroup).getAllByRole('button');
-      // Cards 1, 2, 3 should be held (have yellow styling on inner element)
-      const heldCards = cards.filter(c => c.querySelector('.border-yellow-500, .ring-yellow-300'));
+      // Cards 1, 2, 3 should be held (have data-held or card-held)
+      const heldCards = cards.filter(c => c.querySelector('[data-held="true"], .card-held'));
       expect(heldCards.length).toBe(3);
     });
   });
@@ -236,22 +236,6 @@ describe('GameTable Component', () => {
     });
   });
 
-  describe('Efficiency Display', () => {
-    it('should calculate and display efficiency', () => {
-      render(<GameTable {...mockProps} />);
-      
-      // 500 earnings / 1 round = 500.00
-      expect(screen.getByText(/500/)).toBeInTheDocument();
-    });
-
-    it('should show 0.00 efficiency for round 0', () => {
-      const props = { ...mockProps, round: 0, totalEarnings: 0 };
-      render(<GameTable {...props} />);
-      
-      expect(screen.getByText(/0\.00/)).toBeInTheDocument();
-    });
-  });
-
   describe('Failure State Display', () => {
     it('should display failure warnings when in failure state', () => {
       const props = {
@@ -261,7 +245,8 @@ describe('GameTable Component', () => {
       };
       
       render(<GameTable {...props} />);
-      expect(screen.getByText(/Failure Condition/i)).toBeInTheDocument();
+      // GameHeader shows the failure description (e.g. "Bet must be ≥ 20 (2x base)")
+      expect(screen.getByText(/Bet must be/i)).toBeInTheDocument();
     });
   });
 

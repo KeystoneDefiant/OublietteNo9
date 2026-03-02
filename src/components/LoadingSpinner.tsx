@@ -19,18 +19,34 @@ export function LoadingSpinner({
   };
 
   const containerClasses = fullScreen
-    ? 'min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-blue-50 to-purple-50'
+    ? 'min-h-screen min-h-[100dvh] flex flex-col items-center justify-center'
     : 'flex flex-col items-center justify-center p-8';
 
   return (
-    <div className={containerClasses}>
+    <div
+      className={containerClasses}
+      style={
+        fullScreen
+          ? { background: 'linear-gradient(180deg, #050508 0%, #0d0a0c 100%)' }
+          : undefined
+      }
+    >
       <div className="relative">
         <div
-          className={`${sizeClasses[size]} border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin`}
-        ></div>
+          className={`${sizeClasses[size]} border-4 rounded-full animate-spin`}
+          style={{
+            borderColor: 'var(--game-border)',
+            borderTopColor: 'var(--game-accent-gold)',
+          }}
+        />
       </div>
       {message && (
-        <p className="mt-4 text-lg text-gray-700 font-medium animate-pulse">{message}</p>
+        <p
+          className="mt-4 text-base sm:text-lg font-medium animate-pulse"
+          style={{ color: 'var(--game-text-muted)' }}
+        >
+          {message}
+        </p>
       )}
     </div>
   );

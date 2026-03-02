@@ -8,6 +8,7 @@ type SoundEvent =
   | 'shopPurchase'
   | 'screenTransition'
   | 'returnToPreDraw'
+  | 'cheater'
   | 'handScoring';
 
 interface AudioInstances {
@@ -42,6 +43,8 @@ export interface ThemeAudioSettings {
   soundEffectsEnabled: boolean;
   musicVolume?: number;
   soundEffectsVolume?: number;
+  /** Min volume % (0–10) when scoring many same-rank hands in a row. 0 = can go silent. */
+  handScoringMinVolumePercent?: number;
 }
 
 const defaultAudioSettings: ThemeAudioSettings = {
@@ -106,6 +109,8 @@ export function useThemeAudio(audioSettings?: ThemeAudioSettings) {
         audioPath = config.sounds.screenTransition;
       } else if (event === 'returnToPreDraw') {
         audioPath = config.sounds.returnToPreDraw;
+      } else if (event === 'cheater') {
+        audioPath = config.sounds.cheater;
       } else if (handRank && config.sounds.handScoring) {
         audioPath = config.sounds.handScoring[handRank];
       }
@@ -127,8 +132,11 @@ export function useThemeAudio(audioSettings?: ThemeAudioSettings) {
       if (event === 'handScoring' && handRank) {
         handRankPlaysThisRound[handRank] = (handRankPlaysThisRound[handRank] || 0) + 1;
         const count = handRankPlaysThisRound[handRank];
+        const minVolPercent = audioSettingsRef.current.handScoringMinVolumePercent ?? 0;
+        const minFloor = baseVolume * (minVolPercent / 100);
         if (count > 5) {
-          volume = baseVolume * Math.pow(0.75, count - 5);
+          const ducked = baseVolume * Math.pow(0.75, count - 5);
+          volume = Math.max(minFloor, ducked);
         }
       }
 

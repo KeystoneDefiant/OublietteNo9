@@ -1,7 +1,8 @@
 .tutorial-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.6);
+  background: rgba(5, 5, 8, 0.85);
+  backdrop-filter: blur(8px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -10,9 +11,10 @@
 }
 
 .tutorial-modal {
-  background: white;
+  background: linear-gradient(180deg, var(--game-bg-card) 0%, var(--game-bg-panel) 100%);
+  border: 1px solid var(--game-border);
   border-radius: 1rem;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
   max-width: 32rem;
   width: 100%;
   max-height: 90vh;
@@ -30,9 +32,9 @@
 }
 
 .tutorial-title {
-  font-size: 1.5rem;
+  font-size: 1.25rem;
   font-weight: 700;
-  color: #1f2937;
+  color: var(--game-accent-gold);
   margin: 0;
   padding-right: 2rem;
 }
@@ -44,14 +46,14 @@
   background: none;
   border: none;
   font-size: 1.75rem;
-  color: #6b7280;
+  color: var(--game-text-muted);
   cursor: pointer;
   line-height: 1;
   padding: 0.25rem;
 }
 
 .tutorial-close:hover {
-  color: #374151;
+  color: var(--game-text);
 }
 
 .tutorial-content {
@@ -64,7 +66,7 @@
 .tutorial-body {
   font-size: 1rem;
   line-height: 1.6;
-  color: #4b5563;
+  color: var(--game-text-muted);
   margin: 0;
   white-space: pre-line;
 }
@@ -74,13 +76,13 @@
   justify-content: space-between;
   align-items: center;
   padding: 1rem 1.5rem 1.5rem;
-  border-top: 1px solid #e5e7eb;
+  border-top: 1px solid var(--game-border);
   flex-shrink: 0;
 }
 
 .tutorial-progress {
   font-size: 0.875rem;
-  color: #6b7280;
+  color: var(--game-text-muted);
 }
 
 .tutorial-nav {
@@ -93,27 +95,27 @@
   padding: 0.5rem 1.25rem;
   border-radius: 0.5rem;
   cursor: pointer;
-  transition: background-color 0.2s, color 0.2s;
-  border: 2px solid transparent;
+  transition: all 0.15s ease;
+  border: none;
 }
 
 .tutorial-btn-primary {
-  background: #2563eb;
-  color: white;
-  border-color: #2563eb;
+  background: linear-gradient(180deg, var(--game-accent-red-bright) 0%, var(--game-accent-red) 100%);
+  color: var(--game-text);
+  box-shadow: 0 4px 0 rgba(0, 0, 0, 0.4);
 }
 
 .tutorial-btn-primary:hover {
-  background: #1d4ed8;
-  border-color: #1d4ed8;
+  filter: brightness(1.1);
+  transform: translateY(-1px);
 }
 
 .tutorial-btn-secondary {
-  background: #f3f4f6;
-  color: #374151;
-  border-color: #d1d5db;
+  background: transparent;
+  color: var(--game-accent-gold);
+  border: 2px solid var(--game-accent-gold);
 }
 
 .tutorial-btn-secondary:hover {
-  background: #e5e7eb;
+  background: rgba(201, 162, 39, 0.15);
 }

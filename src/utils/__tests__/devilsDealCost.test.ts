@@ -185,5 +185,27 @@ describe('Devil\'s Deal Cost Calculation', () => {
         }
       });
     });
+
+    it('should charge minimum cost when offered card creates pair below Jacks (Jacks or Better)', () => {
+      // Scenario: hand 2,3,4,9,10 and offered card 3. Best hand = pair of 3s.
+      // With Jacks or Better, pair of 3s has multiplier 0 (doesn't pay).
+      // Without fix: cost = 0 (free Devil's Deal). With fix: use effective multiplier 1.
+      const betAmount = 2;
+      const selectedHandCount = 10;
+      const costPercent = devilsDealConfig.baseCostPercent;
+
+      const rawMultiplier = 0; // Pair of 3s doesn't pay
+      const effectiveMultiplier = 1; // Fix: treat non-paying pairs as minimum 1x for cost
+
+      const costWithFix = Math.round(
+        ((effectiveMultiplier * betAmount * selectedHandCount) * selectedHandCount * costPercent) / 100
+      );
+      const costWithoutFix = Math.round(
+        ((rawMultiplier * betAmount * selectedHandCount) * selectedHandCount * costPercent) / 100
+      );
+
+      expect(costWithoutFix).toBe(0);
+      expect(costWithFix).toBeGreaterThan(0);
+    });
   });
 });

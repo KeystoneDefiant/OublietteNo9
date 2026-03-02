@@ -2,122 +2,123 @@ import { FailureStateType, GameState } from '../types';
 import { getFailureStateDescription } from '../utils/failureConditions';
 import { formatCredits } from '../utils/format';
 
-type AnimationSpeedMode = 1 | 2 | 3 | 'skip';
-
 interface GameHeaderProps {
   credits: number;
   round?: number;
-  efficiency?: string;
   failureState?: FailureStateType;
-  gameState?: GameState; // Optional full state for failure state description
-  /** When true, hide failure condition in header (e.g. PreDraw shows it in main panel) */
+  gameState?: GameState;
   hideFailureInHeader?: boolean;
-  musicEnabled?: boolean;
-  soundEffectsEnabled?: boolean;
-  onToggleMusic?: () => void;
-  onToggleSoundEffects?: () => void;
   onShowPayoutTable?: () => void;
-  animationSpeedMode?: AnimationSpeedMode;
-  onCycleAnimationSpeed?: () => void;
+  onShowSettings?: () => void;
 }
 
-export function GameHeader({ credits, round, efficiency, failureState, gameState, hideFailureInHeader, musicEnabled, soundEffectsEnabled, onToggleMusic, onToggleSoundEffects, onShowPayoutTable, animationSpeedMode = 1, onCycleAnimationSpeed }: GameHeaderProps) {
-  const failureDescription = failureState && gameState 
-    ? getFailureStateDescription(failureState, gameState)
-    : null;
+export function GameHeader({
+  credits,
+  round,
+  failureState,
+  gameState,
+  hideFailureInHeader,
+  onShowPayoutTable,
+  onShowSettings,
+}: GameHeaderProps) {
+  const failureDescription =
+    failureState && gameState ? getFailureStateDescription(failureState, gameState) : null;
 
   return (
-    <div className="flex justify-between items-center mb-6 flex-wrap gap-4">
-      <div className="flex items-center gap-4">
-        {/* Logo Area */}
-        <div className="bg-white rounded-lg shadow-lg p-3 h-16 w-24 flex items-center justify-center border-2 border-gray-300">
-          <span className="text-gray-400 text-xs">
-            <img src="images/logos/number9.png" alt="Logo" />
+    <div className="flex items-center justify-between gap-2 sm:gap-3 mb-4 sm:mb-6 flex-nowrap min-w-0">
+      {/* Left: Logo + Stats - single line, truncate if needed */}
+      <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+        <div
+          className="rounded-lg p-2 sm:p-2.5 h-10 sm:h-11 w-12 sm:w-14 flex items-center justify-center border border-[var(--game-border)] flex-shrink-0"
+          style={{
+            background:
+              'linear-gradient(145deg, var(--game-bg-card) 0%, var(--game-bg-panel) 100%)',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
+          }}
+        >
+          <img src="images/logos/number9.png" alt="Logo" className="w-full h-full object-contain" />
+        </div>
+
+        <div
+          className="rounded-lg px-2 sm:px-3 py-1.5 flex items-center gap-x-3 sm:gap-x-4 border border-[var(--game-border)] min-w-0"
+          style={{
+            background:
+              'linear-gradient(145deg, var(--game-bg-card) 0%, var(--game-bg-panel) 100%)',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
+          }}
+        >
+          <span
+            className="text-xs sm:text-sm font-bold whitespace-nowrap"
+            style={{ color: 'var(--game-text)' }}
+          >
+            <span style={{ color: 'var(--game-accent-gold)' }}>
+              Credits: {formatCredits(credits)}
+            </span>
           </span>
-        </div>
-        <div className="bg-white rounded-lg shadow-lg px-6 py-3 flex gap-4">
-          <p className="text-lg font-bold text-gray-800">
-            Credits: <span className="text-green-600">{formatCredits(credits)}</span>
-          </p>
           {round !== undefined && (
-            <p className="text-lg font-bold text-gray-800">
-              Round: <span className="text-blue-600">{round}</span>
-            </p>
-          )}
-          {efficiency !== undefined && (
-            <p className="text-lg font-bold text-gray-800" title="Average credits earned per round (total earnings ÷ rounds played)">
-              Efficiency: <span className="text-purple-600">{efficiency}</span>
-            </p>
+            <span
+              className="text-xs sm:text-sm font-bold whitespace-nowrap"
+              style={{ color: 'var(--game-text)' }}
+            >
+              <span style={{ color: 'var(--game-accent-gold)' }}>Round: {round}</span>
+            </span>
           )}
         </div>
+
         {!hideFailureInHeader && failureState && failureDescription && (
-          <div className="bg-red-50 border-2 border-red-400 rounded-lg shadow-lg px-6 py-3">
-            <p className="text-sm font-semibold text-red-800 mb-1">⚠️ Failure Condition</p>
-            <p className="text-sm font-medium text-red-700">{failureDescription}</p>
+          <div
+            className="rounded-lg px-2 sm:px-3 py-1.5 border border-[var(--game-accent-red)] flex items-center gap-1.5 min-w-0 flex-shrink"
+            style={{
+              background: 'rgba(139, 21, 32, 0.25)',
+              boxShadow: '0 0 12px rgba(185, 28, 40, 0.2)',
+            }}
+          >
+            <span
+              className="text-xs font-semibold whitespace-nowrap"
+              style={{ color: 'var(--game-accent-red-bright)' }}
+            >
+              ⚠️
+            </span>
+            <span
+              className="text-xs font-medium truncate"
+              style={{ color: 'var(--game-text)' }}
+              title={failureDescription}
+            >
+              {failureDescription}
+            </span>
           </div>
         )}
       </div>
-      
-      {/* Animation speed + Audio Controls */}
-      <div className="flex items-center gap-2">
-        {onCycleAnimationSpeed && (
-          <button
-            onClick={onCycleAnimationSpeed}
-            className={`font-bold py-2 px-4 rounded-lg transition-colors shadow-lg ${
-              animationSpeedMode === 1
-                ? 'bg-indigo-100 hover:bg-indigo-200 text-indigo-800'
-                : animationSpeedMode === 2
-                  ? 'bg-indigo-200 hover:bg-indigo-300 text-indigo-900'
-                  : animationSpeedMode === 3
-                    ? 'bg-indigo-400 hover:bg-indigo-500 text-white'
-                    : 'bg-red-400 hover:bg-red-500 text-white'
-            }`}
-            title={
-              animationSpeedMode === 1
-                ? 'Animation 1× (click for 2×)'
-                : animationSpeedMode === 2
-                  ? 'Animation 2× (click for 3×)'
-                  : animationSpeedMode === 3
-                    ? 'Animation 3× (click to skip)'
-                    : 'Skip animation (click for 1×)'
-            }
-          >
-            {animationSpeedMode === 1 ? '1×' : animationSpeedMode === 2 ? '2×' : animationSpeedMode === 3 ? '3×' : '⏭'}
-          </button>
-        )}
+
+      {/* Right: Payouts + Gear - always single line */}
+      <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
         {onShowPayoutTable && (
           <button
             onClick={onShowPayoutTable}
-            className="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-lg transition-colors shadow-lg"
+            className="font-bold py-1.5 px-2 sm:px-3 rounded-lg text-xs sm:text-sm transition-all border border-[var(--game-border)] hover:brightness-110"
+            style={{
+              background:
+                'linear-gradient(180deg, var(--game-accent-gold) 0%, var(--game-accent-gold-dim) 100%)',
+              color: 'var(--game-bg-dark)',
+            }}
             title="Show Payout Table"
           >
-            💰 Payouts
+            💰
           </button>
         )}
-        {onToggleMusic && (
+        {onShowSettings && (
           <button
-            onClick={onToggleMusic}
-            className={`font-bold py-2 px-4 rounded-lg transition-colors shadow-lg ${
-              musicEnabled 
-                ? 'bg-blue-600 hover:bg-blue-700 text-white' 
-                : 'bg-gray-400 hover:bg-gray-500 text-gray-700'
-            }`}
-            title={musicEnabled ? 'Disable Music' : 'Enable Music'}
+            onClick={onShowSettings}
+            className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg flex items-center justify-center text-lg transition-all border border-[var(--game-border)] hover:brightness-110"
+            style={{
+              background:
+                'linear-gradient(145deg, var(--game-bg-card) 0%, var(--game-bg-panel) 100%)',
+              color: 'var(--game-text)',
+            }}
+            title="Settings"
+            aria-label="Open settings"
           >
-            {musicEnabled ? '🎵' : '🔇'}
-          </button>
-        )}
-        {onToggleSoundEffects && (
-          <button
-            onClick={onToggleSoundEffects}
-            className={`font-bold py-2 px-4 rounded-lg transition-colors shadow-lg ${
-              soundEffectsEnabled 
-                ? 'bg-green-600 hover:bg-green-700 text-white' 
-                : 'bg-gray-400 hover:bg-gray-500 text-gray-700'
-            }`}
-            title={soundEffectsEnabled ? 'Disable Sound Effects' : 'Enable Sound Effects'}
-          >
-            {soundEffectsEnabled ? '🔊' : '🔇'}
+            ⚙️
           </button>
         )}
       </div>

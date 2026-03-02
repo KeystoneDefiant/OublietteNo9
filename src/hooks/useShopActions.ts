@@ -8,6 +8,8 @@ import {
   calculateDevilsDealChanceCost,
   calculateDevilsDealCostReductionCost,
   calculateExtraCardInHandCost,
+  applyShopCostMultiplier,
+  getParallelHandsBundleBaseCost,
 } from '../utils/config';
 import { useThemeAudio } from '../hooks/useThemeAudio';
 
@@ -87,7 +89,11 @@ export function useShopActions(
         return prev;
       }
 
-      const cost = calculateSingleDeadCardRemovalCost(prev.deckModifications.deadCardRemovalCount);
+      const creditsForPricing = prev.creditsAtShopOpen ?? prev.credits;
+      const cost = applyShopCostMultiplier(
+        calculateSingleDeadCardRemovalCost(prev.deckModifications.deadCardRemovalCount),
+        creditsForPricing
+      );
 
       if (prev.credits < cost) {
         return prev;
@@ -121,9 +127,13 @@ export function useShopActions(
       }
 
       const deadCardCount = prev.deckModifications.deadCards.length;
-      const cost = calculateAllDeadCardsRemovalCost(
-        prev.deckModifications.deadCardRemovalCount,
-        deadCardCount
+      const creditsForPricing = prev.creditsAtShopOpen ?? prev.credits;
+      const cost = applyShopCostMultiplier(
+        calculateAllDeadCardsRemovalCost(
+          prev.deckModifications.deadCardRemovalCount,
+          deadCardCount
+        ),
+        creditsForPricing
       );
 
       if (prev.credits < cost) {
@@ -149,7 +159,11 @@ export function useShopActions(
   const addWildCard = useCallback(() => {
     playSound('shopPurchase');
     setState((prev) => {
-      const cost = calculateWildCardCost(prev.wildCardCount);
+      const creditsForPricing = prev.creditsAtShopOpen ?? prev.credits;
+      const cost = applyShopCostMultiplier(
+        calculateWildCardCost(prev.wildCardCount),
+        creditsForPricing
+      );
       if (prev.credits < cost || prev.wildCardCount >= currentMode.shop.wildCard.maxCount) {
         return prev;
       }
@@ -177,7 +191,11 @@ export function useShopActions(
   const purchaseExtraDraw = useCallback(() => {
     playSound('shopPurchase');
     setState((prev) => {
-      const cost = currentMode.shop.extraDraw.cost;
+      const creditsForPricing = prev.creditsAtShopOpen ?? prev.credits;
+      const cost = applyShopCostMultiplier(
+        currentMode.shop.extraDraw.cost,
+        creditsForPricing
+      );
       if (prev.credits < cost || prev.extraDrawPurchased) {
         return prev;
       }
@@ -193,8 +211,9 @@ export function useShopActions(
     (bundleSize: number) => {
       playSound('shopPurchase');
       setState((prev) => {
-        const basePricePerHand = currentMode.shop.parallelHandsBundles.basePricePerHand;
-        const cost = bundleSize * basePricePerHand;
+        const creditsForPricing = prev.creditsAtShopOpen ?? prev.credits;
+        const baseCost = getParallelHandsBundleBaseCost(bundleSize, creditsForPricing);
+        const cost = applyShopCostMultiplier(baseCost, creditsForPricing);
         if (prev.credits < cost) {
           return prev;
         }
@@ -223,7 +242,11 @@ export function useShopActions(
         return prev;
       }
 
-      const cost = calculateDevilsDealChanceCost(prev.devilsDealChancePurchases);
+      const creditsForPricing = prev.creditsAtShopOpen ?? prev.credits;
+      const cost = applyShopCostMultiplier(
+        calculateDevilsDealChanceCost(prev.devilsDealChancePurchases),
+        creditsForPricing
+      );
       if (prev.credits < cost) {
         return prev;
       }
@@ -249,7 +272,11 @@ export function useShopActions(
         return prev;
       }
 
-      const cost = calculateDevilsDealCostReductionCost(prev.devilsDealCostReductionPurchases);
+      const creditsForPricing = prev.creditsAtShopOpen ?? prev.credits;
+      const cost = applyShopCostMultiplier(
+        calculateDevilsDealCostReductionCost(prev.devilsDealCostReductionPurchases),
+        creditsForPricing
+      );
       if (prev.credits < cost) {
         return prev;
       }
@@ -269,7 +296,11 @@ export function useShopActions(
       if (prev.extraCardsInHand >= maxPurchases) {
         return prev;
       }
-      const cost = calculateExtraCardInHandCost(prev.extraCardsInHand);
+      const creditsForPricing = prev.creditsAtShopOpen ?? prev.credits;
+      const cost = applyShopCostMultiplier(
+        calculateExtraCardInHandCost(prev.extraCardsInHand),
+        creditsForPricing
+      );
       if (prev.credits < cost) {
         return prev;
       }

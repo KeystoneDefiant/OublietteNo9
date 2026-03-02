@@ -49,13 +49,17 @@ export function DevilsDealCard({
           />
         </div>
         <div
-          className={`mt-4 text-center w-full ${
-            isHeld ? 'text-yellow-600 font-bold' : 'text-gray-700'
-          }`}
+          className="mt-4 text-center w-full"
+          style={{
+            color: isHeld ? 'var(--game-accent-gold)' : 'var(--game-text-muted)',
+            fontWeight: isHeld ? 700 : 400,
+          }}
           onClick={handleClick}
         >
-          <p className="text-lg font-semibold mb-2">{quip}</p>
-          <p className="text-sm text-gray-600">Cost: {formatCredits(cost)} credits</p>
+          <p className="text-base sm:text-lg font-semibold mb-2">{quip}</p>
+          <p className="text-sm" style={{ color: 'var(--game-text-dim)' }}>
+            Cost: {formatCredits(cost)} credits
+          </p>
         </div>
       </div>
     </div>

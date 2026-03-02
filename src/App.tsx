@@ -100,9 +100,10 @@ function App() {
     updateStreakCounter,
     toggleMusic,
     toggleSoundEffects,
-    cycleAnimationSpeed,
+    setAnimationSpeed,
     setMusicVolume,
     setSoundEffectsVolume,
+    setHandScoringMinVolumePercent,
   } = useGameState();
 
   // Show loading spinner while theme is loading
@@ -161,16 +162,8 @@ function App() {
               onSetSelectedHandCount={setSelectedHandCount}
               onDealHand={dealHand}
               onEndRun={endRun}
-              onCheatAddCredits={cheatAddCredits}
-              onCheatAddHands={cheatAddHands}
-              onCheatSetDevilsDeal={cheatSetDevilsDeal}
-              musicEnabled={state.audioSettings.musicEnabled}
-              soundEffectsEnabled={state.audioSettings.soundEffectsEnabled}
-              onToggleMusic={toggleMusic}
-              onToggleSoundEffects={toggleSoundEffects}
               onShowPayoutTable={() => setShowPayoutTable(true)}
-              animationSpeedMode={state.animationSpeedMode}
-              onCycleAnimationSpeed={cycleAnimationSpeed}
+              onShowSettings={() => setShowSettings(true)}
             />
           </div>
           </Suspense>
@@ -196,13 +189,8 @@ function App() {
               onToggleHold={toggleHold}
               onToggleDevilsDealHold={toggleDevilsDealHold}
               onDraw={drawParallelHands}
-              musicEnabled={state.audioSettings.musicEnabled}
-              soundEffectsEnabled={state.audioSettings.soundEffectsEnabled}
-              onToggleMusic={toggleMusic}
-              onToggleSoundEffects={toggleSoundEffects}
               onShowPayoutTable={() => setShowPayoutTable(true)}
-              animationSpeedMode={state.animationSpeedMode}
-              onCycleAnimationSpeed={cycleAnimationSpeed}
+              onShowSettings={() => setShowSettings(true)}
             />
           </div>
           </Suspense>
@@ -223,9 +211,7 @@ function App() {
               initialStreakCounter={state.streakCounter}
               audioSettings={state.audioSettings}
               animationSpeedMode={state.animationSpeedMode}
-              onToggleMusic={toggleMusic}
-              onToggleSoundEffects={toggleSoundEffects}
-              onCycleAnimationSpeed={cycleAnimationSpeed}
+              onShowSettings={() => setShowSettings(true)}
               onAnimationComplete={(finalStreakCount: number) => {
                 updateStreakCounter(finalStreakCount);
                 moveToNextScreen();
@@ -254,13 +240,8 @@ function App() {
                 gameState={state}
                 onReturnToPreDraw={returnToPreDraw}
                 showShopNextRound={state.showShopNextRound}
-                musicEnabled={state.audioSettings.musicEnabled}
-                soundEffectsEnabled={state.audioSettings.soundEffectsEnabled}
-                onToggleMusic={toggleMusic}
-                onToggleSoundEffects={toggleSoundEffects}
                 onShowPayoutTable={() => setShowPayoutTable(true)}
-                animationSpeedMode={state.animationSpeedMode}
-                onCycleAnimationSpeed={cycleAnimationSpeed}
+                onShowSettings={() => setShowSettings(true)}
               />
             </div>
           </Suspense>
@@ -273,9 +254,12 @@ function App() {
             <div key="shop" className="screen-enter">
               <Shop
               credits={state.credits}
+              creditsForPricing={state.creditsAtShopOpen ?? state.credits}
               handCount={state.handCount}
               betAmount={state.betAmount}
               selectedHandCount={state.selectedHandCount}
+              round={state.round}
+              prevRoundMinimumBet={state.prevRoundMinimumBet}
               deadCards={state.deckModifications.deadCards}
               deadCardRemovalCount={state.deckModifications.deadCardRemovalCount}
               wildCards={state.deckModifications.wildCards}
@@ -295,6 +279,7 @@ function App() {
               extraCardsInHand={state.extraCardsInHand}
               onPurchaseExtraCardInHand={purchaseExtraCardInHand}
               onClose={proceedFromResults}
+              onShowSettings={() => setShowSettings(true)}
             />
           </div>
           </Suspense>
@@ -326,31 +311,43 @@ function App() {
               audioSettings={state.audioSettings}
               onMusicVolumeChange={setMusicVolume}
               onSoundEffectsVolumeChange={setSoundEffectsVolume}
+              onHandScoringMinVolumeChange={setHandScoringMinVolumePercent}
+              onToggleMusic={toggleMusic}
+              onToggleSoundEffects={toggleSoundEffects}
+              animationSpeedMode={state.animationSpeedMode}
+              onAnimationSpeedChange={setAnimationSpeed}
+              onCheatAddCredits={cheatAddCredits}
+              onCheatAddHands={cheatAddHands}
+              onCheatSetDevilsDeal={cheatSetDevilsDeal}
             />
           </div>
         </Suspense>
       )}
 
       {showPayoutTable && (
-        <div 
-          className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"
+        <div
+          className="fixed inset-0 modal-overlay z-50 flex items-center justify-center p-4"
           onClick={() => setShowPayoutTable(false)}
         >
-          <div 
-            className="bg-white rounded-lg shadow-2xl max-w-md w-full max-h-[80vh] overflow-hidden"
+          <div
+            className="game-panel rounded-xl max-w-md w-full max-h-[85vh] overflow-hidden border border-[var(--game-border)]"
+            style={{ boxShadow: '0 8px 32px rgba(0,0,0,0.5)' }}
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex justify-between items-center p-4 border-b border-gray-200">
-              <h2 className="text-2xl font-bold text-gray-800">Payout Table</h2>
+            <div className="flex justify-between items-center p-4 sm:p-6 border-b border-[var(--game-border)]">
+              <h2 className="text-xl sm:text-2xl font-bold" style={{ color: 'var(--game-accent-gold)' }}>
+                Payout Table
+              </h2>
               <button
                 onClick={() => setShowPayoutTable(false)}
-                className="text-gray-500 hover:text-gray-700 text-2xl font-bold leading-none"
+                className="text-2xl font-bold leading-none hover:opacity-80"
+                style={{ color: 'var(--game-text-muted)' }}
                 aria-label="Close payout table"
               >
                 ×
               </button>
             </div>
-            <div className="p-4 overflow-y-auto max-h-[calc(80vh-80px)]">
+            <div className="p-4 sm:p-6 overflow-y-auto max-h-[calc(85vh-80px)]">
               <RewardTable rewardTable={state.rewardTable} wildCardCount={state.wildCardCount} />
             </div>
           </div>

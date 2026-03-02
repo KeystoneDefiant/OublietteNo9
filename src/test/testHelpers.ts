@@ -52,6 +52,8 @@ export function createTestGameState(overrides: Partial<GameState> = {}): GameSta
     gameOverReason: null,
     showShopNextRound: false,
     selectedShopOptions: [],
+    creditsAtShopOpen: null,
+    prevRoundMinimumBet: null,
     isEndlessMode: false,
     currentFailureState: null,
     winningHandsLastRound: 0,
@@ -68,6 +70,7 @@ export function createTestGameState(overrides: Partial<GameState> = {}): GameSta
       soundEffectsEnabled: true,
       musicVolume: 0.7,
       soundEffectsVolume: 1.0,
+      handScoringMinVolumePercent: 0,
     },
     animationSpeedMode: 1,
   };

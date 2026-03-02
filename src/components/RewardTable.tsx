@@ -72,7 +72,7 @@ export function RewardTable({
     wildCardCount > 0 ? RANK_ORDER : RANK_ORDER.filter((rank) => rank !== 'five-of-a-kind');
 
   return (
-    <div className="bg-white rounded-lg shadow-lg p-6 h-full overflow-y-auto relative">
+    <div className="game-panel rounded-xl p-4 sm:p-6 h-full overflow-y-auto relative">
       <div className="space-y-2">
         {visibleRanks.map((rank) => {
           const multiplier = rewardTable[rank] || 0;
@@ -86,19 +86,22 @@ export function RewardTable({
                 flex justify-between items-center p-3 rounded-lg transition-all relative
                 ${
                   isHighlighted
-                    ? 'bg-green-200 border-2 border-green-500 payout-highlight'
-                    : 'bg-gray-50 hover:bg-gray-100'
+                    ? 'border-2 payout-highlight'
+                    : 'game-panel-muted hover:opacity-90'
                 }
               `}
             >
-              <span className="font-medium text-gray-700">{RANK_LABELS[rank]}</span>
-              <span className="font-bold text-green-600">
+              <span className="font-medium" style={{ color: 'var(--game-text)' }}>{RANK_LABELS[rank]}</span>
+              <span className="font-bold" style={{ color: 'var(--game-accent-gold)' }}>
                 {multiplier > 0 ? `×${multiplier}` : '—'}
               </span>
               {isHighlighted && showPopup && payoutAmount && (
                 <div
-                  className="credit-popup absolute left-1/2 -top-12 transform -translate-x-1/2 bg-green-600 text-white px-4 py-2 rounded-lg font-bold shadow-lg whitespace-nowrap"
+                  className="credit-popup absolute left-1/2 -top-12 transform -translate-x-1/2 px-4 py-2 rounded-lg font-bold shadow-lg whitespace-nowrap"
                   style={{
+                    backgroundColor: 'var(--game-accent-gold-dim)',
+                    color: 'var(--game-text)',
+                    border: '2px solid var(--game-accent-gold)',
                     animation: 'creditFloat 1s ease-out forwards',
                   }}
                 >

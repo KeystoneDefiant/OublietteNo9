@@ -19,6 +19,7 @@ export const classicThemeConfig: ThemeConfig = {
     shopPurchase: 'shop-purchase.ogg',
     screenTransition: 'screen-transition.ogg',
     returnToPreDraw: 'return-to-predraw.ogg',
+    cheater: 'cheater.ogg',
     handScoring: {
       'royal-flush': 'royalflush.ogg',
       'straight-flush': 'straightflush.ogg',

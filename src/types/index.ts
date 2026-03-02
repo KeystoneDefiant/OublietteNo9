@@ -52,6 +52,10 @@ export type ShopOptionType =
   | 'parallel-hands-bundle-10'
   | 'parallel-hands-bundle-25'
   | 'parallel-hands-bundle-50'
+  | 'parallel-hands-bundle-100'
+  | 'parallel-hands-bundle-250'
+  | 'parallel-hands-bundle-500'
+  | 'parallel-hands-bundle-1000'
   | 'dead-card'
   | 'wild-card'
   | 'extra-draw'
@@ -85,6 +89,7 @@ export interface ThemeSoundConfig {
   shopPurchase?: string;
   screenTransition?: string;
   returnToPreDraw?: string;
+  cheater?: string;
   handScoring?: {
     [key: string]: string; // HandRank -> sound file path
   };
@@ -148,6 +153,10 @@ export interface GameState {
   gameOverReason: GameOverReason | null;
   showShopNextRound: boolean; // Flag to show shop after results
   selectedShopOptions: ShopOptionType[]; // Selected shop options for this round
+  /** Credits when shop was opened; used for pricing so prices don't change mid-visit. */
+  creditsAtShopOpen: number | null;
+  /** Minimum bet from the round we just finished; used to compute next-round cost when bet increases. */
+  prevRoundMinimumBet: number | null;
   isEndlessMode: boolean; // Whether endless mode is active
   currentFailureState: FailureStateType; // Current active failure condition
   winningHandsLastRound: number; // Number of winning hands from last round
@@ -164,7 +173,9 @@ export interface GameState {
     soundEffectsEnabled: boolean;
     musicVolume: number; // 0.0 to 1.0
     soundEffectsVolume: number; // 0.0 to 1.0
+    /** Min volume when scoring many same-rank hands in a row (0–10%). 0 = can go silent. */
+    handScoringMinVolumePercent: number;
   };
-  /** Animation speed: 1 | 2 | 3 | 'skip' - visible on all game screens */
-  animationSpeedMode: 1 | 2 | 3 | 'skip';
+  /** Animation speed: 0.5 to 7 (multiplier), or 'skip' to skip animations */
+  animationSpeedMode: number | 'skip';
 }

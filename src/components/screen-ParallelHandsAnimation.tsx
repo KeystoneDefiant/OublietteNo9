@@ -37,14 +37,10 @@ interface ParallelHandsAnimationProps {
   onAnimationComplete: (finalStreakCount: number) => void;
   /** Audio settings for sound effects */
   audioSettings?: { musicEnabled: boolean; soundEffectsEnabled: boolean };
-  /** Toggle music callback */
-  onToggleMusic?: () => void;
-  /** Toggle sound effects callback */
-  onToggleSoundEffects?: () => void;
-  /** Animation speed mode from game state (1 | 2 | 3 | 'skip') */
-  animationSpeedMode?: 1 | 2 | 3 | 'skip';
-  /** Cycle animation speed callback */
-  onCycleAnimationSpeed?: () => void;
+  /** Animation speed: 0.5 to 7, or 'skip' */
+  animationSpeedMode?: number | 'skip';
+  /** Open settings modal */
+  onShowSettings?: () => void;
 }
 
 /** Split hands across stacks: stack s gets indices where i % numStacks === s */
@@ -101,7 +97,7 @@ const RolodexHandCard = React.memo(function RolodexHandCard({
               );
             }
             const isRedSuit = card.suit === 'hearts' || card.suit === 'diamonds';
-            const suitColorClass = isRedSuit ? 'text-red-600' : 'text-black';
+            const suitColorClass = isRedSuit ? 'text-red-600' : 'text-white';
             return (
               <div
                 key={cardIndex}
@@ -221,9 +217,7 @@ export function ParallelHandsAnimation({
   onAnimationComplete,
   audioSettings,
   animationSpeedMode = 1,
-  onToggleMusic,
-  onToggleSoundEffects,
-  onCycleAnimationSpeed,
+  onShowSettings,
 }: ParallelHandsAnimationProps) {
   const { playSound } = useThemeAudio(audioSettings);
   const [totalRevealedCount, setTotalRevealedCount] = useState(0);
@@ -232,24 +226,34 @@ export function ParallelHandsAnimation({
   const [isFadingOut, setIsFadingOut] = useState(false);
   const [scoreByRank, setScoreByRank] = useState<Record<string, { count: number; credits: number }>>({});
 
-  const animCfg = gameConfig.animation as { parallelHandsRolodexMaxVisible?: number };
+  const animCfg = gameConfig.animation as {
+    parallelHandsRolodexMaxVisible?: number;
+    rolodexStacks?: { one?: { max?: number }; two?: { max?: number }; three?: { max?: number }; four?: { min?: number } };
+  };
   const maxVisible = animCfg.parallelHandsRolodexMaxVisible ?? 10;
 
-  // Stack count: 1 (≤100), 2 (101-200), 3 (201-300), 4 (301+)
+  // Stack count from config: 1 (≤one.max), 2 (≤two.max), 3 (≤three.max), 4 (≥four.min)
+  const stacks = animCfg.rolodexStacks ?? {
+    one: { max: 100 },
+    two: { max: 200 },
+    three: { max: 300 },
+    four: { min: 301 },
+  };
+  const n = parallelHands.length;
   const numStacks =
-    parallelHands.length <= 100 ? 1
-    : parallelHands.length <= 200 ? 2
-    : parallelHands.length <= 300 ? 3
+    n <= (stacks.one?.max ?? 100) ? 1
+    : n <= (stacks.two?.max ?? 200) ? 2
+    : n <= (stacks.three?.max ?? 300) ? 3
     : 4;
   const stackHands = useMemo(
     () => getStackHands(parallelHands, numStacks),
     [parallelHands, numStacks]
   );
 
-  // Fixed ms per hand by speed mode: 1x=200ms, 2x=125ms, 3x=65ms
-  const msPerHand =
-    animationSpeedMode === 2 ? 125 : animationSpeedMode === 3 ? 65 : 200;
-  const speedMultiplier = msPerHand / 200; // relative to 1x
+  // msPerHand: 200 for 1x, scales inversely with speed (0.5x=400ms, 5x=40ms)
+  const speedNum = typeof animationSpeedMode === 'number' ? animationSpeedMode : 1;
+  const msPerHand = Math.round(200 / speedNum);
+  const speedMultiplier = 1 / speedNum; // relative to 1x
 
   // Ensure card animates to flat before animate-out (scaled by speed)
   const ANIMATE_IN_MS = 100 * speedMultiplier;
@@ -378,51 +382,24 @@ export function ParallelHandsAnimation({
       data-animation-speed={animationSpeedMode}
       style={
         {
-          '--card-transition-ms': animationSpeedMode === 2 ? 60 : animationSpeedMode === 3 ? 30 : 100,
+          '--card-transition-ms': animationSpeedMode === 'skip' ? 30 : Math.max(15, Math.round(100 / speedNum)),
           '--fade-out-ms': FADE_DURATION_MS,
         } as React.CSSProperties
       }
     >
       <div className="animation-background" />
-      {/* Top bar: animation speed toggle, sound toggles, skip */}
+      {/* Top bar: gear (settings) + skip */}
       <div className="phase-b-top-bar">
         <div className="phase-b-top-controls">
-          {onCycleAnimationSpeed && (
-          <button
-            type="button"
-            onClick={onCycleAnimationSpeed}
-            className={`phase-b-speed-btn phase-b-speed-${animationSpeedMode}`}
-            title={
-              animationSpeedMode === 1
-                ? 'Animation 1x (click for 2x)'
-                : animationSpeedMode === 2
-                  ? 'Animation 2x (click for 3x)'
-                  : animationSpeedMode === 3
-                    ? 'Animation 3x (click to skip)'
-                    : 'Skip animation (click for 1x)'
-            }
-          >
-            {animationSpeedMode === 1 ? '1×' : animationSpeedMode === 2 ? '2×' : animationSpeedMode === 3 ? '3×' : '⏭'}
-          </button>
-          )}
-          {onToggleMusic && (
+          {onShowSettings && (
             <button
               type="button"
-              onClick={onToggleMusic}
-              className={`phase-b-audio-btn ${audioSettings?.musicEnabled ? 'active' : ''}`}
-              title={audioSettings?.musicEnabled ? 'Disable Music' : 'Enable Music'}
+              onClick={onShowSettings}
+              className="phase-b-speed-btn"
+              title="Settings"
+              aria-label="Open settings"
             >
-              {audioSettings?.musicEnabled ? '🎵' : '🔇'}
-            </button>
-          )}
-          {onToggleSoundEffects && (
-            <button
-              type="button"
-              onClick={onToggleSoundEffects}
-              className={`phase-b-audio-btn ${audioSettings?.soundEffectsEnabled ? 'active' : ''}`}
-              title={audioSettings?.soundEffectsEnabled ? 'Disable Sound Effects' : 'Enable Sound Effects'}
-            >
-              {audioSettings?.soundEffectsEnabled ? '🔊' : '🔇'}
+              ⚙️
             </button>
           )}
           <button
@@ -465,7 +442,7 @@ export function ParallelHandsAnimation({
           <div className="phase-b-total">{formatCreditsWithSuffix(totalCredits)}</div>
         </div>
       </div>
-      {/* Right: Rolodex stack(s) - grid layout, CSS handles placement and scaling */}
+      {/* Right: Rolodex stack(s) - grid layout driven by config.parallelHandsGrid thresholds */}
       <div className={`phase-b-rolodex phase-b-rolodex-stacks-${numStacks}`}>
         {animationSpeedMode !== 'skip' &&
           stackHands.map((hands, stackIndex) => (

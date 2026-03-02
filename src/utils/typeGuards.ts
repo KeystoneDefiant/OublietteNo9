@@ -9,6 +9,7 @@ export interface StoredAudioSettings {
   soundEffectsEnabled?: boolean;
   musicVolume?: number;
   soundEffectsVolume?: number;
+  handScoringMinVolumePercent?: number;
 }
 
 /**
@@ -32,6 +33,9 @@ export function isAudioSettings(value: unknown): value is StoredAudioSettings {
   if ('soundEffectsVolume' in obj && typeof obj.soundEffectsVolume !== 'number' && obj.soundEffectsVolume !== undefined) {
     return false;
   }
+  if ('handScoringMinVolumePercent' in obj && typeof obj.handScoringMinVolumePercent !== 'number' && obj.handScoringMinVolumePercent !== undefined) {
+    return false;
+  }
   return true;
 }
 
@@ -44,6 +48,37 @@ export function parseAudioSettings(json: string | null): StoredAudioSettings | n
   try {
     const parsed: unknown = JSON.parse(json);
     return isAudioSettings(parsed) ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Expected shape for animation settings from localStorage */
+export interface StoredAnimationSettings {
+  animationSpeedMode?: number | 'skip';
+}
+
+const ANIMATION_SPEED_MIN = 0.5;
+const ANIMATION_SPEED_MAX = 7;
+
+/**
+ * Safely parse and validate animation settings from JSON string.
+ * Returns null if invalid. Validates animationSpeedMode is 0.5-7 or 'skip'.
+ */
+export function parseAnimationSettings(json: string | null): StoredAnimationSettings | null {
+  if (!json) return null;
+  try {
+    const parsed: unknown = JSON.parse(json);
+    if (parsed === null || typeof parsed !== 'object') return null;
+    const obj = parsed as Record<string, unknown>;
+    const mode = obj.animationSpeedMode;
+    if (mode === 'skip') {
+      return { animationSpeedMode: 'skip' };
+    }
+    if (typeof mode === 'number' && mode >= ANIMATION_SPEED_MIN && mode <= ANIMATION_SPEED_MAX) {
+      return { animationSpeedMode: mode };
+    }
+    return null;
   } catch {
     return null;
   }

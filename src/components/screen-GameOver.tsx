@@ -1,14 +1,13 @@
 import { formatCredits } from '../utils/format';
 import { getGameOverDisplay } from '../utils/gameOverDisplay';
 import { GameOverReason, GameState } from '../types';
+import { GameButton } from './GameButton';
 
 interface GameOverProps {
   round: number;
   totalEarnings: number;
   credits: number;
-  /** Why the run ended; used for specific messaging */
   gameOverReason?: GameOverReason | null;
-  /** Full state for failure condition descriptions */
   gameState?: GameState | null;
   onReturnToMenu: () => void;
 }
@@ -29,65 +28,105 @@ export function GameOver({
   );
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-red-900 via-red-800 to-red-900 flex items-center justify-center p-6">
-      <div className="bg-white rounded-lg shadow-2xl p-8 max-w-2xl w-full">
+    <div
+      className="min-h-screen min-h-[100dvh] flex items-center justify-center p-4 sm:p-6"
+      style={{
+        background: 'linear-gradient(180deg, #050508 0%, #0d0a0c 50%, #120e10 100%)',
+      }}
+    >
+      <div
+        className="game-panel rounded-2xl p-6 sm:p-8 max-w-lg w-full border border-[var(--game-border)]"
+        style={{ boxShadow: '0 8px 32px rgba(0,0,0,0.5), 0 0 0 1px rgba(201, 162, 39, 0.08)' }}
+      >
         <div className="text-center mb-6">
-          <h1 className="text-4xl font-bold text-gray-800 mb-2">
+          <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-2" style={{ color: 'var(--game-accent-gold)' }}>
             {display.title}
           </h1>
-          <p className="text-gray-600">
+          <p className="text-sm sm:text-base" style={{ color: 'var(--game-text-muted)' }}>
             {display.subtitle}
           </p>
         </div>
-        
+
         <div className="space-y-4 mb-8">
-          <div className="bg-gradient-to-r from-gray-700 to-gray-600 rounded-lg p-4">
-            <p className="text-lg font-semibold text-white text-center">
+          <div
+            className="rounded-lg p-4 border border-[var(--game-accent-red)]"
+            style={{ background: 'rgba(139, 21, 32, 0.2)' }}
+          >
+            <p className="text-base sm:text-lg font-semibold text-center" style={{ color: 'var(--game-accent-gold)' }}>
               Run Summary
             </p>
           </div>
-          
-          <div className="grid grid-cols-2 gap-4">
-            <div className="bg-blue-50 rounded-lg p-4 border-2 border-blue-200">
-              <p className="text-sm text-gray-600 font-medium">Rounds Survived</p>
-              <p className="text-3xl font-bold text-blue-600">{round}</p>
+
+          <div className="grid grid-cols-2 gap-3 sm:gap-4">
+            <div className="game-panel-muted rounded-lg p-4 border border-[var(--game-border)]">
+              <p className="text-xs sm:text-sm font-medium" style={{ color: 'var(--game-text-muted)' }}>
+                Rounds Survived
+              </p>
+              <p className="text-2xl sm:text-3xl font-bold" style={{ color: 'var(--game-accent-gold)' }}>
+                {round}
+              </p>
             </div>
-            
-            <div className="bg-green-50 rounded-lg p-4 border-2 border-green-200">
-              <p className="text-sm text-gray-600 font-medium">Total Earnings</p>
-              <p className="text-3xl font-bold text-green-600">
+
+            <div className="game-panel-muted rounded-lg p-4 border border-[var(--game-border)]">
+              <p className="text-xs sm:text-sm font-medium" style={{ color: 'var(--game-text-muted)' }}>
+                Total Earnings
+              </p>
+              <p className="text-2xl sm:text-3xl font-bold" style={{ color: 'var(--game-accent-gold)' }}>
                 {formatCredits(totalEarnings)}
               </p>
             </div>
-            
-            <div className="bg-purple-50 rounded-lg p-4 border-2 border-purple-200">
-              <p className="text-sm text-gray-600 font-medium">Avg per Round</p>
-              <p className="text-3xl font-bold text-purple-600">{efficiency}</p>
-              <p className="text-xs text-gray-500 mt-1">credits/round</p>
+
+            <div className="game-panel-muted rounded-lg p-4 border border-[var(--game-border)]">
+              <p className="text-xs sm:text-sm font-medium" style={{ color: 'var(--game-text-muted)' }}>
+                Avg per Round
+              </p>
+              <p className="text-2xl sm:text-3xl font-bold" style={{ color: 'var(--game-accent-gold)' }}>
+                {efficiency}
+              </p>
+              <p className="text-xs mt-1" style={{ color: 'var(--game-text-dim)' }}>credits/round</p>
             </div>
-            
-            <div className={`${display.isVoluntaryEnd ? 'bg-amber-50 border-amber-200' : 'bg-red-50 border-red-200'} rounded-lg p-4 border-2`}>
-              <p className="text-sm text-gray-600 font-medium">Final Credits</p>
-              <p className={`text-3xl font-bold ${display.isVoluntaryEnd ? 'text-amber-600' : 'text-red-600'}`}>
+
+            <div
+              className={`rounded-lg p-4 border ${
+                display.isVoluntaryEnd ? 'border-[var(--game-accent-gold)]' : 'border-[var(--game-accent-red)]'
+              }`}
+              style={{
+                background: display.isVoluntaryEnd ? 'rgba(201, 162, 39, 0.15)' : 'rgba(139, 21, 32, 0.25)',
+              }}
+            >
+              <p className="text-xs sm:text-sm font-medium" style={{ color: 'var(--game-text-muted)' }}>
+                Final Credits
+              </p>
+              <p
+                className="text-2xl sm:text-3xl font-bold"
+                style={{
+                  color: display.isVoluntaryEnd ? 'var(--game-accent-gold)' : 'var(--game-accent-red-bright)',
+                }}
+              >
                 {formatCredits(credits)}
               </p>
               {display.isVoluntaryEnd && (
-                <p className="text-xs text-green-600 font-semibold mt-1">✓ Finished with credits!</p>
+                <p className="text-xs font-semibold mt-1" style={{ color: 'var(--game-accent-gold)' }}>
+                  ✓ Finished with credits!
+                </p>
               )}
             </div>
           </div>
 
           {display.isVoluntaryEnd && credits > 100 && (
-            <div className="bg-gradient-to-r from-yellow-50 to-amber-50 rounded-lg p-4 border-2 border-amber-300">
-              <p className="text-center text-amber-800 font-semibold">
+            <div
+              className="rounded-lg p-4 border border-[var(--game-accent-gold)]"
+              style={{ background: 'rgba(201, 162, 39, 0.15)', boxShadow: '0 0 16px var(--game-accent-gold-glow)' }}
+            >
+              <p className="text-center font-semibold text-sm sm:text-base" style={{ color: 'var(--game-accent-gold)' }}>
                 🏆 Excellent run! You finished with {formatCredits(credits)} credits!
               </p>
             </div>
           )}
 
           {display.tip && (
-            <div className="bg-gray-50 rounded-lg p-4 border-2 border-gray-300">
-              <p className="text-center text-gray-600 text-sm">
+            <div className="game-panel-muted rounded-lg p-4 border border-[var(--game-border)]">
+              <p className="text-center text-sm" style={{ color: 'var(--game-text-muted)' }}>
                 {display.tip}
               </p>
             </div>
@@ -95,13 +134,9 @@ export function GameOver({
         </div>
 
         <div className="text-center">
-          <button
-            onClick={onReturnToMenu}
-            className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-lg text-lg shadow-lg hover:shadow-xl transform hover:scale-105 transition-all"
-            aria-label="Return to main menu"
-          >
+          <GameButton onClick={onReturnToMenu} variant="primary" size="lg" aria-label="Return to main menu">
             Return to Menu
-          </button>
+          </GameButton>
         </div>
       </div>
     </div>

@@ -156,6 +156,7 @@ src/
 │   ├── Credits.tsx
 │   ├── ErrorBoundary.tsx        # ✨ NEW - Error boundary wrapper
 │   ├── ErrorScreen.tsx          # ✨ NEW - Error display UI
+│   ├── GameButton.tsx           # ✨ NEW - Reusable game-style buttons
 │   ├── GameHeader.tsx
 │   ├── LoadingSpinner.tsx       # ✨ NEW - Loading indicator
 │   ├── MainMenu.tsx
@@ -599,7 +600,24 @@ These are potential future enhancements, not critical issues:
 
 ---
 
-## Recent Improvements (February 2026)
+## Recent Improvements (March 2026)
+
+### UI Overhaul - Mobile-Friendly, Game-Like Styling (March 2, 2026) ✅
+   - **Problem**: UI felt like a generic web app; needed mobile-friendly layout, darker moodier colors, and game-like visual style
+   - **Solution**: Comprehensive UI overhaul across all screens
+   - **Changes**:
+     - **Global CSS**: Darker palette (#050508 base), crimson/gold accents, game-style button classes with gradients and shadows
+     - **GameButton component**: Reusable primary/secondary/ghost variants with press effects
+     - **MainMenu**: Full-screen layout, stacked logo + card, responsive padding
+     - **GameHeader**: Compact mobile layout, flex-wrap for stats, smaller icon buttons
+     - **PreDraw, GameTable, Results**: Full viewport usage, game-panel styling, responsive typography
+     - **Shop, GameOver**: Rounded panels, GameButton integration
+     - **Modals**: Dark overlay with backdrop blur, consistent game-panel styling
+     - **Theme background**: Darker purple/crimson gradient
+     - **index.html**: viewport-fit=cover, theme-color, PWA meta for mobile
+   - **Impact**: More immersive game feel, better mobile experience, consistent dark aesthetic
+   - **Files Modified**: global.css, MainMenu, GameHeader, PreDraw, GameTable, Results, Shop, GameOver, Settings, Credits, CheatsModal, Card, DevilsDealCard, RewardTable, LoadingSpinner, Tutorial.css, Classic/background.css, App.tsx, index.html
+   - **Files Created**: GameButton.tsx
 
 ### Theme Selection Disabled (February 26, 2026) ✅
    - **Problem**: Theme selection added complexity; user requested Classic-only experience

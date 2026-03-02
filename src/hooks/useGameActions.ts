@@ -88,20 +88,28 @@ export function useGameActions(
             // Calculate best possible hand's payout (per hand) using first 5 cards only
             const currentBetAmount = prev.betAmount;
             let bestMultiplier = 0;
+            let bestRank = 'high-card';
             for (let position = 0; position < 5; position++) {
               const testHand = [...handForDeal];
               testHand[position] = selectedCard;
               const result = PokerEvaluator.evaluate(testHand);
               const withRewards = PokerEvaluator.applyRewards(result, prev.rewardTable);
-              // Track the best multiplier found
               if (withRewards.multiplier > bestMultiplier) {
                 bestMultiplier = withRewards.multiplier;
+                bestRank = result.rank;
+              } else if (withRewards.multiplier === bestMultiplier && result.rank !== 'high-card') {
+                bestRank = result.rank;
               }
             }
 
+            // When card creates a pair or better that doesn't pay (Jacks or Better),
+            // use minimum multiplier 1 for cost so Devil's Deal isn't free
+            const effectiveMultiplier =
+              bestMultiplier > 0 ? bestMultiplier : bestRank !== 'high-card' ? 1 : 0;
+
             // Calculate best possible hand's payout per hand
             // Formula: multiplier * betAmount
-            const bestPossibleHandPayoutPerHand = bestMultiplier * currentBetAmount;
+            const bestPossibleHandPayoutPerHand = effectiveMultiplier * currentBetAmount;
 
             // Calculate cost: (best possible hand's payout * total number of hands) * percentage
             // Formula: (multiplier * betAmount * selectedHandCount) * (costPercent / 100)

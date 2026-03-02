@@ -12,6 +12,8 @@ describe('Shop Component', () => {
     handCount: 50,
     betAmount: mode.startingBet,
     selectedHandCount: mode.startingHandCount,
+    round: 1,
+    prevRoundMinimumBet: null,
     deadCards: [],
     deadCardRemovalCount: 0,
     wildCards: [],
@@ -403,7 +405,8 @@ describe('Shop Component', () => {
       
       const disabledButtons = container.querySelectorAll('button:disabled');
       disabledButtons.forEach(btn => {
-        expect(btn).toHaveClass(/opacity-50|cursor-not-allowed/);
+        // Dark theme: disabled buttons use shop-btn-disabled (has cursor-not-allowed) or similar
+        expect(btn.className).toMatch(/shop-btn-disabled|cursor-not-allowed|opacity-50/);
       });
     });
   });
@@ -424,7 +427,7 @@ describe('Shop Component', () => {
       };
       render(<Shop {...props} />);
 
-      const card = screen.getByRole('heading', { name: /Parallel Hands \+5/i }).closest('.border-2');
+      const card = screen.getByRole('heading', { name: /Parallel Hands \+5/i }).closest('.game-panel');
       const handsButton = within(card!).getByRole('button', { name: /50 Credits/i });
       fireEvent.click(handsButton);
 
@@ -444,7 +447,7 @@ describe('Shop Component', () => {
       };
       render(<Shop {...props} />);
 
-      const card = screen.getByRole('heading', { name: /Parallel Hands \+5/i }).closest('.border-2');
+      const card = screen.getByRole('heading', { name: /Parallel Hands \+5/i }).closest('.game-panel');
       fireEvent.click(within(card!).getByRole('button', { name: /50 Credits/i }));
       fireEvent.click(screen.getByRole('button', { name: /Complete Purchase Anyway/i }));
 
@@ -463,7 +466,8 @@ describe('Shop Component', () => {
       };
       render(<Shop {...props} />);
 
-      const card = screen.getByRole('heading', { name: /Parallel Hands \+5/i }).closest('.border-2');
+      const card = screen.getByRole('heading', { name: /Parallel Hands \+5/i }).closest('.game-panel');
+      expect(card).toBeTruthy();
       fireEvent.click(within(card!).getByRole('button', { name: /50 Credits/i }));
       fireEvent.click(screen.getByRole('button', { name: /Cancel/i }));
 

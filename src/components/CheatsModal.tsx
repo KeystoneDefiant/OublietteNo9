@@ -1,3 +1,5 @@
+import { GameButton } from './GameButton';
+
 interface CheatsModalProps {
   onClose: () => void;
   onAddCredits: (amount: number) => void;
@@ -7,72 +9,86 @@ interface CheatsModalProps {
 
 export function CheatsModal({ onClose, onAddCredits, onAddHands, onSetDevilsDealCheat }: CheatsModalProps) {
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg shadow-2xl p-8 max-w-md w-full mx-4 relative">
+    <div className="fixed inset-0 modal-overlay flex items-center justify-center z-50 p-4">
+      <div
+        className="game-panel rounded-xl p-6 sm:p-8 max-w-md w-full border border-[var(--game-border)] relative"
+        style={{ boxShadow: '0 8px 32px rgba(0,0,0,0.5)' }}
+      >
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 text-gray-500 hover:text-gray-700 text-2xl font-bold"
+          className="absolute top-4 right-4 text-2xl font-bold hover:opacity-80"
+          style={{ color: 'var(--game-text-muted)' }}
+          aria-label="Close cheats"
         >
           ×
         </button>
-        <h2 className="text-2xl font-bold mb-6 text-gray-800">Cheats</h2>
+        <h2 className="text-xl sm:text-2xl font-bold mb-6" style={{ color: 'var(--game-accent-gold)' }}>
+          Cheats
+        </h2>
 
         <div className="space-y-3 mb-6">
-          <button
+          <GameButton
             onClick={() => {
               onAddCredits(1000);
               onClose();
             }}
-            className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-lg transition-colors"
+            variant="secondary"
+            size="md"
+            fullWidth
           >
             Add 1000 Credits
-          </button>
-          <button
+          </GameButton>
+          <GameButton
             onClick={() => {
               onAddCredits(10000);
               onClose();
             }}
-            className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-lg transition-colors"
+            variant="secondary"
+            size="md"
+            fullWidth
           >
             Add 10000 Credits
-          </button>
-          <button
+          </GameButton>
+          <GameButton
             onClick={() => {
               onAddHands(10);
               onClose();
             }}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg transition-colors"
+            variant="secondary"
+            size="md"
+            fullWidth
           >
             Add 10 Parallel Hands
-          </button>
-          <button
+          </GameButton>
+          <GameButton
             onClick={() => {
               onAddHands(50);
               onClose();
             }}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg transition-colors"
+            variant="secondary"
+            size="md"
+            fullWidth
           >
             Add 50 Parallel Hands
-          </button>
+          </GameButton>
           {onSetDevilsDealCheat && (
-            <button
+            <GameButton
               onClick={() => {
                 onSetDevilsDealCheat();
                 onClose();
               }}
-              className="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-4 rounded-lg transition-colors"
+              variant="secondary"
+              size="md"
+              fullWidth
             >
               Devil's Deal: 100% Chance, 1% Cost
-            </button>
+            </GameButton>
           )}
         </div>
 
-        <button
-          onClick={onClose}
-          className="w-full bg-gray-400 hover:bg-gray-500 text-white font-bold py-3 px-4 rounded-lg transition-colors"
-        >
+        <GameButton onClick={onClose} variant="ghost" size="md" fullWidth>
           Close
-        </button>
+        </GameButton>
       </div>
     </div>
   );

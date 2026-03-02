@@ -3,6 +3,65 @@ export const gameConfig = {
   deadCardLimit: 10,
   shopOptionCount: 3, // Number of options to display in shop
 
+  /**
+   * Shop options: selection config for default and premium stores.
+   * Premium store activates when credits >= premium.creditsThreshold.
+   */
+  shopOptions: {
+    default: {
+      name: 'Shop',
+      shopOptionCount: 4,
+      shopSlots: [
+        { maxRarity: 1 },
+        { maxRarity: 2, rarityChances: [0.6, 0.4] },
+        { maxRarity: 3, rarityChances: [0.2, 0.5, 0.3] },
+        { maxRarity: 4, rarityChances: [0.1, 0.3, 0.5, 0.1] },
+      ],
+      shopItems: {
+        'dead-card': { rarity: 1 },
+        'remove-single-dead-card': { rarity: 2 },
+        'remove-all-dead-cards': { rarity: 3 },
+        'parallel-hands-bundle-5': { rarity: 1 },
+        'parallel-hands-bundle-10': { rarity: 1 },
+        'parallel-hands-bundle-25': { rarity: 2 },
+        'parallel-hands-bundle-50': { rarity: 3 },
+        'wild-card': { rarity: 3 },
+        'extra-draw': { rarity: 3 },
+        'extra-card-in-hand': { rarity: 3 },
+        'devils-deal-chance': { rarity: 2 },
+        'devils-deal-cost-reduction': { rarity: 2 },
+      },
+    },
+    premium: {
+      name: 'VIP Shop',
+      creditsThreshold: 450_000,
+      /** Flat percentage added to all item costs (e.g. 25 = +25%) */
+      costPercentIncrease: 500,
+      /** Base price per hand for large bundles (100+). Uses default shop price for smaller bundles. */
+      basePricePerHandLargeBundles: 70,
+      shopOptionCount: 2,
+      shopSlots: [
+        { maxRarity: 3, rarityChances: [0.2, 0.5, 0.3] },
+        { maxRarity: 3, rarityChances: [0.0, 0.4, 0.6] },
+      ],
+      shopItems: {
+        'remove-single-dead-card': { rarity: 1 },
+        'remove-all-dead-cards': { rarity: 1 },
+        'parallel-hands-bundle-25': { rarity: 1 },
+        'parallel-hands-bundle-50': { rarity: 1 },
+        'parallel-hands-bundle-100': { rarity: 2 },
+        'parallel-hands-bundle-250': { rarity: 2 },
+        'parallel-hands-bundle-500': { rarity: 3 },
+        'parallel-hands-bundle-1000': { rarity: 3 },
+        'wild-card': { rarity: 2 },
+        'extra-draw': { rarity: 2 },
+        'extra-card-in-hand': { rarity: 2 },
+        'devils-deal-chance': { rarity: 1 },
+        'devils-deal-cost-reduction': { rarity: 1 },
+      },
+    },
+  },
+
   // Animation timing configuration (in milliseconds)
   animation: {
     cardFlip: 500, // Card flip animation delay
@@ -10,6 +69,13 @@ export const gameConfig = {
     parallelHandsRevealMsPerHand: 1000,
     /** Phase B: Rolodex max visible hands in stack (pseudo-3D depth) */
     parallelHandsRolodexMaxVisible: 10,
+    /** Rolodex stack count by hand count: 1 stack ≤100, 2 stacks ≤200, 3 stacks ≤300, 4 stacks 301+ */
+    rolodexStacks: {
+      one: { max: 100 },
+      two: { max: 200 },
+      three: { max: 300 },
+      four: { min: 301 },
+    },
   },
 
   // Parallel hands grid thresholds (switch to 2 columns early to avoid stall at 20–21)
@@ -101,7 +167,6 @@ export const gameConfig = {
     maxDraws: 1,
     minimumBetIncreasePercent: 95,
     minimumBetIncreaseInterval: 3,
-    shopOptionCount: 4,
     shopFrequency: 2,
     minimumPairRank: 11,
     devilsDeal: {
@@ -148,27 +213,6 @@ export const gameConfig = {
       'two-pair': 2,
       'one-pair': 1,
       'high-card': 0,
-    },
-    // Rarity 1 = common, 4 = rare. Slots define max rarity per slot and chance per rarity.
-    shopSlots: [
-      { maxRarity: 1 }, // Slot 1: common only (100%)
-      { maxRarity: 2, rarityChances: [0.6, 0.4] }, // Slot 2: 60% common, 40% uncommon
-      { maxRarity: 3, rarityChances: [0.2, 0.5, 0.3] }, // Slot 3: 20% common, 50% uncommon, 30% rare
-      { maxRarity: 4, rarityChances: [0.1, 0.5, 0.3, 0.1] }, // Slot 3: 20% common, 50% uncommon, 30% rare
-    ],
-    shopItems: {
-      'dead-card': { rarity: 1 },
-      'remove-single-dead-card': { rarity: 2 },
-      'remove-all-dead-cards': { rarity: 3 },
-      'parallel-hands-bundle-5': { rarity: 1 },
-      'parallel-hands-bundle-10': { rarity: 1 },
-      'parallel-hands-bundle-25': { rarity: 2 },
-      'parallel-hands-bundle-50': { rarity: 3 },
-      'wild-card': { rarity: 3 },
-      'extra-draw': { rarity: 3 },
-      'extra-card-in-hand': { rarity: 3 },
-      'devils-deal-chance': { rarity: 2 },
-      'devils-deal-cost-reduction': { rarity: 2 },
     },
   },
 
@@ -236,4 +280,39 @@ export function getGameMode(modeId: keyof typeof gameConfig.gameModes): GameMode
     gameConfig.defaultGameMode as unknown as Record<string, unknown>,
     overrides as Record<string, unknown>
   ) as GameModeConfig;
+}
+
+/** Shop mode shape for selection (slots, items, count). */
+export type ShopSelectionMode = {
+  shopSlots: ReadonlyArray<{ maxRarity: number; rarityChances?: ReadonlyArray<number> }>;
+  shopItems: Record<string, { rarity: number }>;
+  shopOptionCount?: number;
+};
+
+/**
+ * Returns the display name for the active shop based on credits.
+ */
+export function getShopDisplayName(credits: number): string {
+  const { default: defaultOpts, premium: premiumOpts } = gameConfig.shopOptions;
+  return credits >= premiumOpts.creditsThreshold ? premiumOpts.name : defaultOpts.name;
+}
+
+/**
+ * Returns the shop mode to use for option selection based on credits.
+ * Uses premium store when credits >= shopOptions.premium.creditsThreshold.
+ */
+export function getShopModeForCredits(credits: number): ShopSelectionMode {
+  const { default: defaultOpts, premium: premiumOpts } = gameConfig.shopOptions;
+  if (credits >= premiumOpts.creditsThreshold) {
+    return {
+      shopSlots: premiumOpts.shopSlots,
+      shopItems: premiumOpts.shopItems as Record<string, { rarity: number }>,
+      shopOptionCount: premiumOpts.shopOptionCount,
+    };
+  }
+  return {
+    shopSlots: defaultOpts.shopSlots,
+    shopItems: defaultOpts.shopItems as Record<string, { rarity: number }>,
+    shopOptionCount: defaultOpts.shopOptionCount,
+  };
 }

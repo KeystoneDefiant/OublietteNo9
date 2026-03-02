@@ -25,8 +25,8 @@ const SUIT_SYMBOLS: { [key: string]: string } = {
 const SUIT_COLORS: { [key: string]: string } = {
   hearts: 'text-red-600',
   diamonds: 'text-red-600',
-  clubs: 'text-black',
-  spades: 'text-black',
+  clubs: 'text-slate-300',
+  spades: 'text-slate-300',
 };
 
 const SIZE_CLASSES = {
@@ -71,7 +71,7 @@ export function Card({
         relative
         cursor-pointer transition-all
         ${onClick ? 'hover:scale-105 hover:shadow-lg' : ''}
-        ${dataFocused ? 'ring-2 ring-blue-500 ring-offset-2 outline-none' : ''}
+        ${dataFocused ? '' : ''}
       `}
       onClick={onClick}
       onKeyDown={
@@ -88,14 +88,26 @@ export function Card({
     >
       {/* Card Front */}
       <div
-        className={`
+          className={`
           absolute inset-0
-          border-2 rounded-lg shadow-md
+          border rounded-lg shadow-md
           flex flex-col items-center justify-center
           transition-transform duration-500
-          ${isHeld ? 'border-yellow-500 bg-yellow-50 ring-2 ring-yellow-300' : 'border-gray-300 bg-white'}
+          ${isHeld ? 'ring-2 ring-[var(--game-accent-gold)]' : ''}
         `}
+        data-held={isHeld}
         style={{
+          ...(isHeld
+            ? {
+                borderColor: 'var(--game-accent-gold)',
+                backgroundColor: 'var(--game-card-background)',
+                boxShadow: '0 0 12px var(--game-accent-gold-glow)',
+                '--tw-ring-color': 'var(--game-accent-gold)',
+              }
+            : {
+                borderColor: 'var(--game-border)',
+                backgroundColor: 'var(--game-card-background)',
+              }),
           transform: isFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)',
           transformStyle: 'preserve-3d',
           zIndex: isFlipped ? 1 : 2,
@@ -119,18 +131,19 @@ export function Card({
       <div
         className={`
           absolute inset-0
-          border-2 rounded-lg shadow-md
+          border rounded-lg shadow-md
           flex items-center justify-center
           transition-transform duration-500
-          border-purple-600 bg-gradient-to-br from-purple-600 to-purple-800
+          border-[var(--game-border)]
         `}
         style={{
+          background: 'linear-gradient(145deg, var(--game-bg-elevated) 0%, var(--game-bg-panel) 100%)',
           transform: isFlipped ? 'rotateY(0deg)' : 'rotateY(180deg)',
           transformStyle: 'preserve-3d',
           zIndex: isFlipped ? 2 : 1,
         }}
       >
-        <div className="text-white text-xs font-bold">POKER</div>
+        <div className="text-xs font-bold" style={{ color: 'var(--game-text-muted)' }}>POKER</div>
       </div>
     </div>
   );
