@@ -570,11 +570,22 @@ describe('getEndlessModeConditions', () => {
   it('should include minimum win percent with correct value for current round', () => {
     const state = createTestGameState({
       isEndlessMode: true,
-      round: 31, // 1 round into endless (startRound 30)
+      round: 30, // First endless round (startRound 30)
     });
     const result = getEndlessModeConditions(state);
     const winPctCondition = result.find((c) => c.includes('% of hands'));
     expect(winPctCondition).toBeDefined();
     expect(winPctCondition).toContain('25'); // startPercent for first endless round
+  });
+
+  it('should show 30% for round 31 (second endless round)', () => {
+    const state = createTestGameState({
+      isEndlessMode: true,
+      round: 31, // 1 round into endless (startRound 30)
+    });
+    const result = getEndlessModeConditions(state);
+    const winPctCondition = result.find((c) => c.includes('% of hands'));
+    expect(winPctCondition).toBeDefined();
+    expect(winPctCondition).toContain('30'); // startPercent + increment for second endless round
   });
 });
