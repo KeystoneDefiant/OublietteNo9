@@ -374,7 +374,7 @@ export function ParallelHandsAnimation({
     if (!isFadingOut) return;
     const doneTimer = setTimeout(() => onAnimationComplete(currentStreakCounter), FADE_DURATION_MS);
     return () => clearTimeout(doneTimer);
-  }, [isFadingOut, currentStreakCounter, onAnimationComplete]);
+  }, [isFadingOut, currentStreakCounter, onAnimationComplete, FADE_DURATION_MS]);
 
   return (
     <div

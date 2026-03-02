@@ -108,7 +108,7 @@ describe('Results Component', () => {
         ...mockProps,
         parallelHands: [highCardHand, highCardHand, highCardHand],
       };
-      const { container } = render(<Results {...lossProps} />);
+      render(<Results {...lossProps} />);
       // Dark theme uses inline style for negative profit color
       const profitSpan = screen.getByText(/-30/).closest('span');
       expect(profitSpan).toBeTruthy();
