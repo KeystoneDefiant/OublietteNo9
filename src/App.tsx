@@ -5,6 +5,7 @@ import { ErrorBoundary } from './components/ErrorBoundary';
 import { LoadingSpinner } from './components/LoadingSpinner';
 import { RewardTable } from './components/RewardTable';
 import { initializeTheme, loadThemeConfig } from './utils/themeManager';
+import { LOGO_URL } from './config/assets';
 import { ThemeConfig } from './types/index';
 
 // Code splitting: Lazy load screen components for better performance
@@ -27,10 +28,10 @@ function App() {
   const [themeConfig, setThemeConfig] = useState<ThemeConfig | null>(null);
   const [isThemeLoading, setIsThemeLoading] = useState(true);
 
-  // Preload logo so it's cached before any screen needs it
+  // Preload logo so it's cached before any screen needs it (HTML preload also runs; this backs up for SPA nav)
   useEffect(() => {
     const img = new Image();
-    img.src = `${import.meta.env.BASE_URL}images/logos/number9.png`;
+    img.src = LOGO_URL;
   }, []);
 
   useEffect(() => {

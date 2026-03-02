@@ -1,4 +1,5 @@
 import { GameButton } from './GameButton';
+import { LOGO_URL } from '../config/assets';
 
 interface MainMenuProps {
   onStartRun: () => void;
@@ -19,7 +20,7 @@ export function MainMenu({ onStartRun, onTutorial, onCredits, onSettings }: Main
       {/* Logo - top */}
       <div className="flex-shrink-0 mb-6 sm:mb-8 md:mb-10">
         <img
-          src="images/logos/number9.png"
+          src={LOGO_URL}
           alt="Oubliette Number 9"
           className="w-32 h-auto sm:w-40 md:w-48 max-w-[90vw]"
         />

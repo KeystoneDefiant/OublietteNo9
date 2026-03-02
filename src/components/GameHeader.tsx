@@ -1,4 +1,5 @@
 import { FailureStateType, GameState } from '../types';
+import { LOGO_URL } from '../config/assets';
 import { getFailureStateDescription } from '../utils/failureConditions';
 import { formatCredits } from '../utils/format';
 
@@ -36,7 +37,7 @@ export function GameHeader({
             boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
           }}
         >
-          <img src="images/logos/number9.png" alt="Logo" className="w-full h-full object-contain" />
+          <img src={LOGO_URL} alt="Logo" className="w-full h-full object-contain" />
         </div>
 
         <div
