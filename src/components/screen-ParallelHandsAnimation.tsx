@@ -14,300 +14,403 @@ import './screen-ParallelHandsAnimation.css';
 import { useThemeAudio } from '../hooks/useThemeAudio';
 import { formatCreditsWithSuffix } from '../utils/format';
 
-/**
- * ParallelHandsAnimation screen component props
- *
- * Phase B: Left panel (held cards + score list), right rolodex, bottom multiplier bar.
- */
 interface ParallelHandsAnimationProps {
-  /** Array of all parallel hands to animate */
   parallelHands: Hand[];
-  /** Base hand cards (for held cards display) */
   playerHand: CardType[];
-  /** Indices of held cards in playerHand */
   heldIndices: number[];
-  /** Reward multipliers for calculating payouts */
   rewardTable: RewardTable;
-  /** Number of hands selected (for reference) */
   selectedHandCount: number;
-  /** Bet amount per hand for payout calculation */
   betAmount: number;
-  /** Initial streak counter value */
   initialStreakCounter: number;
-  /** Callback when animation completes with round streak summary details */
   onAnimationComplete: (summary: {
     finalStreakCount: number;
     highestCombo: number;
     highestMultiplier: number;
   }) => void;
-  /** Audio settings for sound effects */
   audioSettings?: { musicEnabled: boolean; soundEffectsEnabled: boolean };
-  /** Animation speed: 0.5 to 7, or 'skip' */
   animationSpeedMode?: number | 'skip';
-  /** Open settings modal */
   onShowSettings?: () => void;
 }
 
-type RolodexStackConfig = {
-  one?: { max?: number };
-  two?: { max?: number };
-  three?: { max?: number };
-  four?: { min?: number };
-};
+type RevealPhase = 'enter' | 'cards' | 'result' | 'exit';
+type RevealMode = 'individual' | 'sampled';
 
-type RolodexAnimationConfig = {
-  parallelHandsRevealMsPerHand?: number;
-  parallelHandsRevealTiming?: {
-    minMsPerHand?: number;
+type ParallelHandsWaveConfig = {
+  parallelHandsAbstractWave?: {
+    individualMaxHands?: number;
+    mediumMaxHands?: number;
+    mediumFeaturedWinners?: number;
+    highFeaturedWinners?: number;
+    noWinnerFallbackFeatures?: number;
+    maxMsPerBeat?: number;
+    minMsPerBeat?: number;
     handCountAcceleration?: number;
-    stackDelayFactor?: number;
-    dealInRatio?: number;
-    lingerRatio?: number;
-    rotateOutRatio?: number;
+    entryRatio?: number;
+    cardsRatio?: number;
+    resultRatio?: number;
+    exitRatio?: number;
+    gapRatio?: number;
     revealCompletePauseMs?: number;
     fadeOutMs?: number;
+    ambientFlowIndicators?: number;
+    ambientGhostCards?: number;
+    ambientOrbCount?: number;
+    winnerCardsMultiplier?: number;
+    winnerResultMultiplier?: number;
+    winnerExitMultiplier?: number;
   };
-  parallelHandsRolodexMaxVisible?: number;
-  rolodexStacks?: RolodexStackConfig;
 };
 
-type RolodexTimingProfile = {
-  numStacks: number;
-  maxVisible: number;
-  msPerHand: number;
-  animateInMs: number;
-  rotateFadeMs: number;
-  displayBeforeOut: number;
+type WaveTimingProfile = {
+  msPerBeat: number;
+  entryMs: number;
+  cardsMs: number;
+  resultMs: number;
+  exitMs: number;
+  gapMs: number;
   revealCompletePauseMs: number;
   fadeDurationMs: number;
-  startDelays: number[];
+  ambientFlowIndicators: number;
+  ambientGhostCards: number;
+  ambientOrbCount: number;
+  winnerCardsMultiplier: number;
+  winnerResultMultiplier: number;
+  winnerExitMultiplier: number;
 };
 
-const DEFAULT_ROLODEX_TIMING = {
-  maxMsPerHand: 420,
-  minMsPerHand: 70,
-  handCountAcceleration: 58,
-  stackDelayFactor: 0.68,
-  dealInRatio: 0.34,
-  lingerRatio: 0.22,
-  rotateOutRatio: 0.44,
+type EvaluatedRevealHand = {
+  globalIndex: number;
+  hand: Hand;
+  rank: string;
+  rankLabel: string;
+  handScored: boolean;
+  creditsWon: number;
+  endingStreakCount: number;
+};
+
+type RevealAggregate = {
+  count: number;
+  credits: number;
+};
+
+type RevealEvent = {
+  kind: 'implicit' | 'featured';
+  hands: EvaluatedRevealHand[];
+  featuredHand: EvaluatedRevealHand | null;
+  batchResolvedCount: number;
+  batchCredits: number;
+  batchRankTotals: Record<string, RevealAggregate>;
+  endingStreakCount: number;
+  lastHandScored: boolean;
+  cumulativeResolvedCount: number;
+};
+
+type ExitingBeat = {
+  event: RevealEvent;
+  phase: 'result' | 'exit';
+  exitMs: number;
+};
+
+const DEFAULT_ABSTRACT_WAVE = {
+  individualMaxHands: 24,
+  mediumMaxHands: 300,
+  mediumFeaturedWinners: 10,
+  highFeaturedWinners: 14,
+  noWinnerFallbackFeatures: 2,
+  maxMsPerBeat: 430,
+  minMsPerBeat: 90,
+  handCountAcceleration: 56,
+  entryRatio: 0.22,
+  cardsRatio: 0.4,
+  resultRatio: 0.24,
+  exitRatio: 0.14,
+  gapRatio: 0.1,
   revealCompletePauseMs: 700,
   fadeOutMs: 420,
+  ambientFlowIndicators: 11,
+  ambientGhostCards: 5,
+  ambientOrbCount: 4,
+  winnerCardsMultiplier: 1.35,
+  winnerResultMultiplier: 1.75,
+  winnerExitMultiplier: 1.25,
 } as const;
+
+const PREMIUM_RANKS = new Set([
+  'straight',
+  'flush',
+  'full-house',
+  'four-of-a-kind',
+  'straight-flush',
+  'royal-flush',
+]);
 
 function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
 }
 
-function getRolodexStackCount(handCount: number, stacks: RolodexStackConfig): number {
-  if (handCount <= (stacks.one?.max ?? 18)) return 1;
-  if (handCount <= (stacks.two?.max ?? 60)) return 2;
-  if (handCount <= (stacks.three?.max ?? 150)) return 3;
-  return 4;
+function isPremiumRank(rank: string): boolean {
+  return PREMIUM_RANKS.has(rank);
 }
 
-function getRolodexTimingProfile(
+function getWaveTimingProfile(
   handCount: number,
   speedNum: number,
-  config: RolodexAnimationConfig
-): RolodexTimingProfile {
+  config: ParallelHandsWaveConfig
+): WaveTimingProfile {
   const timingConfig = {
-    ...DEFAULT_ROLODEX_TIMING,
-    maxMsPerHand: config.parallelHandsRevealMsPerHand ?? DEFAULT_ROLODEX_TIMING.maxMsPerHand,
-    ...(config.parallelHandsRevealTiming ?? {}),
+    ...DEFAULT_ABSTRACT_WAVE,
+    ...(config.parallelHandsAbstractWave ?? {}),
   };
-  const numStacks = getRolodexStackCount(handCount, config.rolodexStacks ?? {});
-  const maxVisible = config.parallelHandsRolodexMaxVisible ?? 10;
-  const countAwareMsPerHand = clamp(
+  const countAwareMsPerBeat = clamp(
     Math.round(
-      timingConfig.maxMsPerHand -
+      timingConfig.maxMsPerBeat -
         Math.log2(Math.max(2, handCount + 1)) * timingConfig.handCountAcceleration
     ),
-    timingConfig.minMsPerHand,
-    timingConfig.maxMsPerHand
+    timingConfig.minMsPerBeat,
+    timingConfig.maxMsPerBeat
   );
   const safeSpeed = Math.max(0.25, speedNum);
-  const msPerHand = Math.max(timingConfig.minMsPerHand, Math.round(countAwareMsPerHand / safeSpeed));
-  const animateInMs = Math.max(60, Math.round(msPerHand * timingConfig.dealInRatio));
-  const lingerMs = Math.max(40, Math.round(msPerHand * timingConfig.lingerRatio));
-  const rotateFadeMs = Math.max(30, Math.round(msPerHand * timingConfig.rotateOutRatio));
-  const displayBeforeOut = Math.max(animateInMs + lingerMs, Math.round(msPerHand - rotateFadeMs));
-  const revealCompletePauseMs = Math.max(220, Math.round(timingConfig.revealCompletePauseMs / safeSpeed));
-  const fadeDurationMs = Math.max(180, Math.round(timingConfig.fadeOutMs / safeSpeed));
-  const stackDelayStep = Math.max(30, Math.round(msPerHand * timingConfig.stackDelayFactor));
+  const msPerBeat = Math.max(timingConfig.minMsPerBeat, Math.round(countAwareMsPerBeat / safeSpeed));
 
   return {
-    numStacks,
-    maxVisible,
-    msPerHand,
-    animateInMs,
-    rotateFadeMs,
-    displayBeforeOut,
-    revealCompletePauseMs,
-    fadeDurationMs,
-    startDelays: Array.from({ length: numStacks }, (_, index) => index * stackDelayStep),
+    msPerBeat,
+    entryMs: Math.max(36, Math.round(msPerBeat * timingConfig.entryRatio)),
+    cardsMs: Math.max(70, Math.round(msPerBeat * timingConfig.cardsRatio)),
+    resultMs: Math.max(70, Math.round(msPerBeat * timingConfig.resultRatio)),
+    exitMs: Math.max(36, Math.round(msPerBeat * timingConfig.exitRatio)),
+    gapMs: Math.max(18, Math.round(msPerBeat * timingConfig.gapRatio)),
+    revealCompletePauseMs: Math.max(
+      220,
+      Math.round(timingConfig.revealCompletePauseMs / safeSpeed)
+    ),
+    fadeDurationMs: Math.max(180, Math.round(timingConfig.fadeOutMs / safeSpeed)),
+    ambientFlowIndicators: timingConfig.ambientFlowIndicators,
+    ambientGhostCards: timingConfig.ambientGhostCards,
+    ambientOrbCount: timingConfig.ambientOrbCount,
+    winnerCardsMultiplier: timingConfig.winnerCardsMultiplier,
+    winnerResultMultiplier: timingConfig.winnerResultMultiplier,
+    winnerExitMultiplier: timingConfig.winnerExitMultiplier,
   };
 }
 
-/** Split hands across stacks: stack s gets indices where i % numStacks === s */
-function getStackHands(
-  parallelHands: Hand[],
-  numStacks: number
-): { hand: Hand; globalIndex: number }[][] {
-  const stacks: { hand: Hand; globalIndex: number }[][] = Array.from({ length: numStacks }, () => []);
-  parallelHands.forEach((hand, i) => {
-    stacks[i % numStacks].push({ hand, globalIndex: i });
-  });
-  return stacks;
+function buildEvenlySpacedIndices(total: number, desiredCount: number): number[] {
+  if (total <= 0 || desiredCount <= 0) return [];
+  if (desiredCount >= total) {
+    return Array.from({ length: total }, (_, index) => index);
+  }
+
+  const indices = new Set<number>([0, total - 1]);
+  for (let i = 0; i < desiredCount; i += 1) {
+    indices.add(Math.round((i * (total - 1)) / Math.max(1, desiredCount - 1)));
+  }
+
+  return Array.from(indices).sort((a, b) => a - b);
 }
 
-/** Phase B: Compact hand card for rolodex */
-const RolodexHandCard = React.memo(function RolodexHandCard({
-  hand,
-  rewardTable,
-  betAmount,
-  streakMultiplier,
-  isFront,
-  isAnimatingOut,
+function buildRevealEvent(
+  kind: RevealEvent['kind'],
+  hands: EvaluatedRevealHand[],
+  featuredHand: EvaluatedRevealHand | null
+): RevealEvent {
+  const batchRankTotals = hands.reduce<Record<string, RevealAggregate>>((accumulator, hand) => {
+    const current = accumulator[hand.rank] ?? { count: 0, credits: 0 };
+    accumulator[hand.rank] = {
+      count: current.count + 1,
+      credits: current.credits + hand.creditsWon,
+    };
+    return accumulator;
+  }, {});
+  const lastHand = hands[hands.length - 1];
+
+  return {
+    kind,
+    hands,
+    featuredHand,
+    batchResolvedCount: hands.length,
+    batchCredits: hands.reduce((sum, hand) => sum + hand.creditsWon, 0),
+    batchRankTotals,
+    endingStreakCount: lastHand?.endingStreakCount ?? 0,
+    lastHandScored: lastHand?.handScored ?? false,
+    cumulativeResolvedCount: (lastHand?.globalIndex ?? -1) + 1,
+  };
+}
+
+function buildRevealEvents(
+  hands: EvaluatedRevealHand[],
+  config: ParallelHandsWaveConfig
+): { mode: RevealMode; events: RevealEvent[] } {
+  const waveConfig = {
+    ...DEFAULT_ABSTRACT_WAVE,
+    ...(config.parallelHandsAbstractWave ?? {}),
+  };
+
+  if (hands.length === 0) {
+    return { mode: 'individual', events: [] };
+  }
+
+  if (hands.length <= waveConfig.individualMaxHands) {
+    return {
+      mode: 'individual',
+      events: hands.map((hand) => buildRevealEvent('featured', [hand], hand)),
+    };
+  }
+
+  const winningHands = hands.filter((hand) => hand.handScored);
+  const desiredWinnerFeatures =
+    hands.length <= waveConfig.mediumMaxHands
+      ? waveConfig.mediumFeaturedWinners
+      : waveConfig.highFeaturedWinners;
+
+  const featuredIndices =
+    winningHands.length > 0
+      ? buildEvenlySpacedIndices(
+          winningHands.length,
+          Math.min(desiredWinnerFeatures, winningHands.length)
+        ).map((winnerIndex) => winningHands[winnerIndex].globalIndex)
+      : buildEvenlySpacedIndices(
+          hands.length,
+          Math.min(waveConfig.noWinnerFallbackFeatures, hands.length)
+        );
+
+  const events: RevealEvent[] = [];
+  let cursor = 0;
+
+  for (const featureIndex of featuredIndices) {
+    if (featureIndex > cursor) {
+      events.push(buildRevealEvent('implicit', hands.slice(cursor, featureIndex), null));
+    }
+
+    const featuredHand = hands[featureIndex];
+    if (featuredHand) {
+      events.push(buildRevealEvent('featured', [featuredHand], featuredHand));
+    }
+
+    cursor = featureIndex + 1;
+  }
+
+  if (cursor < hands.length) {
+    events.push(buildRevealEvent('implicit', hands.slice(cursor), null));
+  }
+
+  return { mode: 'sampled', events };
+}
+
+function WaveHandCards({
+  cards,
+  size = 'featured',
 }: {
-  hand: Hand;
-  rewardTable: RewardTable;
-  betAmount: number;
-  streakMultiplier: number;
-  isFront: boolean;
-  isAnimatingOut: boolean;
+  cards: CardType[];
+  size?: 'featured' | 'compact';
 }) {
-  const handResult = PokerEvaluator.evaluate(hand.cards);
-  const withRewards = PokerEvaluator.applyRewards(handResult, rewardTable);
-  const creditsWon = Math.round(withRewards.multiplier * betAmount * streakMultiplier);
-
   return (
-    <div
-      className={`rolodex-hand-card ${isFront ? 'rolodex-front' : 'rolodex-back'} ${isAnimatingOut ? 'rolodex-animating-out' : ''}`}
-    >
-      <div className="rolodex-hand-content">
-        <div className="rolodex-hand-cards">
-          {hand.cards.map((card, cardIndex) => {
-            if (card.isDead) {
-              return (
-                <div key={cardIndex} className="rolodex-card-small" title="Dead Card">
-                  <span className="text-xl">💀</span>
-                </div>
-              );
-            }
-            if (card.isWild) {
-              return (
-                <div key={cardIndex} className="rolodex-card-small" title="Wild Card">
-                  <span className="card-wild font-bold text-xs">WILD</span>
-                </div>
-              );
-            }
-            const isRedSuit = card.suit === 'hearts' || card.suit === 'diamonds';
-            const suitColorClass = isRedSuit ? 'card-suit-red' : 'card-suit-black';
-            return (
-              <div
-                key={cardIndex}
-                className="rolodex-card-small"
-                title={`${card.rank}${card.suit.charAt(0).toUpperCase()}`}
-              >
-                <span className={suitColorClass}>{card.rank}</span>
-                <span className={`suit ${suitColorClass}`}>{getSuitSymbol(card.suit)}</span>
-              </div>
-            );
-          })}
-        </div>
-        <div className="rolodex-score">
-          <span className="rolodex-rank">{toCapitalCase(handResult.rank)}</span>
-          <span className="rolodex-credits">{formatCreditsWithSuffix(creditsWon)}</span>
-        </div>
-      </div>
-    </div>
-  );
-});
-
-/** Single rolodex stack with delayed start for cascade effect */
-function RolodexStack({
-  stackHands,
-  startDelay,
-  displayBeforeOut,
-  ROTATE_FADE_MS,
-  handStreakMultipliers,
-  rewardTable,
-  betAmount,
-  playSound,
-  onHandRevealed,
-  maxVisible,
-}: {
-  stackHands: { hand: Hand; globalIndex: number }[];
-  startDelay: number;
-  displayBeforeOut: number;
-  ROTATE_FADE_MS: number;
-  handStreakMultipliers: number[];
-  rewardTable: RewardTable;
-  betAmount: number;
-  playSound: (type: string, rank?: string) => void;
-  onHandRevealed: (globalIndex: number) => void;
-  maxVisible: number;
-}) {
-  const [started, setStarted] = useState(false);
-  const [revealedCount, setRevealedCount] = useState(0);
-  const [isAnimatingOut, setIsAnimatingOut] = useState(false);
-
-  useEffect(() => {
-    const t = setTimeout(() => setStarted(true), startDelay);
-    return () => clearTimeout(t);
-  }, [startDelay]);
-
-  useEffect(() => {
-    if (!started || revealedCount >= stackHands.length || stackHands.length === 0) return;
-    const { hand, globalIndex } = stackHands[revealedCount];
-    const handResult = PokerEvaluator.evaluate(hand.cards);
-    const withRewards = PokerEvaluator.applyRewards(handResult, rewardTable);
-    const handScored = withRewards.multiplier > 0;
-
-    const scoreTimer = setTimeout(() => {
-      if (handScored) playSound('handScoring', handResult.rank);
-      onHandRevealed(globalIndex);
-      setIsAnimatingOut(true);
-    }, displayBeforeOut);
-
-    return () => clearTimeout(scoreTimer);
-  }, [started, revealedCount, stackHands, displayBeforeOut, playSound, onHandRevealed, rewardTable]);
-
-  useEffect(() => {
-    if (!isAnimatingOut) return;
-    const advanceTimer = setTimeout(() => {
-      setIsAnimatingOut(false);
-      setRevealedCount((prev) => prev + 1);
-    }, ROTATE_FADE_MS);
-    return () => clearTimeout(advanceTimer);
-  }, [isAnimatingOut, ROTATE_FADE_MS]);
-
-  if (stackHands.length === 0) return null;
-
-  return (
-    <div className="rolodex-stack">
-      {Array.from(
-        { length: Math.min(maxVisible, stackHands.length - revealedCount + 1) },
-        (_, i) => {
-          const idx = revealedCount + i;
-          if (idx >= stackHands.length) return null;
-          const { hand, globalIndex } = stackHands[idx];
-          const isFront = i === 0;
+    <div className={`wave-hand-cards wave-hand-cards-${size}`}>
+      {cards.map((card, cardIndex) => {
+        if (card.isDead) {
           return (
-            <RolodexHandCard
-              key={hand.id}
-              hand={hand}
-              rewardTable={rewardTable}
-              betAmount={betAmount}
-              streakMultiplier={handStreakMultipliers[globalIndex]}
-              isFront={isFront}
-              isAnimatingOut={isFront && isAnimatingOut}
-            />
+            <div key={cardIndex} className={`wave-hand-card wave-hand-card-${size}`}>
+              <span className="wave-hand-card-emoji">💀</span>
+            </div>
           );
         }
-      )}
+        if (card.isWild) {
+          return (
+            <div key={cardIndex} className={`wave-hand-card wave-hand-card-${size}`}>
+              <span className="card-wild font-bold text-xs">WILD</span>
+            </div>
+          );
+        }
+
+        const isRedSuit = card.suit === 'hearts' || card.suit === 'diamonds';
+        const suitColorClass = isRedSuit ? 'card-suit-red' : 'card-suit-black';
+
+        return (
+          <div
+            key={cardIndex}
+            className={`wave-hand-card wave-hand-card-${size}`}
+            title={`${card.rank}${card.suit.charAt(0).toUpperCase()}`}
+            style={{ '--card-order': cardIndex } as React.CSSProperties}
+          >
+            <span className={suitColorClass}>{card.rank}</span>
+            <span className={`suit ${suitColorClass}`}>{getSuitSymbol(card.suit)}</span>
+          </div>
+        );
+      })}
     </div>
+  );
+}
+
+function WaveBeatStage({
+  event,
+  phase,
+  ambientGhostCards,
+  variant = 'active',
+  idleVariant = 'sigil',
+}: {
+  event: RevealEvent | null;
+  phase: RevealPhase | null;
+  ambientGhostCards: number;
+  variant?: 'active' | 'exiting';
+  idleVariant?: 'sigil' | 'empty';
+}) {
+  if (!event) {
+    return (
+      <div className={`abstract-wave-idle${idleVariant === 'empty' ? ' is-empty' : ''}`}>
+        {idleVariant === 'sigil' ? <span className="abstract-wave-idle-sigil" aria-hidden="true" /> : null}
+      </div>
+    );
+  }
+
+  const resultVisible = phase === 'result' && event.kind === 'featured' && event.featuredHand;
+
+  return (
+    <article
+      className={`abstract-wave-beat ${phase ? `abstract-wave-beat-${phase}` : ''} ${
+        event.kind === 'featured' ? 'is-featured' : 'is-implicit'
+      } ${event.featuredHand?.handScored ? 'is-winning' : ''} ${
+        event.featuredHand?.handScored && event.featuredHand ? (isPremiumRank(event.featuredHand.rank) ? 'is-premium-winning' : '') : ''
+      } ${
+        variant === 'exiting' ? 'is-exiting-overlay' : 'is-active-overlay'
+      }`}
+      aria-label="Abstract wave stage"
+    >
+      <div className="abstract-wave-beat-center">
+        <div className="abstract-wave-ghost-field" aria-hidden="true">
+          {Array.from({ length: ambientGhostCards }, (_, index) => (
+            <span
+              key={index}
+              className="abstract-wave-ghost-card"
+              style={{ animationDelay: `${index * 110}ms` }}
+            />
+          ))}
+        </div>
+
+        {event.kind === 'featured' && event.featuredHand ? (
+          <WaveHandCards cards={event.featuredHand.hand.cards} size="featured" />
+        ) : (
+          <div className="abstract-wave-pulse" aria-hidden="true">
+            <span className="abstract-wave-pulse-line" />
+            <span className="abstract-wave-pulse-line" />
+            <span className="abstract-wave-pulse-line" />
+          </div>
+        )}
+
+        <div
+          className={`abstract-wave-result-layer${resultVisible ? ' is-visible' : ''}`}
+          aria-live="polite"
+        >
+          {resultVisible && event.featuredHand ? (
+            <>
+              <span className="abstract-wave-result-rank">{event.featuredHand.rankLabel}</span>
+              <span className="abstract-wave-result-payout">
+                {event.featuredHand.handScored
+                  ? `+${formatCreditsWithSuffix(event.featuredHand.creditsWon)}`
+                  : 'MISS'}
+              </span>
+            </>
+          ) : null}
+        </div>
+      </div>
+    </article>
   );
 }
 
@@ -327,33 +430,25 @@ export function ParallelHandsAnimation({
 }: ParallelHandsAnimationProps) {
   const { playSound } = useThemeAudio(audioSettings);
   const [totalRevealedCount, setTotalRevealedCount] = useState(0);
-  const [currentStreakCounter, setCurrentStreakCounter] = useState(initialStreakCounter);
-  const [lastHandScored, setLastHandScored] = useState<boolean | null>(null);
+  const [committedRevealedCount, setCommittedRevealedCount] = useState(0);
+  const [committedStreakCounter, setCommittedStreakCounter] = useState(initialStreakCounter);
+  const [committedLastHandScored, setCommittedLastHandScored] = useState<boolean | null>(null);
+  const [previewResolvedCount, setPreviewResolvedCount] = useState(0);
   const [isFadingOut, setIsFadingOut] = useState(false);
-  const [scoreByRank, setScoreByRank] = useState<Record<string, { count: number; credits: number }>>({});
+  const [committedScoreByRank, setCommittedScoreByRank] = useState<Record<
+    string,
+    { count: number; credits: number }
+  >>(
+    {}
+  );
+  const [activeEventIndex, setActiveEventIndex] = useState<number | null>(() =>
+    parallelHands.length > 0 ? 0 : null
+  );
+  const [activePhase, setActivePhase] = useState<RevealPhase | null>(() =>
+    parallelHands.length > 0 ? 'enter' : null
+  );
+  const [exitingBeat, setExitingBeat] = useState<ExitingBeat | null>(null);
 
-  const n = parallelHands.length;
-  const animCfg = gameConfig.animation as RolodexAnimationConfig;
-  const speedNum = typeof animationSpeedMode === 'number' ? animationSpeedMode : 1;
-  const timingProfile = useMemo(
-    () => getRolodexTimingProfile(n, speedNum, animCfg),
-    [n, speedNum, animCfg]
-  );
-  const {
-    numStacks,
-    maxVisible,
-    msPerHand,
-    animateInMs,
-    rotateFadeMs,
-    displayBeforeOut,
-    revealCompletePauseMs,
-    fadeDurationMs,
-    startDelays,
-  } = timingProfile;
-  const stackHands = useMemo(
-    () => getStackHands(parallelHands, numStacks),
-    [parallelHands, numStacks]
-  );
   const roundComboSummary = useMemo(
     () =>
       summarizeRoundCombos(
@@ -366,49 +461,84 @@ export function ParallelHandsAnimation({
     [parallelHands, rewardTable, betAmount, initialStreakCounter]
   );
 
-  const handStreakMultipliers = roundComboSummary.streakMultipliers;
+  const evaluatedHands = useMemo<EvaluatedRevealHand[]>(
+    () =>
+      parallelHands.map((hand, globalIndex) => {
+        const handResult = PokerEvaluator.evaluate(hand.cards);
+        const withRewards = PokerEvaluator.applyRewards(handResult, rewardTable);
+        const streakMultiplier = roundComboSummary.streakMultipliers[globalIndex] ?? 1;
+        const creditsWon = Math.round(withRewards.multiplier * betAmount * streakMultiplier);
 
-  const onHandRevealed = useCallback(
-    (globalIndex: number) => {
-      const hand = parallelHands[globalIndex];
-      const handResult = PokerEvaluator.evaluate(hand.cards);
-      const withRewards = PokerEvaluator.applyRewards(handResult, rewardTable);
-      const handScored = withRewards.multiplier > 0;
-      const creditsWon = Math.round(
-        withRewards.multiplier * betAmount * handStreakMultipliers[globalIndex]
-      );
-
-      setCurrentStreakCounter((prev) => (handScored ? prev + 1 : Math.max(0, prev - 1)));
-      setLastHandScored(handScored);
-      setScoreByRank((prev) => {
-        const rank = handResult.rank;
-        const cur = prev[rank] ?? { count: 0, credits: 0 };
         return {
-          ...prev,
-          [rank]: { count: cur.count + 1, credits: cur.credits + creditsWon },
+          globalIndex,
+          hand,
+          rank: handResult.rank,
+          rankLabel: toCapitalCase(handResult.rank),
+          handScored: withRewards.multiplier > 0,
+          creditsWon,
+          endingStreakCount:
+            roundComboSummary.comboProgression[globalIndex] ?? initialStreakCounter,
         };
-      });
-      setTotalRevealedCount((prev) => prev + 1);
-    },
-    [parallelHands, rewardTable, betAmount, handStreakMultipliers]
+      }),
+    [
+      parallelHands,
+      rewardTable,
+      betAmount,
+      roundComboSummary.streakMultipliers,
+      roundComboSummary.comboProgression,
+      initialStreakCounter,
+    ]
   );
 
-  const currentStreakMultiplier = calculateStreakMultiplier(
-    currentStreakCounter,
-    gameConfig.streakMultiplier
+  const waveConfig = gameConfig.animation as ParallelHandsWaveConfig;
+  const { mode: revealMode, events: revealEvents } = useMemo(
+    () => buildRevealEvents(evaluatedHands, waveConfig),
+    [evaluatedHands, waveConfig]
   );
-  const nextThreshold = getNextThreshold(currentStreakCounter, gameConfig.streakMultiplier);
-  const streakProgress = getStreakProgress(currentStreakCounter, gameConfig.streakMultiplier);
+
+  const speedNum = typeof animationSpeedMode === 'number' ? animationSpeedMode : 1;
+  const {
+    msPerBeat,
+    entryMs,
+    cardsMs,
+    resultMs,
+    exitMs,
+    gapMs,
+    revealCompletePauseMs,
+    fadeDurationMs,
+    ambientFlowIndicators,
+    ambientGhostCards,
+    ambientOrbCount,
+    winnerCardsMultiplier,
+    winnerResultMultiplier,
+    winnerExitMultiplier,
+  } = useMemo(
+    () => getWaveTimingProfile(parallelHands.length, speedNum, waveConfig),
+    [parallelHands.length, speedNum, waveConfig]
+  );
 
   const heldCards = useMemo(
-    () => heldIndices.map((i) => playerHand[i]).filter(Boolean),
+    () => heldIndices.map((index) => playerHand[index]).filter(Boolean),
     [playerHand, heldIndices]
   );
-  const totalCredits = useMemo(
-    () => Object.values(scoreByRank).reduce((sum, r) => sum + r.credits, 0),
-    [scoreByRank]
+  const activeEvent = activeEventIndex !== null ? revealEvents[activeEventIndex] ?? null : null;
+  const isRoundComplete = totalRevealedCount === parallelHands.length && parallelHands.length > 0;
+  const getEventExitMs = useCallback(
+    (event: RevealEvent | null) =>
+      event?.kind === 'featured' && event.featuredHand?.handScored
+        ? Math.round(exitMs * winnerExitMultiplier)
+        : exitMs,
+    [exitMs, winnerExitMultiplier]
   );
-
+  const activeCardsMs =
+    activeEvent?.kind === 'featured' && activeEvent.featuredHand?.handScored
+      ? Math.round(cardsMs * winnerCardsMultiplier)
+      : cardsMs;
+  const activeResultMs =
+    activeEvent?.kind === 'featured' && activeEvent.featuredHand?.handScored
+      ? Math.round(resultMs * winnerResultMultiplier)
+      : resultMs;
+  const activeExitMs = getEventExitMs(activeEvent);
   const completionSummary = useMemo(
     () => ({
       finalStreakCount:
@@ -420,21 +550,109 @@ export function ParallelHandsAnimation({
     [roundComboSummary, initialStreakCounter]
   );
 
+  const commitRevealEvent = useCallback((event: RevealEvent) => {
+    setCommittedStreakCounter(event.endingStreakCount);
+    setCommittedLastHandScored(event.lastHandScored);
+    setCommittedScoreByRank((prev) => {
+      const next = { ...prev };
+      for (const [rank, aggregate] of Object.entries(event.batchRankTotals)) {
+        const current = next[rank] ?? { count: 0, credits: 0 };
+        next[rank] = {
+          count: current.count + aggregate.count,
+          credits: current.credits + aggregate.credits,
+        };
+      }
+      return next;
+    });
+    setCommittedRevealedCount(event.cumulativeResolvedCount);
+  }, []);
+
+  const previewEvent =
+    activePhase === 'result' && activeEvent
+      ? activeEvent
+      : exitingBeat?.event ?? null;
+  const previewHands = useMemo(
+    () => (previewEvent ? previewEvent.hands.slice(0, previewResolvedCount) : []),
+    [previewEvent, previewResolvedCount]
+  );
+  const displayedScoreByRank = useMemo(() => {
+    if (!previewEvent) return committedScoreByRank;
+
+    const next = { ...committedScoreByRank };
+    for (const hand of previewHands) {
+      const aggregate = { count: 1, credits: hand.creditsWon };
+      const rank = hand.rank;
+      const current = next[rank] ?? { count: 0, credits: 0 };
+      next[rank] = {
+        count: current.count + aggregate.count,
+        credits: current.credits + aggregate.credits,
+      };
+    }
+    return next;
+  }, [committedScoreByRank, previewEvent, previewHands]);
+  const displayedRevealedCount = committedRevealedCount + previewResolvedCount;
+  const latestPreviewHand = previewHands[previewHands.length - 1] ?? null;
+  const displayedStreakCounter = latestPreviewHand?.endingStreakCount ?? committedStreakCounter;
+  const displayedLastHandScored = latestPreviewHand?.handScored ?? committedLastHandScored;
+  const currentStreakMultiplier = calculateStreakMultiplier(
+    displayedStreakCounter,
+    gameConfig.streakMultiplier
+  );
+  const nextThreshold = getNextThreshold(displayedStreakCounter, gameConfig.streakMultiplier);
+  const streakProgress = getStreakProgress(displayedStreakCounter, gameConfig.streakMultiplier);
+  const totalCredits = useMemo(
+    () => Object.values(displayedScoreByRank).reduce((sum, entry) => sum + entry.credits, 0),
+    [displayedScoreByRank]
+  );
+  const focusedRank = previewEvent?.featuredHand?.rank ?? null;
+
   const skipToSummary = () => {
     onAnimationComplete(completionSummary);
   };
 
-  // When animation speed is 'skip', go directly to summary
+  useEffect(() => {
+    if (!previewEvent) {
+      setPreviewResolvedCount(0);
+      return;
+    }
+
+    const targetCount = previewEvent.batchResolvedCount;
+    if (targetCount <= 0) {
+      setPreviewResolvedCount(0);
+      return;
+    }
+
+    const previewDurationMs = Math.max(120, activeResultMs + getEventExitMs(previewEvent));
+    const stepMs = Math.max(16, Math.floor(previewDurationMs / Math.max(1, targetCount)));
+    const startedAt = Date.now();
+
+    setPreviewResolvedCount(1);
+
+    if (targetCount === 1) {
+      return;
+    }
+
+    const intervalId = setInterval(() => {
+      const elapsed = Date.now() - startedAt;
+      const nextCount = Math.min(targetCount, 1 + Math.floor(elapsed / stepMs));
+      setPreviewResolvedCount((current) => (nextCount > current ? nextCount : current));
+      if (nextCount >= targetCount) {
+        clearInterval(intervalId);
+      }
+    }, stepMs);
+
+    return () => clearInterval(intervalId);
+  }, [previewEvent, activeResultMs, getEventExitMs]);
+
   useEffect(() => {
     if (animationSpeedMode === 'skip') {
       onAnimationComplete(completionSummary);
     }
   }, [animationSpeedMode, onAnimationComplete, completionSummary]);
 
-  // Handle empty hands: complete immediately
   useEffect(() => {
     if (parallelHands.length === 0) {
-      const t = setTimeout(
+      const timeoutId = setTimeout(
         () =>
           onAnimationComplete({
             finalStreakCount: initialStreakCounter,
@@ -446,43 +664,142 @@ export function ParallelHandsAnimation({
           }),
         100
       );
-      return () => clearTimeout(t);
+      return () => clearTimeout(timeoutId);
     }
   }, [parallelHands.length, onAnimationComplete, initialStreakCounter]);
 
-  // All revealed: wait for last hand to animate out, then pause, then fade out
+  useEffect(() => {
+    if (animationSpeedMode === 'skip' || isFadingOut) return;
+    if (activeEventIndex !== null || totalRevealedCount >= parallelHands.length) return;
+    if (revealEvents.length === 0) return;
+
+    const nextEventIndex = revealEvents.findIndex(
+      (event) => event.cumulativeResolvedCount > totalRevealedCount
+    );
+    if (nextEventIndex === -1) return;
+
+    const timeoutId = setTimeout(() => {
+      setActiveEventIndex(nextEventIndex);
+      setActivePhase('enter');
+    }, totalRevealedCount === 0 ? 0 : gapMs);
+
+    return () => clearTimeout(timeoutId);
+  }, [
+    animationSpeedMode,
+    isFadingOut,
+    activeEventIndex,
+    totalRevealedCount,
+    parallelHands.length,
+    revealEvents,
+    gapMs,
+  ]);
+
+  useEffect(() => {
+    if (activeEventIndex === null || activePhase !== 'enter') return;
+
+    const timeoutId = setTimeout(() => {
+      setActivePhase('cards');
+    }, entryMs);
+
+    return () => clearTimeout(timeoutId);
+  }, [activeEventIndex, activePhase, entryMs]);
+
+  useEffect(() => {
+    if (activeEventIndex === null || activePhase !== 'cards') return;
+
+    const timeoutId = setTimeout(() => {
+      const currentEvent = revealEvents[activeEventIndex];
+      if (!currentEvent) return;
+
+      if (currentEvent.kind === 'featured' && currentEvent.featuredHand?.handScored) {
+        (playSound as (type: string, rank?: string) => void)(
+          'handScoring',
+          currentEvent.featuredHand.rank
+        );
+      }
+      setTotalRevealedCount(currentEvent.cumulativeResolvedCount);
+      setActivePhase('result');
+    }, activeCardsMs);
+
+    return () => clearTimeout(timeoutId);
+  }, [activeEventIndex, activePhase, revealEvents, activeCardsMs, playSound]);
+
+  useEffect(() => {
+    if (activeEventIndex === null || activePhase !== 'result') return;
+
+    const timeoutId = setTimeout(() => {
+      const currentEvent = revealEvents[activeEventIndex];
+      if (currentEvent) {
+        setExitingBeat({
+          event: currentEvent,
+          phase: 'result',
+          exitMs: getEventExitMs(currentEvent),
+        });
+      }
+      setActiveEventIndex(null);
+      setActivePhase(null);
+    }, activeResultMs);
+
+    return () => clearTimeout(timeoutId);
+  }, [activeEventIndex, activePhase, activeResultMs, revealEvents, getEventExitMs]);
+
+  useEffect(() => {
+    if (!exitingBeat || exitingBeat.phase !== 'result') return;
+
+    const timeoutId = setTimeout(() => {
+      setExitingBeat((prev) => (prev ? { ...prev, phase: 'exit' } : null));
+    }, 24);
+
+    return () => clearTimeout(timeoutId);
+  }, [exitingBeat]);
+
+  useEffect(() => {
+    if (!exitingBeat || exitingBeat.phase !== 'exit') return;
+
+    const timeoutId = setTimeout(() => {
+      commitRevealEvent(exitingBeat.event);
+      setExitingBeat(null);
+    }, exitingBeat.exitMs);
+
+    return () => clearTimeout(timeoutId);
+  }, [exitingBeat, commitRevealEvent]);
+
   useEffect(() => {
     if (
       totalRevealedCount === parallelHands.length &&
       parallelHands.length > 0 &&
+      activeEventIndex === null &&
+      exitingBeat === null &&
       !isFadingOut &&
       animationSpeedMode !== 'skip'
     ) {
-      const pauseMs = rotateFadeMs + revealCompletePauseMs;
-      const pauseTimer = setTimeout(() => setIsFadingOut(true), pauseMs);
-      return () => clearTimeout(pauseTimer);
+      const timeoutId = setTimeout(() => setIsFadingOut(true), revealCompletePauseMs);
+      return () => clearTimeout(timeoutId);
     }
   }, [
     totalRevealedCount,
     parallelHands.length,
+    activeEventIndex,
+    exitingBeat,
     isFadingOut,
-    rotateFadeMs,
-    revealCompletePauseMs,
     animationSpeedMode,
+    revealCompletePauseMs,
   ]);
 
   useEffect(() => {
     if (!isFadingOut) return;
-    const doneTimer = setTimeout(
+
+    const timeoutId = setTimeout(
       () =>
         onAnimationComplete({
           ...completionSummary,
-          finalStreakCount: currentStreakCounter,
+          finalStreakCount: committedStreakCounter,
         }),
       fadeDurationMs
     );
-    return () => clearTimeout(doneTimer);
-  }, [isFadingOut, currentStreakCounter, onAnimationComplete, fadeDurationMs, completionSummary]);
+
+    return () => clearTimeout(timeoutId);
+  }, [isFadingOut, committedStreakCounter, onAnimationComplete, fadeDurationMs, completionSummary]);
 
   return (
     <div
@@ -490,14 +807,17 @@ export function ParallelHandsAnimation({
       data-animation-speed={animationSpeedMode}
       style={
         {
-          '--card-transition-ms': animationSpeedMode === 'skip' ? 30 : Math.max(animateInMs, rotateFadeMs),
+          '--card-transition-ms':
+            animationSpeedMode === 'skip'
+              ? 30
+              : Math.max(entryMs, activeExitMs, exitingBeat?.exitMs ?? 0),
           '--fade-out-ms': fadeDurationMs,
-          '--rolodex-ms-per-hand': msPerHand,
+          '--wave-ms-per-beat': msPerBeat,
         } as React.CSSProperties
       }
     >
       <div className="animation-background" />
-      {/* Top bar: gear (settings) + skip */}
+
       <div className="phase-b-top-bar">
         <div className="phase-b-top-controls">
           {onShowSettings && (
@@ -521,15 +841,13 @@ export function ParallelHandsAnimation({
           </button>
         </div>
       </div>
-      {/* Left panel: held cards + score list + accumulated */}
+
       <div className="phase-b-left-panel">
         <div className="phase-b-held-section">
           <div className="phase-b-held-label">Held cards</div>
           <div className="phase-b-held-cards">
             {heldCards.length > 0 ? (
-              heldCards.map((card) => (
-                <Card key={card.id} card={card} size="small" />
-              ))
+              heldCards.map((card) => <Card key={card.id} card={card} size="small" />)
             ) : (
               <span className="phase-b-held-empty">None held</span>
             )}
@@ -539,58 +857,100 @@ export function ParallelHandsAnimation({
           <div className="phase-b-scores-label">
             <span>Scored hands</span>
             <div className="phase-b-reveal-meta">
-              <span className="phase-b-scores-counter">
-                {totalRevealedCount} of {parallelHands.length} hands
+              <span className={`phase-b-scores-counter${previewEvent ? ' is-live' : ''}`}>
+                {displayedRevealedCount.toLocaleString()} of {parallelHands.length.toLocaleString()} hands
               </span>
             </div>
           </div>
           <div className="phase-b-scores-list">
-            {Object.entries(scoreByRank).map(([rank, { count, credits }]) => (
-              <div key={rank} className="phase-b-score-row">
-                <span className="phase-b-score-left">{toCapitalCase(rank)} × {count}</span>
+            {Object.entries(displayedScoreByRank).map(([rank, { count, credits }]) => (
+              <div
+                key={rank}
+                className={`phase-b-score-row${focusedRank === rank ? ' is-focused' : ''}${
+                  isPremiumRank(rank) ? ' is-premium' : ''
+                }`}
+              >
+                <span className="phase-b-score-left">
+                  {toCapitalCase(rank)} × {count.toLocaleString()}
+                </span>
                 <span className="phase-b-score-right">{formatCreditsWithSuffix(credits)}</span>
               </div>
             ))}
-            {Object.keys(scoreByRank).length === 0 && (
+            {Object.keys(displayedScoreByRank).length === 0 && (
               <span className="phase-b-scores-empty">—</span>
             )}
           </div>
-          <div className="phase-b-total">{formatCreditsWithSuffix(totalCredits)}</div>
+          <div className={`phase-b-total${previewEvent ? ' is-live' : ''}`}>
+            {formatCreditsWithSuffix(totalCredits)}
+          </div>
         </div>
       </div>
-      {/* Right: Adaptive rolodex stack(s) with hand-count-aware pacing */}
-      <div
-        className={`phase-b-rolodex phase-b-rolodex-stacks-${numStacks}`}
-        data-hand-count={parallelHands.length}
-        data-stack-count={numStacks}
+
+      <section
+        className="abstract-wave-stage"
+        data-reveal-style="abstract-wave"
+        data-reveal-mode={revealMode}
+        aria-label="Parallel hands abstract wave reveal"
       >
-        {animationSpeedMode !== 'skip' &&
-          stackHands.map((hands, stackIndex) => (
-            <div key={stackIndex} className="rolodex-cell">
-              <RolodexStack
-                stackHands={hands}
-                startDelay={startDelays[stackIndex]}
-                displayBeforeOut={displayBeforeOut}
-                ROTATE_FADE_MS={rotateFadeMs}
-                handStreakMultipliers={handStreakMultipliers}
-                rewardTable={rewardTable}
-                betAmount={betAmount}
-                playSound={playSound as (type: string, rank?: string) => void}
-                onHandRevealed={onHandRevealed}
-                maxVisible={maxVisible}
+        <div className="abstract-wave-field">
+          <div className="abstract-wave-orbs" aria-hidden="true">
+            {Array.from({ length: ambientOrbCount }, (_, index) => (
+              <span
+                key={index}
+                className="abstract-wave-orb"
+                style={{ animationDelay: `${index * 480}ms` }}
               />
-            </div>
-          ))}
-      </div>
-      {/* Bottom: horizontal multiplier bar */}
+            ))}
+          </div>
+          <div className="abstract-wave-flow" aria-hidden="true">
+            {Array.from({ length: ambientFlowIndicators }, (_, index) => (
+              <span
+                key={index}
+                className="abstract-wave-flow-node"
+                style={{
+                  animationDelay: `${index * 95}ms`,
+                  opacity: 0.22 + ((index % 5) * 0.1),
+                }}
+              />
+            ))}
+          </div>
+
+          <div className={`abstract-wave-stage-stack${exitingBeat && activeEvent ? ' is-overlapping' : ''}`}>
+            {exitingBeat ? (
+              <WaveBeatStage
+                event={exitingBeat.event}
+                phase={exitingBeat.phase}
+                ambientGhostCards={ambientGhostCards}
+                variant="exiting"
+              />
+            ) : null}
+            {activeEvent ? (
+              <WaveBeatStage
+                event={activeEvent}
+                phase={activePhase}
+                ambientGhostCards={ambientGhostCards}
+                variant="active"
+              />
+            ) : !exitingBeat ? (
+              <WaveBeatStage
+                event={null}
+                phase={null}
+                ambientGhostCards={ambientGhostCards}
+                idleVariant={isRoundComplete ? 'empty' : 'sigil'}
+              />
+            ) : null}
+          </div>
+        </div>
+      </section>
+
       {gameConfig.streakMultiplier.enabled && (
         <div className="phase-b-bottom-bar">
           <StreakProgressBar
-            currentStreak={currentStreakCounter}
+            currentStreak={displayedStreakCounter}
             currentMultiplier={currentStreakMultiplier}
             nextThreshold={nextThreshold}
             progress={streakProgress}
-            lastHandScored={lastHandScored}
+            lastHandScored={displayedLastHandScored}
             config={gameConfig.streakMultiplier}
             variant="horizontal-segments"
           />
@@ -600,7 +960,6 @@ export function ParallelHandsAnimation({
   );
 }
 
-/** Convert hand rank to Capital Case (e.g. "one-pair" → "One Pair") */
 function toCapitalCase(rank: string): string {
   return rank
     .split('-')

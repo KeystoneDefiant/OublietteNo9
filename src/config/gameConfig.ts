@@ -65,27 +65,29 @@ export const gameConfig = {
   // Animation timing configuration (in milliseconds)
   animation: {
     cardFlip: 500, // Card flip animation delay
-    /** Phase B: Rolodex hand reveal - cap for single-hand cinematic pacing */
-    parallelHandsRevealMsPerHand: 420,
-    /** Adaptive timing for the Phase B rolodex reveal */
-    parallelHandsRevealTiming: {
-      minMsPerHand: 70,
-      handCountAcceleration: 58,
-      stackDelayFactor: 0.68,
-      dealInRatio: 0.34,
-      lingerRatio: 0.22,
-      rotateOutRatio: 0.44,
-      revealCompletePauseMs: 700,
-      fadeOutMs: 420,
-    },
-    /** Phase B: Rolodex max visible hands in stack (pseudo-3D depth) */
-    parallelHandsRolodexMaxVisible: 10,
-    /** Rolodex stack count by hand count: 1 stack ≤18, 2 stacks ≤60, 3 stacks ≤150, 4 stacks 151+ */
-    rolodexStacks: {
-      one: { max: 18 },
-      two: { max: 60 },
-      three: { max: 150 },
-      four: { min: 151 },
+    /** Phase B: abstract-wave reveal timing and scaling */
+    parallelHandsAbstractWave: {
+      individualMaxHands: 24, // Max hand count that still reveals every hand individually.
+      mediumMaxHands: 300, // Upper bound for the medium-density sampled reveal mode.
+      mediumFeaturedWinners: 10, // Winner spotlight count used while in medium sampled rounds.
+      highFeaturedWinners: 14, // Winner spotlight count used for very large sampled rounds.
+      noWinnerFallbackFeatures: 2, // Featured beats to show when a sampled round has no scoring hands.
+      maxMsPerBeat: 430, // Slowest allowed duration for one reveal beat at low hand counts.
+      minMsPerBeat: 90, // Fastest allowed duration for one reveal beat at huge hand counts.
+      handCountAcceleration: 56, // How aggressively beat duration speeds up as hand count rises.
+      entryRatio: 0.22, // Portion of each beat spent bringing the new hand onto the stage.
+      cardsRatio: 0.4, // Portion of each beat spent showing/settling the cards before the result lands.
+      resultRatio: 0.24, // Portion of each beat spent holding the rank/payout result on screen.
+      exitRatio: 0.14, // Portion of each beat spent sending the old hand off the stage.
+      gapRatio: 0.04, // Small spacing between beats before the next hand begins entering.
+      revealCompletePauseMs: 700, // Hold time after the last reveal before the whole screen fades away.
+      fadeOutMs: 420, // Duration of the final full-screen fade into the results screen.
+      ambientFlowIndicators: 11, // Number of background flow lines used to suggest motion and scale.
+      ambientGhostCards: 5, // Number of ghost-card silhouettes layered behind the active hand.
+      ambientOrbCount: 5, // Number of drifting background light orbs in the stage field.
+      winnerCardsMultiplier: 1.5, // Extra time multiplier for the card-display phase on scoring hands.
+      winnerResultMultiplier: 2.25, // Extra time multiplier for how long scoring results stay readable.
+      winnerExitMultiplier: 2, // Extra time multiplier for the exit phase of scoring hands.
     },
   },
 

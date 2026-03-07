@@ -600,13 +600,179 @@ These are potential future enhancements, not critical issues:
 
 ---
 
-**Last Updated**: March 7, 2026 - Game over animation finality and adaptive reveal pacing
+**Last Updated**: March 7, 2026 - Abstract wave handoff breath polish
 **Evaluator**: Claude (AI Assistant)  
 **Next Review**: After significant changes or when adding tests
 
 ---
 
 ## Recent Improvements (March 2026)
+
+### Abstract Wave Handoff Breath Polish (March 7, 2026) ✅
+ - **Problem**: The counter/motion pass improved the general flow, but the handoff still needed a little more breathing room so the outgoing result text could clear before the incoming hand fully settled.
+ - **Solution**: Added overlap-aware stage styling that fades the old result text away slightly faster and delays the incoming hand settle just enough to create a smoother, classier transition between beats.
+ - **Changes**:
+   - **Overlap-aware stage state**: `src/components/screen-ParallelHandsAnimation.tsx` now marks the stage stack when an exiting beat and a new active beat are overlapping.
+   - **Result-first handoff**: `src/components/screen-ParallelHandsAnimation.css` now shortens and lightens the outgoing result-layer fade during overlap so the previous hand's text clears earlier.
+   - **Delayed incoming settle**: `src/components/screen-ParallelHandsAnimation.css` now adds a small extra settle delay to active cards during overlap, making the next hand finish landing just after the outgoing text clears.
+   - **Softer outgoing cards**: `src/components/screen-ParallelHandsAnimation.css` further softens the exiting featured-card drift so the previous hand feels like it glides away rather than snaps off.
+   - **Tests**: `src/components/__tests__/screen-ParallelHandsAnimation.test.tsx` now explicitly verifies the overlap state class in addition to the two beat layers being present.
+ - **Impact**: The reveal now has a more elegant inhale/exhale between hands, with less competition between the outgoing result text and the incoming card settle.
+ - **Files Modified**: `src/components/screen-ParallelHandsAnimation.tsx`, `src/components/screen-ParallelHandsAnimation.css`, `src/components/__tests__/screen-ParallelHandsAnimation.test.tsx`, `TODO.md`, `CLAUDE.md`
+ - **Verification (March 7, 2026)**:
+```
+✓ Targeted tests: `npx vitest run src/components/__tests__/screen-ParallelHandsAnimation.test.tsx`
+✓ ESLint: `npm run lint`
+✓ Production build: `npm run build`
+  - `screen-ParallelHandsAnimation`: 25.21 kB (gzipped: 5.72 kB)
+  - CSS chunk: 20.91 kB (gzipped: 4.69 kB)
+  - Main bundle: 397.35 kB (gzipped: 118.07 kB)
+```
+
+### Abstract Wave Counter and Motion Polish (March 7, 2026) ✅
+ - **Problem**: The previous sync pass improved the connection between the stage and the left panel, but incoming hands still arrived a bit too vertically, outgoing hands could feel abrupt, and the scored-hands counter still needed to advance progressively at the user-selected animation speed instead of effectively jumping to batch totals.
+ - **Solution**: Added more lateral "caught by the current" motion to incoming cards, softened the exit drift for outgoing hands, and moved the left-panel preview logic to progressive in-batch counting so the scored-hands counter and aggregates advance over time with the reveal.
+ - **Changes**:
+   - **Progressive batch counting**: `src/components/screen-ParallelHandsAnimation.tsx` now stores each event's constituent hands and advances a preview count over the reveal duration, allowing the scored-hands counter and left-panel aggregates to tick upward progressively instead of landing at the full batch total immediately.
+   - **Animation-speed sync**: `src/components/screen-ParallelHandsAnimation.tsx` bases that preview pacing on the current beat timing, so changing the user's animation speed also changes how fast the left-panel counter progresses.
+   - **Refined hand motion**: `src/components/screen-ParallelHandsAnimation.css` now gives entering hands a stronger lateral drift and softens the outgoing hand/result exit into a cleaner glide rather than a sharper disappearance.
+   - **Tests**: `src/components/__tests__/screen-ParallelHandsAnimation.test.tsx` now verifies that sampled batches count upward progressively through the left counter.
+ - **Impact**: The reveal is smoother to watch, the outgoing hand clears more gracefully, and the left-side scored-hands progression now feels tied to the same rhythm as the stage animation.
+ - **Files Modified**: `src/components/screen-ParallelHandsAnimation.tsx`, `src/components/screen-ParallelHandsAnimation.css`, `src/components/__tests__/screen-ParallelHandsAnimation.test.tsx`, `TODO.md`, `CLAUDE.md`
+ - **Verification (March 7, 2026)**:
+```
+✓ Targeted tests: `npx vitest run src/components/__tests__/screen-ParallelHandsAnimation.test.tsx`
+✓ ESLint: `npm run lint`
+✓ Production build: `npm run build`
+  - `screen-ParallelHandsAnimation`: 25.19 kB (gzipped: 5.71 kB)
+  - CSS chunk: 19.99 kB (gzipped: 4.58 kB)
+  - Main bundle: 397.35 kB (gzipped: 118.07 kB)
+```
+
+### Abstract Wave Transition and Sync Polish (March 7, 2026) ✅
+ - **Problem**: The previous overlap pass still let outgoing hands feel like they disappeared instead of gracefully transitioning away, and the left summary panel updated in noticeable jumps that felt detached from the beat currently playing on the stage.
+ - **Solution**: Reworked the reveal handoff so exiting beats stay mounted long enough to animate from result into exit, and split the left-panel progression into committed vs in-flight display state so the score list, hand counter, and streak bar advance in sync with the visible reveal.
+ - **Changes**:
+   - **True exit transition**: `src/components/screen-ParallelHandsAnimation.tsx` now keeps an `exitingBeat` with its own phase and exit duration, allowing the outgoing hand to remain on-screen in a result state before smoothly transitioning into exit while the next hand enters.
+   - **Synced left-panel progression**: `src/components/screen-ParallelHandsAnimation.tsx` now derives previewed score totals, hand counts, and streak values from the currently visible reveal beat, so the left panel reflects the animation timing instead of jumping only when state commits.
+   - **Dual focus cues**: `src/components/screen-ParallelHandsAnimation.css` now highlights the currently resolving score row and total in the left panel, while premium winning hands get extra emphasis on the main stage for a cleaner two-point focus.
+   - **Timing refinement**: `src/config/gameConfig.ts` now slightly reduces the inter-beat gap and extends winner exit timing so the handoff feels smoother and more luxurious.
+   - **Tests**: `src/components/__tests__/screen-ParallelHandsAnimation.test.tsx` now verifies that the left score panel stays in sync with the visible reveal beat in addition to the existing overlap coverage.
+ - **Impact**: The reveal now reads as one continuous flow instead of separate cards blinking on and off, and the left panel feels attached to the same cinematic rhythm rather than acting like a disconnected counter.
+ - **Files Modified**: `src/components/screen-ParallelHandsAnimation.tsx`, `src/components/screen-ParallelHandsAnimation.css`, `src/components/__tests__/screen-ParallelHandsAnimation.test.tsx`, `src/config/gameConfig.ts`, `TODO.md`, `CLAUDE.md`
+ - **Verification (March 7, 2026)**:
+```
+✓ Targeted tests: `npx vitest run src/components/__tests__/screen-ParallelHandsAnimation.test.tsx`
+✓ ESLint: `npm run lint`
+✓ Production build: `npm run build`
+  - `screen-ParallelHandsAnimation`: 24.76 kB (gzipped: 5.49 kB)
+  - CSS chunk: 19.97 kB (gzipped: 4.57 kB)
+  - Main bundle: 397.35 kB (gzipped: 118.07 kB)
+```
+
+### Abstract Wave Luxury and Mobile Polish (March 7, 2026) ✅
+ - **Problem**: The elegant overlap pass improved the handoff, but the stage still ended on a rainbow-like sigil, mobile layouts could pin the animation too low with the streak multiplier crowding it, the hand-progress panel lost its padding on narrow screens, and the featured reveal cards were not honoring the global dark/light card theme.
+ - **Solution**: Combined the softer elegant handoff with a restrained luxury accent, removed the colorful end-state sigil, retuned the mobile layout so the stage stays visually centered while the left progress panel keeps its spacing, and switched reveal card surfaces to the shared card-theme variables.
+ - **Changes**:
+   - **End-state cleanup**: `src/components/screen-ParallelHandsAnimation.tsx` now renders an empty idle state once the reveal is complete, so the stage no longer falls back to a rainbow-like closing sigil before fading out.
+  - **Luxury accent**: `src/components/screen-ParallelHandsAnimation.css` now adds a subtle gold glint sweep across winning featured cards during the result hold instead of relying on louder stage-level effects.
+  - **Shared card theming**: `src/components/screen-ParallelHandsAnimation.css` now uses the same card background, border, and default suit/text variables as the main card UI, so reveal cards switch cleanly between the global dark and light themes.
+   - **Centered mobile stage**: `src/components/screen-ParallelHandsAnimation.css` now centers the abstract-wave stage container within its grid area and uses full-height field sizing on mobile so the reveal stays centered instead of sinking toward the bottom bar.
+   - **Mobile padding fix**: `src/components/screen-ParallelHandsAnimation.css` restores dedicated padding to the left summary/progress panel on narrow breakpoints, fixing the cramped hand-progress box appearance.
+ - **Impact**: The reveal lands with a cleaner final frame, a more premium winner accent, and a noticeably better mobile composition where the animation and multiplier no longer fight for space, while card faces stay visually consistent with the player's selected theme.
+ - **Files Modified**: `src/components/screen-ParallelHandsAnimation.tsx`, `src/components/screen-ParallelHandsAnimation.css`, `TODO.md`, `CLAUDE.md`
+ - **Verification (March 7, 2026)**:
+```
+✓ ESLint: `npm run lint`
+✓ Targeted tests: `npx vitest run src/components/__tests__/screen-ParallelHandsAnimation.test.tsx`
+✓ Production build: `npm run build`
+  - `screen-ParallelHandsAnimation`: 23.62 kB (gzipped: 5.13 kB)
+  - CSS chunk: 19.06 kB (gzipped: 4.37 kB)
+  - Main bundle: 397.35 kB (gzipped: 118.07 kB)
+```
+
+### Abstract Wave Reveal Redesign (March 7, 2026) ✅
+ - **Problem**: The previous Parallel Hands animation was still asking the player to read too many simultaneous UI elements, even after moving to a sampled stage, so the reveal felt more like a dashboard than a stylish payoff moment.
+ - **Solution**: Reworked the right side into an abstract-wave reveal that separates implicit batch progress from explicit featured beats, keeps cards as the only readable moving element, and delays rank/payout until the end of each featured reveal.
+ - **Changes**:
+   - **Event model rewrite**: `src/components/screen-ParallelHandsAnimation.tsx` now derives two event types: implicit ambient beats that advance aggregate progress without foreground detail, and explicit featured beats that spotlight a single hand when the reveal should become readable.
+   - **Stage simplification**: `src/components/screen-ParallelHandsAnimation.tsx` removes the recent-results rail and burst-summary panel in favor of one atmospheric stage with flow pulses, ghost cards, readable featured cards, and a delayed result landing layer.
+   - **Config refresh**: `src/config/gameConfig.ts` now replaces `parallelHandsSampledReveal` with `parallelHandsAbstractWave`, exposing thresholds for individual-vs-sampled mode, featured winner density, fallback no-winner beats, ambient density, and timing for cards vs result landing.
+   - **Styling update**: `src/components/screen-ParallelHandsAnimation.css` now defines the abstract-wave field, ambient vertical flow, ghost-card drift, implicit pulse beats, and end-beat result overlay while keeping the layout responsive on mobile and desktop.
+   - **Tests**: `src/components/__tests__/screen-ParallelHandsAnimation.test.tsx` now verifies abstract-wave mode rendering, sampled activation at large counts, removal of the recent-results rail, and that result text appears only after the card beat progresses.
+ - **Impact**: The animation screen now communicates scale through motion instead of dense UI, making the reveal feel lighter and more legible while still preserving clear end-beat feedback for featured hands.
+ - **Files Modified**: `src/components/screen-ParallelHandsAnimation.tsx`, `src/components/screen-ParallelHandsAnimation.css`, `src/config/gameConfig.ts`, `src/components/__tests__/screen-ParallelHandsAnimation.test.tsx`, `TODO.md`, `CLAUDE.md`
+ - **Verification (March 7, 2026)**:
+```
+✓ ESLint: `npm run lint`
+✓ Targeted tests: `npx vitest run src/components/__tests__/screen-ParallelHandsAnimation.test.tsx`
+✓ Production build: `npm run build`
+  - `screen-ParallelHandsAnimation`: 23.65 kB (gzipped: 5.03 kB)
+  - CSS chunk: 16.04 kB (gzipped: 3.60 kB)
+  - Main bundle: 397.25 kB (gzipped: 118.04 kB)
+```
+
+### Abstract Wave Reveal Polish (March 7, 2026) ✅
+ - **Problem**: The first abstract-wave pass still carried too much on-stage text, winner beats resolved too quickly to feel dramatic, and the stage boxes were getting cramped or clipped on short mobile layouts when the left summary column grew taller.
+ - **Solution**: Pushed the reveal toward a freer cinematic composition by slowing winner landings, adding more surreal background motion, removing nonessential stage copy, and letting the animation float over the bare background while the left summary panel becomes scrollable on smaller screens.
+ - **Changes**:
+   - **Winner landing pacing**: `src/components/screen-ParallelHandsAnimation.tsx` now extends cards/result/exit timing for scoring featured beats, so winners linger longer before the payout lands and clears.
+   - **Lower-text stage**: `src/components/screen-ParallelHandsAnimation.tsx` removes the stage header and filler footnotes, keeps the animation focused on cards plus the end-beat rank/payout overlay, and swaps the idle copy for a purely visual sigil.
+   - **Surreal motion and freer layout**: `src/components/screen-ParallelHandsAnimation.css` adds drifting orb layers behind the wave, removes the boxed stage container treatment, and lets the beat float on the base background instead of inside bordered panels.
+   - **Mobile vertical resilience**: `src/components/screen-ParallelHandsAnimation.css` now constrains the left summary panel on narrow viewports with scrolling and uses viewport-aware beat heights so the stage scales instead of getting top/bottom clipped as the score list grows.
+   - **Config refresh and tests**: `src/config/gameConfig.ts` now includes winner-land timing multipliers and orb density for the abstract-wave mode; `src/components/__tests__/screen-ParallelHandsAnimation.test.tsx` now verifies the filler labels stay gone while the delayed result landing still works.
+ - **Impact**: The reveal reads more like a stylized payoff moment than a UI widget, winners land with more ceremony, and the animation remains visually intact on cramped mobile screens without boxed panels fighting for vertical space.
+ - **Files Modified**: `src/components/screen-ParallelHandsAnimation.tsx`, `src/components/screen-ParallelHandsAnimation.css`, `src/config/gameConfig.ts`, `src/components/__tests__/screen-ParallelHandsAnimation.test.tsx`, `TODO.md`, `CLAUDE.md`
+ - **Verification (March 7, 2026)**:
+```
+✓ ESLint: `npm run lint`
+✓ Targeted tests: `npx vitest run src/components/__tests__/screen-ParallelHandsAnimation.test.tsx`
+✓ Production build: `npm run build`
+  - `screen-ParallelHandsAnimation`: 22.75 kB (gzipped: 4.94 kB)
+  - CSS chunk: 16.22 kB (gzipped: 3.70 kB)
+  - Main bundle: 397.35 kB (gzipped: 118.06 kB)
+```
+
+### Abstract Wave Contrast and Motion Polish (March 7, 2026) ✅
+ - **Problem**: The freer abstract-wave stage was moving in the right direction, but it still needed stronger contrast, a more refined mysterious tone, and more visible featured-card motion so the hand reveal itself felt deliberate rather than merely present.
+ - **Solution**: Tuned the stage toward a higher-contrast black-and-gold palette with restrained jewel-tone accents, brightened the result landing, and added staged featured-card settle motion with stronger winner timing multipliers.
+ - **Changes**:
+   - **Card entrance motion**: `src/components/screen-ParallelHandsAnimation.tsx` now tags each featured card with an order variable so `src/components/screen-ParallelHandsAnimation.css` can stagger the hand entrance and settle animation card-by-card.
+   - **Higher-contrast mysterious styling**: `src/components/screen-ParallelHandsAnimation.css` now deepens the field background, brightens the gold highlights, strengthens flow-node glow, and pushes the overall palette toward a cleaner black/gold/ivory presentation with subtle purple-wine undertones.
+   - **Result landing emphasis**: `src/components/screen-ParallelHandsAnimation.css` now gives the rank/payout overlay brighter contrast and a stronger glow so winner moments feel more ceremonial without adding extra copy.
+   - **Timing refinement**: `src/config/gameConfig.ts` now increases abstract-wave orb density and raises the winner timing multipliers so scoring featured beats breathe longer and clear more gracefully.
+   - **Verification**: Existing targeted animation tests remained valid after the visual polish and still verify the lower-text presentation plus delayed result landing behavior.
+ - **Impact**: The animation now feels more intentional and luxurious, with clearer featured-card choreography and stronger focal contrast while preserving the simplified, mobile-resilient stage structure.
+ - **Files Modified**: `src/components/screen-ParallelHandsAnimation.tsx`, `src/components/screen-ParallelHandsAnimation.css`, `src/config/gameConfig.ts`, `TODO.md`, `CLAUDE.md`
+ - **Verification (March 7, 2026)**:
+```
+✓ ESLint: `npm run lint`
+✓ Targeted tests: `npx vitest run src/components/__tests__/screen-ParallelHandsAnimation.test.tsx`
+✓ Production build: `npm run build`
+  - `screen-ParallelHandsAnimation`: 22.77 kB (gzipped: 4.95 kB)
+  - CSS chunk: 17.80 kB (gzipped: 4.14 kB)
+  - Main bundle: 397.35 kB (gzipped: 118.07 kB)
+```
+
+### Abstract Wave Elegance and Overlap Polish (March 7, 2026) ✅
+ - **Problem**: The higher-contrast pass gave the stage stronger presence, but the reveal still felt a touch too forceful; winners needed to remain on-stage longer, and the transition between hands needed to feel like one continuous elegant handoff rather than a discrete cut.
+ - **Solution**: Added overlapping beat layers so outgoing featured hands can glide out while the next hand enters, lengthened winner hold/exit timing, and softened the motion profile so the reveal feels more refined than theatrical.
+ - **Changes**:
+   - **Overlapping handoff logic**: `src/components/screen-ParallelHandsAnimation.tsx` now keeps an exiting event layer alive while the next event starts, so the outgoing winner can remain visible during the next hand's entrance instead of disappearing before the handoff begins.
+   - **Elegant transition styling**: `src/components/screen-ParallelHandsAnimation.css` now stacks active/exiting beats in a shared stage frame, softens the stage-level translation, and lets exiting cards drift away with reduced blur and opacity while the new hand arrives above them.
+   - **Winner pacing refinement**: `src/config/gameConfig.ts` now lowers the beat gap and increases winner result/exit multipliers so scoring hands linger a little longer and clear more gracefully.
+   - **Verification update**: `src/components/__tests__/screen-ParallelHandsAnimation.test.tsx` now includes coverage for the overlap itself, asserting that the outgoing hand remains visible while the next hand has already entered the stage.
+ - **Impact**: The reveal now reads as a flowing sequence instead of separate beats, with winners getting a more luxurious hold and a smoother handoff into the next reveal.
+ - **Files Modified**: `src/components/screen-ParallelHandsAnimation.tsx`, `src/components/screen-ParallelHandsAnimation.css`, `src/config/gameConfig.ts`, `src/components/__tests__/screen-ParallelHandsAnimation.test.tsx`, `TODO.md`, `CLAUDE.md`
+ - **Verification (March 7, 2026)**:
+```
+✓ ESLint: `npm run lint`
+✓ Targeted tests: `npx vitest run src/components/__tests__/screen-ParallelHandsAnimation.test.tsx`
+✓ Production build: `npm run build`
+  - `screen-ParallelHandsAnimation`: 23.50 kB (gzipped: 5.09 kB)
+  - CSS chunk: 18.27 kB (gzipped: 4.24 kB)
+  - Main bundle: 397.35 kB (gzipped: 118.07 kB)
+```
 
 ### Game Over Animation Finality and Adaptive Reveal Pacing (March 7, 2026) ✅
  - **Problem**: The game over hero animation still finished in a transient layout instead of landing cleanly, and the Parallel Hand reveal used a mostly fixed cadence that felt too abrupt on small rounds and too slow on larger ones.
