@@ -104,7 +104,7 @@ export const gameConfig = {
     enabled: true,
     baseThreshold: 5, // First bonus at 5 streak
     thresholdIncrement: 10, // Base increment value
-    exponentialGrowth: 1.5, // Exponential growth factor (1.0 = linear, >1.0 = exponential)
+    exponentialGrowth: 1.75, // Exponential growth factor (1.0 = linear, >1.0 = exponential)
     baseMultiplier: 1.5, // 1.5x at first tier
     multiplierIncrement: 0.5, // +0.5x per tier (2.0x, 2.5x, 3.0x, etc.)
   },

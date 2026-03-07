@@ -6,4 +6,4 @@
 
 - Let's animate the game over screen a little bit and make it more stylish. Animate in the Game over text in the center of the screen, then move it to the top. Then zoom the failure condition out from large to normal size, then move it under the Game Over text. Then infinitely scroll statistics from right to left across the screen.
 
-- When the payout table is clicked, animate this onto the screen stylishly.
+- When the payout table is clicked, animate this onto the screen stylishly and remove it from the screen when closed smoothly.
