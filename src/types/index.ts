@@ -170,6 +170,8 @@ export interface GameState {
   extraCardsInHand: number; // 0 = deal 5, 1 = deal 6, etc. (still play 5)
   streakCounter: number; // Current streak count (+1 for scoring hand, -1 for non-scoring, min 0)
   currentStreakMultiplier: number; // Current active streak multiplier (1.0, 1.5, 2.0, etc.)
+  runHighestCombo: number; // Best combo streak reached during the current run
+  runHighestMultiplier: number; // Best streak multiplier reached during the current run
   audioSettings: {
     musicEnabled: boolean;
     soundEffectsEnabled: boolean;

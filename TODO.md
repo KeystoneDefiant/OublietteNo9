@@ -1,9 +1,5 @@
 # To Do
 
-- On the game over screen, make sure the average per round has commas, and is rounded to one decimal point. Add in the number of parallel hands the player had at the end of the game, the highest combo, and the highest multiplier they earned.
+- Rethink the animation on the game over heading and subheading. Both should be visible when the animation completes. They should animate in stylishly, smoothly, and give a feeling of finality. Optimally, they should have an effect that slowly animates infinitely to give a small glint of style.
 
-- Add an array of game over strings to the config that will be chosen at random to fill the hint space on the game over screen.
-
-- Let's animate the game over screen a little bit and make it more stylish. Animate in the Game over text in the center of the screen, then move it to the top. Then zoom the failure condition out from large to normal size, then move it under the Game Over text. Then infinitely scroll statistics from right to left across the screen.
-
-- When the payout table is clicked, animate this onto the screen stylishly and remove it from the screen when closed smoothly.
+- Let's rethink the Parallel Hand reveal animation. It needs to be slow enough on a low number of hands to express what is happening, but fast enough on a large number of hands to move quickly. It needs to scale to a mobile and desktop view. It should be stylish, interesting, unique,

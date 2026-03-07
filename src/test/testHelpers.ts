@@ -66,6 +66,8 @@ export function createTestGameState(overrides: Partial<GameState> = {}): GameSta
     extraCardsInHand: 0,
     streakCounter: 0,
     currentStreakMultiplier: 1.0,
+    runHighestCombo: 0,
+    runHighestMultiplier: 1.0,
     audioSettings: {
       musicEnabled: true,
       soundEffectsEnabled: true,

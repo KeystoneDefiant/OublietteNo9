@@ -7,6 +7,7 @@ import { useGameActions } from './useGameActions';
 import { useShopActions } from './useShopActions';
 import { checkFailureConditions } from '../utils/failureConditions';
 import { PokerEvaluator } from '../utils/pokerEvaluator';
+import { calculateStreakMultiplier } from '../utils/streakCalculator';
 import { useThemeAudio } from '../hooks/useThemeAudio';
 import { parseAudioSettings, parseAnimationSettings } from '../utils/typeGuards';
 import { getStoredCardTheme, setStoredCardTheme } from '../config/cardThemes';
@@ -97,6 +98,8 @@ function createInitialState(): GameState {
     extraCardsInHand: 0,
     streakCounter: 0,
     currentStreakMultiplier: 1.0,
+    runHighestCombo: 0,
+    runHighestMultiplier: 1.0,
     audioSettings: loadAudioSettings(),
     animationSpeedMode: loadAnimationSettings(),
     cardTheme: getStoredCardTheme(),
@@ -339,6 +342,10 @@ export function useGameState() {
       devilsDealChancePurchases: 0,
       devilsDealCostReductionPurchases: 0,
       extraCardsInHand: 0,
+      streakCounter: 0,
+      currentStreakMultiplier: 1.0,
+      runHighestCombo: 0,
+      runHighestMultiplier: 1.0,
     }));
   }, [playMusic]);
 
@@ -530,10 +537,19 @@ export function useGameState() {
     }));
   }, [playSound]);
 
-  const updateStreakCounter = useCallback((newStreakCount: number) => {
+  const updateStreakCounter = useCallback((
+    newStreakCount: number,
+    roundSummary?: { highestCombo: number; highestMultiplier: number }
+  ) => {
     setState((prev) => ({
       ...prev,
       streakCounter: newStreakCount,
+      currentStreakMultiplier: calculateStreakMultiplier(newStreakCount),
+      runHighestCombo: Math.max(prev.runHighestCombo, roundSummary?.highestCombo ?? newStreakCount),
+      runHighestMultiplier: Math.max(
+        prev.runHighestMultiplier,
+        roundSummary?.highestMultiplier ?? calculateStreakMultiplier(newStreakCount)
+      ),
     }));
   }, []);
 

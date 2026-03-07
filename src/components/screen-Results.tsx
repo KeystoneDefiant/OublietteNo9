@@ -77,14 +77,19 @@ export function Results({
   const profit =
     totalPayout -
     betAmount * selectedHandCount -
-    (gameState?.devilsDealHeld && gameState?.devilsDealCost ? Math.abs(gameState.devilsDealCost) : 0);
+    (gameState?.devilsDealHeld && gameState?.devilsDealCost
+      ? Math.abs(gameState.devilsDealCost)
+      : 0);
   const comboGraphPoints = useMemo(
     () => getComboGraphPoints(comboProgression, 100, 44),
     [comboProgression]
   );
 
   return (
-    <div id="results-screen" className="min-h-screen min-h-[100dvh] p-4 sm:p-6 relative overflow-hidden select-none">
+    <div
+      id="results-screen"
+      className="min-h-[100dvh] p-4 sm:p-6 relative overflow-hidden select-none"
+    >
       <div className="max-w-4xl mx-auto relative z-0 flex flex-col min-h-[calc(100dvh-2rem)]">
         <GameHeader
           credits={credits}
@@ -98,12 +103,18 @@ export function Results({
         <div className="flex-1 space-y-4 sm:space-y-6 overflow-y-auto">
           <div className="grid grid-cols-2 gap-4 sm:gap-6">
             <div className="game-panel rounded-xl p-4 sm:p-6">
-              <h2 className="text-xl sm:text-2xl font-bold mb-4" style={{ color: 'var(--game-accent-gold)' }}>
+              <h2
+                className="text-xl sm:text-2xl font-bold mb-4"
+                style={{ color: 'var(--game-accent-gold)' }}
+              >
                 Hand Summary
               </h2>
               {heldIndices.length > 0 && (
                 <div>
-                  <p className="text-sm font-medium mb-2" style={{ color: 'var(--game-text-muted)' }}>
+                  <p
+                    className="text-sm font-medium mb-2"
+                    style={{ color: 'var(--game-text-muted)' }}
+                  >
                     Cards Held:
                   </p>
                   <div className="flex gap-2 flex-wrap">
@@ -116,7 +127,10 @@ export function Results({
             </div>
 
             <div className="game-panel rounded-xl p-4 sm:p-6">
-              <h2 className="text-xl sm:text-2xl font-bold mb-4" style={{ color: 'var(--game-accent-gold)' }}>
+              <h2
+                className="text-xl sm:text-2xl font-bold mb-4"
+                style={{ color: 'var(--game-accent-gold)' }}
+              >
                 Win Stats
               </h2>
               <div className="space-y-3">
@@ -124,7 +138,10 @@ export function Results({
                   <span className="text-sm font-medium" style={{ color: 'var(--game-text-muted)' }}>
                     Hands Played
                   </span>
-                  <span className="text-lg sm:text-xl font-bold" style={{ color: 'var(--game-text)' }}>
+                  <span
+                    className="text-lg sm:text-xl font-bold"
+                    style={{ color: 'var(--game-text)' }}
+                  >
                     {handsPlayed}
                   </span>
                 </div>
@@ -132,7 +149,10 @@ export function Results({
                   <span className="text-sm font-medium" style={{ color: 'var(--game-text-muted)' }}>
                     Hands Won
                   </span>
-                  <span className="text-lg sm:text-xl font-bold" style={{ color: 'var(--game-accent-gold)' }}>
+                  <span
+                    className="text-lg sm:text-xl font-bold"
+                    style={{ color: 'var(--game-accent-gold)' }}
+                  >
                     {handsWon}
                   </span>
                 </div>
@@ -140,7 +160,10 @@ export function Results({
                   <span className="text-sm font-medium" style={{ color: 'var(--game-text-muted)' }}>
                     Win %
                   </span>
-                  <span className="text-lg sm:text-xl font-bold" style={{ color: 'var(--game-accent-gold)' }}>
+                  <span
+                    className="text-lg sm:text-xl font-bold"
+                    style={{ color: 'var(--game-accent-gold)' }}
+                  >
                     {winPercent.toFixed(1)}%
                   </span>
                 </div>
@@ -154,18 +177,29 @@ export function Results({
               className="game-panel rounded-xl p-4 sm:p-6 md:p-8 border border-[var(--game-accent-gold)] animate-fadeIn"
               style={{ boxShadow: '0 0 24px var(--game-accent-gold-glow)' }}
             >
-              <h2 className="text-2xl sm:text-3xl font-bold mb-4 sm:mb-6" style={{ color: 'var(--game-accent-gold)' }}>
+              <h2
+                className="text-2xl sm:text-3xl font-bold mb-4 sm:mb-6"
+                style={{ color: 'var(--game-accent-gold)' }}
+              >
                 Round Summary
               </h2>
               <div className="space-y-3 sm:space-y-4">
                 {rankData.map((item) => (
-                  <div key={item.rank} className="flex justify-between items-center text-base sm:text-lg">
+                  <div
+                    key={item.rank}
+                    className="flex justify-between items-center text-base sm:text-lg"
+                  >
                     <span className="capitalize font-medium" style={{ color: 'var(--game-text)' }}>
                       {item.rank.replace(/-/g, ' ')} ×{item.count}
                     </span>
                     <span
                       className="font-bold"
-                      style={{ color: item.totalPayout > 0 ? 'var(--game-accent-gold)' : 'var(--game-text-muted)' }}
+                      style={{
+                        color:
+                          item.totalPayout > 0
+                            ? 'var(--game-accent-gold)'
+                            : 'var(--game-text-muted)',
+                      }}
                     >
                       = {formatCredits(Math.round(item.totalPayout))} credit
                       {Math.round(item.totalPayout) !== 1 ? 's' : ''}
@@ -176,44 +210,66 @@ export function Results({
             </div>
 
             {/* Right: Round cost box - its own container */}
-            <div
-              className="game-panel-muted rounded-xl p-4 sm:p-6 border border-[var(--game-border)] animate-fadeIn"
-            >
+            <div className="game-panel-muted rounded-xl p-4 sm:p-6 border border-[var(--game-border)] animate-fadeIn">
               <div className="space-y-3">
                 <div className="flex justify-between items-center">
-                  <span className="text-base sm:text-lg font-semibold" style={{ color: 'var(--game-text)' }}>
+                  <span
+                    className="text-base sm:text-lg font-semibold"
+                    style={{ color: 'var(--game-text)' }}
+                  >
                     Round Cost:
                   </span>
-                  <span className="text-xl sm:text-2xl font-bold" style={{ color: 'var(--game-accent-red-bright)' }}>
+                  <span
+                    className="text-xl sm:text-2xl font-bold"
+                    style={{ color: 'var(--game-accent-red-bright)' }}
+                  >
                     {formatCredits(betAmount * selectedHandCount)} credits
                   </span>
                 </div>
-                {gameState?.devilsDealCard && gameState?.devilsDealHeld && gameState?.devilsDealCost > 0 && (
-                  <div className="flex justify-between items-center">
-                    <span className="text-base sm:text-lg font-semibold" style={{ color: 'var(--game-text)' }}>
-                      Devil's Deal:
-                    </span>
-                    <span className="text-xl sm:text-2xl font-bold" style={{ color: 'var(--game-accent-red-bright)' }}>
-                      -{formatCredits(Math.abs(gameState.devilsDealCost))} credits
-                    </span>
-                  </div>
-                )}
+                {gameState?.devilsDealCard &&
+                  gameState?.devilsDealHeld &&
+                  gameState?.devilsDealCost > 0 && (
+                    <div className="flex justify-between items-center">
+                      <span
+                        className="text-base sm:text-lg font-semibold"
+                        style={{ color: 'var(--game-text)' }}
+                      >
+                        Devil's Deal:
+                      </span>
+                      <span
+                        className="text-xl sm:text-2xl font-bold"
+                        style={{ color: 'var(--game-accent-red-bright)' }}
+                      >
+                        -{formatCredits(Math.abs(gameState.devilsDealCost))} credits
+                      </span>
+                    </div>
+                  )}
                 <div className="flex justify-between items-center">
-                  <span className="text-base sm:text-lg font-semibold" style={{ color: 'var(--game-text)' }}>
+                  <span
+                    className="text-base sm:text-lg font-semibold"
+                    style={{ color: 'var(--game-text)' }}
+                  >
                     Total Payout:
                   </span>
-                  <span className="text-xl sm:text-2xl font-bold" style={{ color: 'var(--game-accent-gold)' }}>
+                  <span
+                    className="text-xl sm:text-2xl font-bold"
+                    style={{ color: 'var(--game-accent-gold)' }}
+                  >
                     {formatCredits(totalPayout)} credits
                   </span>
                 </div>
                 <div className="flex justify-between items-center pt-2 border-t border-[var(--game-border)]">
-                  <span className="text-lg sm:text-xl font-bold" style={{ color: 'var(--game-text)' }}>
+                  <span
+                    className="text-lg sm:text-xl font-bold"
+                    style={{ color: 'var(--game-text)' }}
+                  >
                     Profit:
                   </span>
                   <span
                     className="text-2xl sm:text-3xl font-bold"
                     style={{
-                      color: profit >= 0 ? 'var(--game-accent-gold)' : 'var(--game-accent-red-bright)',
+                      color:
+                        profit >= 0 ? 'var(--game-accent-gold)' : 'var(--game-accent-red-bright)',
                     }}
                   >
                     {formatCredits(profit)} credit{Math.abs(profit) !== 1 ? 's' : ''}
@@ -221,18 +277,30 @@ export function Results({
                 </div>
                 <div className="pt-3 border-t border-[var(--game-border)] space-y-3">
                   <div className="flex justify-between items-center">
-                    <span className="text-sm sm:text-base font-semibold" style={{ color: 'var(--game-text-muted)' }}>
+                    <span
+                      className="text-sm sm:text-base font-semibold"
+                      style={{ color: 'var(--game-text-muted)' }}
+                    >
                       Highest Combo
                     </span>
-                    <span className="text-lg sm:text-xl font-bold" style={{ color: 'var(--game-accent-gold)' }}>
+                    <span
+                      className="text-lg sm:text-xl font-bold"
+                      style={{ color: 'var(--game-accent-gold)' }}
+                    >
                       {highestCombo}
                     </span>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span className="text-sm sm:text-base font-semibold" style={{ color: 'var(--game-text-muted)' }}>
+                    <span
+                      className="text-sm sm:text-base font-semibold"
+                      style={{ color: 'var(--game-text-muted)' }}
+                    >
                       Highest Multiplier
                     </span>
-                    <span className="text-lg sm:text-xl font-bold" style={{ color: 'var(--game-accent-gold)' }}>
+                    <span
+                      className="text-lg sm:text-xl font-bold"
+                      style={{ color: 'var(--game-accent-gold)' }}
+                    >
                       {formatMultiplier(highestMultiplier)}
                     </span>
                   </div>
@@ -241,7 +309,10 @@ export function Results({
                     style={{ background: 'rgba(255,255,255,0.03)' }}
                   >
                     <div className="flex justify-between items-center mb-2">
-                      <span className="text-xs uppercase tracking-[0.12em]" style={{ color: 'var(--game-text-muted)' }}>
+                      <span
+                        className="text-xs uppercase tracking-[0.12em]"
+                        style={{ color: 'var(--game-text-muted)' }}
+                      >
                         Combo Progression
                       </span>
                       <span className="text-xs" style={{ color: 'var(--game-text-dim)' }}>
@@ -256,11 +327,18 @@ export function Results({
                         aria-label="Combo progression graph"
                       >
                         <title>Combo progression graph</title>
-                        <line x1="0" y1="43" x2="100" y2="43" stroke="var(--game-border)" strokeWidth="1" />
+                        <line
+                          x1="0"
+                          y1="43"
+                          x2="100"
+                          y2="43"
+                          stroke="var(--game-border)"
+                          strokeWidth="1"
+                        />
                         <polyline
                           fill="none"
                           stroke="var(--game-accent-gold)"
-                          strokeWidth="2.5"
+                          strokeWidth="1"
                           strokeLinejoin="round"
                           strokeLinecap="round"
                           points={comboGraphPoints}

@@ -1,4 +1,4 @@
-import { useState, useEffect, lazy, Suspense } from 'react';
+import { useState, useEffect, lazy, Suspense, useCallback } from 'react';
 import { useGameState } from './hooks/useGameState';
 import { useThemeBackgroundAnimation } from './hooks/useThemeBackgroundAnimation';
 import { ErrorBoundary } from './components/ErrorBoundary';
@@ -24,9 +24,29 @@ function App() {
   const [showCredits, setShowCredits] = useState(false);
   const [showTutorial, setShowTutorial] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
-  const [showPayoutTable, setShowPayoutTable] = useState(false);
+  const [payoutTableState, setPayoutTableState] = useState<'closed' | 'open' | 'closing'>('closed');
   const [themeConfig, setThemeConfig] = useState<ThemeConfig | null>(null);
   const [isThemeLoading, setIsThemeLoading] = useState(true);
+
+  const openPayoutTable = useCallback(() => {
+    setPayoutTableState('open');
+  }, []);
+
+  const closePayoutTable = useCallback(() => {
+    setPayoutTableState((prev) => (prev === 'closed' ? prev : 'closing'));
+  }, []);
+
+  useEffect(() => {
+    if (payoutTableState !== 'closing') {
+      return undefined;
+    }
+
+    const timer = window.setTimeout(() => {
+      setPayoutTableState('closed');
+    }, 240);
+
+    return () => window.clearTimeout(timer);
+  }, [payoutTableState]);
 
   // Preload logo so it's cached before any screen needs it (HTML preload also runs; this backs up for SPA nav)
   useEffect(() => {
@@ -64,13 +84,13 @@ function App() {
   // Close payout table on Escape key
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && showPayoutTable) {
-        setShowPayoutTable(false);
+      if (e.key === 'Escape' && payoutTableState !== 'closed') {
+        closePayoutTable();
       }
     };
     window.addEventListener('keydown', handleEscape);
     return () => window.removeEventListener('keydown', handleEscape);
-  }, [showPayoutTable]);
+  }, [payoutTableState, closePayoutTable]);
 
   const {
     state,
@@ -164,7 +184,7 @@ function App() {
               onSetSelectedHandCount={setSelectedHandCount}
               onDealHand={dealHand}
               onEndRun={endRun}
-              onShowPayoutTable={() => setShowPayoutTable(true)}
+              onShowPayoutTable={openPayoutTable}
               onShowSettings={() => setShowSettings(true)}
             />
           </div>
@@ -191,7 +211,7 @@ function App() {
               onToggleHold={toggleHold}
               onToggleDevilsDealHold={toggleDevilsDealHold}
               onDraw={drawParallelHands}
-              onShowPayoutTable={() => setShowPayoutTable(true)}
+              onShowPayoutTable={openPayoutTable}
               onShowSettings={() => setShowSettings(true)}
             />
           </div>
@@ -214,8 +234,11 @@ function App() {
               audioSettings={state.audioSettings}
               animationSpeedMode={state.animationSpeedMode}
               onShowSettings={() => setShowSettings(true)}
-              onAnimationComplete={(finalStreakCount: number) => {
-                updateStreakCounter(finalStreakCount);
+              onAnimationComplete={({ finalStreakCount, highestCombo, highestMultiplier }) => {
+                updateStreakCounter(finalStreakCount, {
+                  highestCombo,
+                  highestMultiplier,
+                });
                 moveToNextScreen();
               }}
             />
@@ -242,7 +265,7 @@ function App() {
                 gameState={state}
                 onReturnToPreDraw={returnToPreDraw}
                 showShopNextRound={state.showShopNextRound}
-                onShowPayoutTable={() => setShowPayoutTable(true)}
+                onShowPayoutTable={openPayoutTable}
                 onShowSettings={() => setShowSettings(true)}
               />
             </div>
@@ -327,13 +350,17 @@ function App() {
         </Suspense>
       )}
 
-      {showPayoutTable && (
+      {payoutTableState !== 'closed' && (
         <div
-          className="fixed inset-0 modal-overlay z-50 flex items-center justify-center p-4"
-          onClick={() => setShowPayoutTable(false)}
+          className={`fixed inset-0 modal-overlay z-50 flex items-center justify-center p-4 payout-table-overlay ${
+            payoutTableState === 'closing' ? 'payout-table-overlay-closing' : 'payout-table-overlay-open'
+          }`}
+          onClick={closePayoutTable}
         >
           <div
-            className="game-panel rounded-xl max-w-lg w-full max-h-[85vh] overflow-hidden border border-[var(--game-border)]"
+            className={`game-panel rounded-xl max-w-lg w-full max-h-[85vh] overflow-hidden border border-[var(--game-border)] payout-table-panel ${
+              payoutTableState === 'closing' ? 'payout-table-panel-closing' : 'payout-table-panel-open'
+            }`}
             style={{ boxShadow: '0 8px 32px rgba(0,0,0,0.5)' }}
             onClick={(e) => e.stopPropagation()}
           >
@@ -342,7 +369,7 @@ function App() {
                 Payout Table
               </h2>
               <button
-                onClick={() => setShowPayoutTable(false)}
+                onClick={closePayoutTable}
                 className="text-2xl font-bold leading-none hover:opacity-80"
                 style={{ color: 'var(--game-text-muted)' }}
                 aria-label="Close payout table"

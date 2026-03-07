@@ -1,23 +1,32 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vitest';
+import { gameConfig } from '../../config/gameConfig';
 import { getGameOverDisplay } from '../gameOverDisplay';
 import { createTestGameState } from '../../test/testHelpers';
 
 describe('getGameOverDisplay', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   it('should return voluntary end display when reason is voluntary', () => {
+    vi.spyOn(Math, 'random').mockReturnValue(0);
     const result = getGameOverDisplay('voluntary', null);
     expect(result.title).toBe('Run Complete!');
-    expect(result.subtitle).toBe('You ended your run successfully');
+    expect(result.subtitle).toBe('You walked away from the table.');
     expect(result.isVoluntaryEnd).toBe(true);
-    expect(result.tip).toBeUndefined();
+    expect(result.tip).toBe(gameConfig.quips.gameOver[0]);
   });
 
   it('should return voluntary when reason is null', () => {
+    vi.spyOn(Math, 'random').mockReturnValue(0);
     const result = getGameOverDisplay(null, null);
     expect(result.title).toBe('Run Complete!');
     expect(result.isVoluntaryEnd).toBe(true);
+    expect(gameConfig.quips.gameOver).toContain(result.tip);
   });
 
   it('should return insufficient-credits display with context', () => {
+    vi.spyOn(Math, 'random').mockReturnValue(0.3);
     const result = getGameOverDisplay('insufficient-credits', null, {
       minimumBet: 10,
       handCount: 20,
@@ -27,10 +36,11 @@ describe('getGameOverDisplay', () => {
     expect(result.subtitle).toContain('10');
     expect(result.subtitle).toContain('20');
     expect(result.isVoluntaryEnd).toBe(false);
-    expect(result.tip).toContain('shop');
+    expect(gameConfig.quips.gameOver).toContain(result.tip);
   });
 
   it('should return failure condition display with state', () => {
+    vi.spyOn(Math, 'random').mockReturnValue(0.7);
     const state = createTestGameState({
       baseMinimumBet: 10,
       round: 31,
@@ -41,5 +51,6 @@ describe('getGameOverDisplay', () => {
     expect(result.title).toBe('Game Over');
     expect(result.subtitle).toMatch(/Bet must be|multiplier/);
     expect(result.isVoluntaryEnd).toBe(false);
+    expect(gameConfig.quips.gameOver).toContain(result.tip);
   });
 });

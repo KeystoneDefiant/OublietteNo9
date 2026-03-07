@@ -150,6 +150,16 @@ export const gameConfig = {
       'Nothing to see here',
       'The shelves are bare',
     ],
+    gameOver: [
+      'The house smiles when you blink first.',
+      'Luck is a loan shark, not a friend.',
+      'The deck remembers every bad bargain.',
+      'Even busted runs teach sharp hands.',
+      'The table is patient. It will wait for your return.',
+      'Every collapse is just another tell.',
+      'The next run starts with better instincts.',
+      'You made it farther than the last ghost at this table.',
+    ],
   },
 
   /**

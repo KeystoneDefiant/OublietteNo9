@@ -600,13 +600,31 @@ These are potential future enhancements, not critical issues:
 
 ---
 
-**Last Updated**: March 6, 2026 - Round snapshot, modal, and results polish updates  
+**Last Updated**: March 7, 2026 - Game over polish and payout table motion updates
 **Evaluator**: Claude (AI Assistant)  
 **Next Review**: After significant changes or when adding tests
 
 ---
 
 ## Recent Improvements (March 2026)
+
+### Game Over Polish and Payout Table Motion (March 7, 2026) ✅
+ - **Problem**: The game over screen was still using plain summary cards, the average-per-round stat was underformatted, run-ending streak data was not preserved for summary display, and the payout table modal appeared/disappeared abruptly.
+ - **Solution**: Added run-best streak snapshots to game state, introduced config-driven game over quips, rebuilt the game over screen around staged hero animations plus a scrolling stat marquee, and gave the payout table modal dedicated open/close transitions.
+ - **Changes**:
+   - **Run summary data**: `useGameState.ts`, `types/index.ts`, `testHelpers.ts`, and `screen-ParallelHandsAnimation.tsx` now preserve and pass the best combo and multiplier reached during a run so `screen-GameOver.tsx` can render stable end-of-run summary stats alongside the player's final parallel hand count.
+   - **Config and display text**: `gameConfig.ts` now includes randomized `gameOver` quips; `gameOverDisplay.ts` selects one for the game over hint area while keeping the reason-specific subtitle logic intact.
+   - **UI polish**: `screen-GameOver.tsx` now formats average-per-round with grouped thousands and one decimal place, animates the title/subtitle sequence, and renders a slow right-to-left statistics marquee; `styles/global.css` adds the new game-over and payout-table motion keyframes.
+   - **Modal transition polish**: `App.tsx` now keeps the payout table mounted through a closing phase so the modal can animate both in and out smoothly.
+   - **Tests**: Added `src/components/__tests__/screen-GameOver.test.tsx` and expanded `gameOverDisplay.test.ts` coverage for the new quip behavior and summary formatting.
+ - **Impact**: Run-ending screens now feel deliberate instead of abrupt, key run stats survive into the final summary, and the payout table interaction matches the rest of the app's polished motion language.
+ - **Files Modified**: `src/App.tsx`, `src/components/screen-GameOver.tsx`, `src/components/screen-ParallelHandsAnimation.tsx`, `src/config/gameConfig.ts`, `src/hooks/useGameState.ts`, `src/styles/global.css`, `src/test/testHelpers.ts`, `src/types/index.ts`, `src/utils/gameOverDisplay.ts`, `src/utils/__tests__/gameOverDisplay.test.ts`, `TODO.md`, `CLAUDE.md`
+ - **Files Created**: `src/components/__tests__/screen-GameOver.test.tsx`
+ - **Verification (March 7, 2026)**:
+```
+✓ ESLint: `npm run lint`
+✓ Targeted tests: `npx vitest run src/utils/__tests__/gameOverDisplay.test.ts src/components/__tests__/screen-GameOver.test.tsx src/components/__tests__/screen-Results.test.tsx`
+```
 
 ### Round Snapshot, Modal, and Results Polish (March 6, 2026) ✅
  - **Problem**: Several post-round displays were out of sync with round transitions, some modals still lacked backdrop-close behavior, smaller screens had layout collisions, and the results/reveal screens were missing round-progress summary details.

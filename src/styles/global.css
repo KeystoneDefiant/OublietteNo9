@@ -508,6 +508,138 @@ h2 {
   backdrop-filter: blur(8px);
 }
 
+@keyframes payoutTableOverlayIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes payoutTableOverlayOut {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes payoutTablePanelIn {
+  from {
+    opacity: 0;
+    transform: translateY(24px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes payoutTablePanelOut {
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(18px) scale(0.98);
+  }
+}
+
+.payout-table-overlay-open {
+  animation: payoutTableOverlayIn 220ms ease-out forwards;
+}
+
+.payout-table-overlay-closing {
+  animation: payoutTableOverlayOut 220ms ease-in forwards;
+}
+
+.payout-table-panel-open {
+  animation: payoutTablePanelIn 240ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.payout-table-panel-closing {
+  animation: payoutTablePanelOut 220ms ease-in forwards;
+}
+
+@keyframes gameOverTitleShift {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.86);
+    letter-spacing: 0.22em;
+  }
+  24% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+    letter-spacing: 0.16em;
+  }
+  100% {
+    opacity: 1;
+    transform: translate(-50%, -220%) scale(0.68);
+    letter-spacing: 0.12em;
+  }
+}
+
+@keyframes gameOverSubtitleReveal {
+  0%,
+  34% {
+    opacity: 0;
+    transform: translate(-50%, 10%) scale(1.24);
+  }
+  58% {
+    opacity: 1;
+    transform: translate(-50%, 2%) scale(1);
+  }
+  100% {
+    opacity: 1;
+    transform: translate(-50%, 58%) scale(1);
+  }
+}
+
+@keyframes gameOverStatsMarquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.game-over-title-animate,
+.game-over-subtitle-animate {
+  position: absolute;
+  left: 50%;
+}
+
+.game-over-title-animate {
+  top: 250%;
+  transform: translate(-50%, -220%) scale(0.68);
+  width: 100%;
+  animation: gameOverTitleShift 2.4s cubic-bezier(0.2, 0.9, 0.22, 1) forwards;
+}
+
+.game-over-subtitle-animate {
+  top: 220%;
+  transform: translate(-50%, 58%) scale(1);
+  width: 100%;
+  animation: gameOverSubtitleReveal 2.8s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.game-over-marquee-track {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  width: max-content;
+  padding-right: 1rem;
+  animation: gameOverStatsMarquee 28s linear infinite;
+}
+
+.game-over-screen .game-over-marquee-track:hover {
+  animation-play-state: paused;
+}
+
 /* ============================================
    Responsive Breakpoints
    ============================================ */

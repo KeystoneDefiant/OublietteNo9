@@ -34,8 +34,12 @@ interface ParallelHandsAnimationProps {
   betAmount: number;
   /** Initial streak counter value */
   initialStreakCounter: number;
-  /** Callback when animation completes, returns final streak count */
-  onAnimationComplete: (finalStreakCount: number) => void;
+  /** Callback when animation completes with round streak summary details */
+  onAnimationComplete: (summary: {
+    finalStreakCount: number;
+    highestCombo: number;
+    highestMultiplier: number;
+  }) => void;
   /** Audio settings for sound effects */
   audioSettings?: { musicEnabled: boolean; soundEffectsEnabled: boolean };
   /** Animation speed: 0.5 to 7, or 'skip' */
@@ -272,7 +276,7 @@ export function ParallelHandsAnimation({
     [numStacks, msPerHand]
   );
 
-  const handStreakMultipliers = useMemo(
+  const roundComboSummary = useMemo(
     () =>
       summarizeRoundCombos(
         parallelHands,
@@ -280,9 +284,11 @@ export function ParallelHandsAnimation({
         betAmount,
         initialStreakCounter,
         gameConfig.streakMultiplier
-      ).streakMultipliers,
+      ),
     [parallelHands, rewardTable, betAmount, initialStreakCounter]
   );
+
+  const handStreakMultipliers = roundComboSummary.streakMultipliers;
 
   const onHandRevealed = useCallback(
     (globalIndex: number) => {
@@ -325,32 +331,43 @@ export function ParallelHandsAnimation({
     [scoreByRank]
   );
 
-  const finalStreakFromAllHands = useMemo(() => {
-    let streak = initialStreakCounter;
-    for (let i = 0; i < parallelHands.length; i++) {
-      const handResult = PokerEvaluator.evaluate(parallelHands[i].cards);
-      const withRewards = PokerEvaluator.applyRewards(handResult, rewardTable);
-      const scored = withRewards.multiplier > 0;
-      streak = scored ? streak + 1 : Math.max(0, streak - 1);
-    }
-    return streak;
-  }, [parallelHands, rewardTable, initialStreakCounter]);
+  const completionSummary = useMemo(
+    () => ({
+      finalStreakCount:
+        roundComboSummary.comboProgression[roundComboSummary.comboProgression.length - 1] ??
+        initialStreakCounter,
+      highestCombo: roundComboSummary.highestCombo,
+      highestMultiplier: roundComboSummary.highestMultiplier,
+    }),
+    [roundComboSummary, initialStreakCounter]
+  );
 
   const skipToSummary = () => {
-    onAnimationComplete(finalStreakFromAllHands);
+    onAnimationComplete(completionSummary);
   };
 
   // When animation speed is 'skip', go directly to summary
   useEffect(() => {
     if (animationSpeedMode === 'skip') {
-      onAnimationComplete(finalStreakFromAllHands);
+      onAnimationComplete(completionSummary);
     }
-  }, [animationSpeedMode, onAnimationComplete, finalStreakFromAllHands]);
+  }, [animationSpeedMode, onAnimationComplete, completionSummary]);
 
   // Handle empty hands: complete immediately
   useEffect(() => {
     if (parallelHands.length === 0) {
-      const t = setTimeout(() => onAnimationComplete(initialStreakCounter), 100);
+      const t = setTimeout(
+        () =>
+          onAnimationComplete({
+            finalStreakCount: initialStreakCounter,
+            highestCombo: initialStreakCounter,
+            highestMultiplier: calculateStreakMultiplier(
+              initialStreakCounter,
+              gameConfig.streakMultiplier
+            ),
+          }),
+        100
+      );
       return () => clearTimeout(t);
     }
   }, [parallelHands.length, onAnimationComplete, initialStreakCounter]);
@@ -371,9 +388,16 @@ export function ParallelHandsAnimation({
 
   useEffect(() => {
     if (!isFadingOut) return;
-    const doneTimer = setTimeout(() => onAnimationComplete(currentStreakCounter), FADE_DURATION_MS);
+    const doneTimer = setTimeout(
+      () =>
+        onAnimationComplete({
+          ...completionSummary,
+          finalStreakCount: currentStreakCounter,
+        }),
+      FADE_DURATION_MS
+    );
     return () => clearTimeout(doneTimer);
-  }, [isFadingOut, currentStreakCounter, onAnimationComplete, FADE_DURATION_MS]);
+  }, [isFadingOut, currentStreakCounter, onAnimationComplete, FADE_DURATION_MS, completionSummary]);
 
   return (
     <div

@@ -1,3 +1,4 @@
+import { gameConfig } from '../config/gameConfig';
 import { GameOverReason, GameState } from '../types';
 import { getFailureStateDescription } from './failureConditions';
 import { formatCredits } from './format';
@@ -37,41 +38,41 @@ export function getGameOverDisplay(
   const config: Record<GameOverReason, Omit<GameOverDisplay, 'isVoluntaryEnd'>> = {
     voluntary: {
       title: 'Run Complete!',
-      subtitle: 'You ended your run successfully',
-      tip: undefined,
+      subtitle: 'You walked away from the table.',
+      tip: getRandomGameOverQuip(),
     },
     'insufficient-credits': {
       title: 'Game Over',
       subtitle: insufficientCreditsSubtitle,
-      tip: 'Buy upgrades in the shop to increase your earnings and survive longer!',
+      tip: getRandomGameOverQuip(),
     },
     'minimum-bet-multiplier': {
       title: 'Game Over',
       subtitle: state
         ? getFailureStateDescription('minimum-bet-multiplier', state)
         : 'You did not meet the minimum bet requirement for the end game.',
-      tip: 'In the end game, your bet must stay above a multiplier of the base minimum.',
+      tip: getRandomGameOverQuip(),
     },
     'minimum-credit-efficiency': {
       title: 'Game Over',
       subtitle: state
         ? getFailureStateDescription('minimum-credit-efficiency', state)
         : 'Your credit efficiency fell below the end game requirement.',
-      tip: 'Focus on winning hands and shop upgrades to maintain efficiency.',
+      tip: getRandomGameOverQuip(),
     },
     'minimum-winning-hands': {
       title: 'Game Over',
       subtitle: state
         ? getFailureStateDescription('minimum-winning-hands', state)
         : 'You did not win enough hands to meet the end game requirement.',
-      tip: 'Consider holding stronger cards or buying wild cards to improve your odds.',
+      tip: getRandomGameOverQuip(),
     },
     'minimum-win-percent': {
       title: 'Game Over',
       subtitle: state
         ? getFailureStateDescription('minimum-win-percent', state)
         : 'You did not win the required percentage of hands for the end game.',
-      tip: 'The required win percentage increases each round—plan your strategy accordingly.',
+      tip: getRandomGameOverQuip(),
     },
   };
 
@@ -84,13 +85,15 @@ export function getGameOverDisplay(
   };
 }
 
+export function getRandomGameOverQuip(): string {
+  const quips = gameConfig.quips.gameOver;
+  return quips[Math.floor(Math.random() * quips.length)] ?? 'The table is not done with you yet.';
+}
+
 /**
  * Formats the insufficient-credits subtitle with actual values.
  */
-function getInsufficientCreditsSubtitle(
-  minimumBet: number,
-  handCount: number
-): string {
+function getInsufficientCreditsSubtitle(minimumBet: number, handCount: number): string {
   const required = minimumBet * handCount;
   return `You need at least ${formatCredits(required)} credits to play the next round (${formatCredits(minimumBet)} × ${handCount} hands).`;
 }
