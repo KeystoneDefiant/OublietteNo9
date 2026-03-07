@@ -9,10 +9,14 @@ interface CheatsModalProps {
 
 export function CheatsModal({ onClose, onAddCredits, onAddHands, onSetDevilsDealCheat }: CheatsModalProps) {
   return (
-    <div className="fixed inset-0 modal-overlay flex items-center justify-center z-50 p-4">
+    <div
+      className="fixed inset-0 modal-overlay flex items-center justify-center z-50 p-4"
+      onClick={onClose}
+    >
       <div
         className="game-panel rounded-xl p-6 sm:p-8 max-w-md w-full border border-[var(--game-border)] relative"
         style={{ boxShadow: '0 8px 32px rgba(0,0,0,0.5)' }}
+        onClick={(e) => e.stopPropagation()}
       >
         <button
           onClick={onClose}

@@ -30,13 +30,6 @@ export function DevilsDealCard({
       className={`flex flex-col items-center ${
         isDisabled ? 'opacity-30 cursor-not-allowed' : 'cursor-pointer'
       }`}
-      style={{
-        position: 'absolute',
-        left: 'calc(80%)',
-        top: '50%',
-        transform: 'translateY(-50%)',
-        width: '20%',
-      }}
       onClick={handleClick}
     >
       <div className="devil-deal-container flex flex-col items-center w-full">

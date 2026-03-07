@@ -260,8 +260,7 @@ function App() {
               handCount={state.handCount}
               betAmount={state.betAmount}
               selectedHandCount={state.selectedHandCount}
-              round={state.round}
-              prevRoundMinimumBet={state.prevRoundMinimumBet}
+              shopDisplayBetAmount={state.shopDisplayBetAmount}
               deadCards={state.deckModifications.deadCards}
               deadCardRemovalCount={state.deckModifications.deadCardRemovalCount}
               wildCards={state.deckModifications.wildCards}
@@ -334,7 +333,7 @@ function App() {
           onClick={() => setShowPayoutTable(false)}
         >
           <div
-            className="game-panel rounded-xl max-w-md w-full max-h-[85vh] overflow-hidden border border-[var(--game-border)]"
+            className="game-panel rounded-xl max-w-lg w-full max-h-[85vh] overflow-hidden border border-[var(--game-border)]"
             style={{ boxShadow: '0 8px 32px rgba(0,0,0,0.5)' }}
             onClick={(e) => e.stopPropagation()}
           >

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { getCreditsNeededForNextRound } from '../config';
+import { getCreditsNeededForDisplayedRound, getCreditsNeededForNextRound } from '../config';
 import { getCurrentGameMode } from '../../config/gameConfig';
 
 describe('getCreditsNeededForNextRound', () => {
@@ -17,5 +17,9 @@ describe('getCreditsNeededForNextRound', () => {
     expect(costRound5).toBe(10 * 5);
     const newMinBet = Math.floor(prevMinBet * (1 + mode.minimumBetIncreasePercent / 100));
     expect(costRound6).toBe(newMinBet * 5);
+  });
+
+  it('should calculate displayed round cost from the completed-round bet snapshot', () => {
+    expect(getCreditsNeededForDisplayedRound(12, 5, 50)).toBe(60);
   });
 });

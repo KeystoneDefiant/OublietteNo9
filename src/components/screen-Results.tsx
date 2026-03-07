@@ -3,9 +3,7 @@ import { Card as CardType, Hand, FailureStateType, GameState } from '../types';
 import { Card } from './Card';
 import { GameHeader } from './GameHeader';
 import { GameButton } from './GameButton';
-import { PokerEvaluator } from '../utils/pokerEvaluator';
-import { calculateStreakMultiplier } from '../utils/streakCalculator';
-import { gameConfig } from '../config/gameConfig';
+import { summarizeRoundCombos } from '../utils/streakCalculator';
 import { formatCredits } from '../utils/format';
 
 interface ResultsProps {
@@ -26,6 +24,27 @@ interface ResultsProps {
   onShowSettings?: () => void;
 }
 
+function formatMultiplier(multiplier: number): string {
+  return `${Number(multiplier.toFixed(2)).toString()}x`;
+}
+
+function getComboGraphPoints(comboProgression: number[], width: number, height: number): string {
+  if (comboProgression.length === 0) {
+    return '';
+  }
+
+  const maxCombo = Math.max(1, ...comboProgression);
+  const stepX = comboProgression.length > 1 ? width / (comboProgression.length - 1) : width / 2;
+
+  return comboProgression
+    .map((combo, index) => {
+      const x = comboProgression.length > 1 ? index * stepX : width / 2;
+      const y = height - (combo / maxCombo) * height;
+      return `${x},${y}`;
+    })
+    .join(' ');
+}
+
 export function Results({
   playerHand,
   heldIndices,
@@ -42,49 +61,27 @@ export function Results({
   onShowPayoutTable,
   onShowSettings,
 }: ResultsProps) {
-  const { totalPayout, rankData, handsPlayed, handsWon, winPercent } = useMemo(() => {
-    const payouts: number[] = [];
-    const rankMap = new Map<string, { rank: string; totalPayout: number; count: number }>();
-    let streak = 0;
-
-    for (let i = 0; i < parallelHands.length; i++) {
-      const hand = parallelHands[i];
-      const result = PokerEvaluator.evaluate(hand.cards);
-      const withRewards = PokerEvaluator.applyRewards(result, rewardTable);
-      const streakMultiplier = calculateStreakMultiplier(streak, gameConfig.streakMultiplier);
-      const handPayout = Math.round(betAmount * withRewards.multiplier * streakMultiplier);
-
-      streak = withRewards.multiplier > 0 ? streak + 1 : Math.max(0, streak - 1);
-      payouts.push(handPayout);
-
-      const rankKey = result.rank;
-      if (rankMap.has(rankKey)) {
-        const existing = rankMap.get(rankKey)!;
-        existing.totalPayout += handPayout;
-        existing.count += 1;
-      } else {
-        rankMap.set(rankKey, { rank: result.rank, totalPayout: handPayout, count: 1 });
-      }
-    }
-
-    const handsWon = Array.from(rankMap.values()).reduce(
-      (sum, item) => sum + (item.totalPayout > 0 ? item.count : 0),
-      0
-    );
-
-    return {
-      totalPayout: payouts.reduce((sum, p) => sum + p, 0),
-      rankData: Array.from(rankMap.values()),
-      handsPlayed: parallelHands.length,
-      handsWon,
-      winPercent: parallelHands.length > 0 ? (handsWon / parallelHands.length) * 100 : 0,
-    };
+  const {
+    comboProgression,
+    totalPayout,
+    rankData,
+    handsPlayed,
+    handsWon,
+    winPercent,
+    highestCombo,
+    highestMultiplier,
+  } = useMemo(() => {
+    return summarizeRoundCombos(parallelHands, rewardTable, betAmount);
   }, [parallelHands, rewardTable, betAmount]);
 
   const profit =
     totalPayout -
     betAmount * selectedHandCount -
     (gameState?.devilsDealHeld && gameState?.devilsDealCost ? Math.abs(gameState.devilsDealCost) : 0);
+  const comboGraphPoints = useMemo(
+    () => getComboGraphPoints(comboProgression, 100, 44),
+    [comboProgression]
+  );
 
   return (
     <div id="results-screen" className="min-h-screen min-h-[100dvh] p-4 sm:p-6 relative overflow-hidden select-none">
@@ -221,6 +218,60 @@ export function Results({
                   >
                     {formatCredits(profit)} credit{Math.abs(profit) !== 1 ? 's' : ''}
                   </span>
+                </div>
+                <div className="pt-3 border-t border-[var(--game-border)] space-y-3">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm sm:text-base font-semibold" style={{ color: 'var(--game-text-muted)' }}>
+                      Highest Combo
+                    </span>
+                    <span className="text-lg sm:text-xl font-bold" style={{ color: 'var(--game-accent-gold)' }}>
+                      {highestCombo}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm sm:text-base font-semibold" style={{ color: 'var(--game-text-muted)' }}>
+                      Highest Multiplier
+                    </span>
+                    <span className="text-lg sm:text-xl font-bold" style={{ color: 'var(--game-accent-gold)' }}>
+                      {formatMultiplier(highestMultiplier)}
+                    </span>
+                  </div>
+                  <div
+                    className="rounded-lg p-3 border border-[var(--game-border)]"
+                    style={{ background: 'rgba(255,255,255,0.03)' }}
+                  >
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="text-xs uppercase tracking-[0.12em]" style={{ color: 'var(--game-text-muted)' }}>
+                        Combo Progression
+                      </span>
+                      <span className="text-xs" style={{ color: 'var(--game-text-dim)' }}>
+                        Round trend
+                      </span>
+                    </div>
+                    {comboProgression.length > 0 ? (
+                      <svg
+                        viewBox="0 0 100 44"
+                        className="w-full h-24"
+                        role="img"
+                        aria-label="Combo progression graph"
+                      >
+                        <title>Combo progression graph</title>
+                        <line x1="0" y1="43" x2="100" y2="43" stroke="var(--game-border)" strokeWidth="1" />
+                        <polyline
+                          fill="none"
+                          stroke="var(--game-accent-gold)"
+                          strokeWidth="2.5"
+                          strokeLinejoin="round"
+                          strokeLinecap="round"
+                          points={comboGraphPoints}
+                        />
+                      </svg>
+                    ) : (
+                      <p className="text-sm italic" style={{ color: 'var(--game-text-dim)' }}>
+                        No combo data this round yet.
+                      </p>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>

@@ -12,8 +12,7 @@ describe('Shop Component', () => {
     handCount: 50,
     betAmount: mode.startingBet,
     selectedHandCount: mode.startingHandCount,
-    round: 1,
-    prevRoundMinimumBet: null,
+    shopDisplayBetAmount: null,
     deadCards: [],
     deadCardRemovalCount: 0,
     wildCards: [],
@@ -59,6 +58,11 @@ describe('Shop Component', () => {
       // Next round cost = betAmount * selectedHandCount (from config)
       const expectedCost = mode.startingBet * mode.startingHandCount;
       expect(label.closest('div')?.textContent).toMatch(new RegExp(String(expectedCost)));
+    });
+
+    it('should use the completed-round bet snapshot for next-round cost display', () => {
+      render(<Shop {...mockProps} betAmount={15} selectedHandCount={8} shopDisplayBetAmount={10} />);
+      expect(screen.getByText(/Credits needed for next round/i).closest('div')?.textContent).toMatch(/80/);
     });
 
     it('should display all shop options', () => {

@@ -571,11 +571,22 @@
 }
 
 .phase-b-scores-label {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
   font-size: 12px;
   font-weight: 700;
   color: var(--game-text-muted);
   text-transform: uppercase;
   letter-spacing: 0.5px;
+}
+
+.phase-b-scores-counter {
+  flex: 0 0 auto;
+  font-size: 11px;
+  color: var(--game-text-dim);
+  white-space: nowrap;
 }
 
 .phase-b-scores-list {

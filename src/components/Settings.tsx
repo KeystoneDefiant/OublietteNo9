@@ -59,10 +59,14 @@ export function Settings({
       : Math.min(ANIMATION_SPEED_MAX, Math.max(ANIMATION_SPEED_MIN, animationSpeedMode));
 
   return (
-    <div className="fixed inset-0 modal-overlay flex items-center justify-center z-50 p-4">
+    <div
+      className="fixed inset-0 modal-overlay flex items-center justify-center z-50 p-4"
+      onClick={onClose}
+    >
       <div
         className="game-panel rounded-xl p-6 sm:p-8 max-w-md w-full max-h-[90vh] overflow-y-auto border border-[var(--game-border)]"
         style={{ boxShadow: '0 8px 32px rgba(0,0,0,0.5)' }}
+        onClick={(e) => e.stopPropagation()}
       >
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-2xl sm:text-3xl font-bold" style={{ color: 'var(--game-accent-gold)' }}>

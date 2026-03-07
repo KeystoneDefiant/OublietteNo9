@@ -1,8 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, within } from '@testing-library/react';
 import { Results } from '../screen-Results';
 import { Card as CardType, Hand } from '../../types';
 import { getTestRewardTable } from '../../test/testHelpers';
+import { calculateStreakMultiplier } from '../../utils/streakCalculator';
+import { gameConfig } from '../../config/gameConfig';
 
 describe('Results Component', () => {
   const createMockCard = (rank: string, suit: string, id: string): CardType => ({
@@ -222,6 +224,32 @@ describe('Results Component', () => {
       render(<Results {...mockProps} />);
       expect(screen.getByText(/Total Payout/i)).toBeInTheDocument();
       expect(screen.getByText(/Round Cost/i)).toBeInTheDocument();
+    });
+
+    it('should show highest combo, highest multiplier, and the combo progression graph', () => {
+      const comboHands = Array.from({ length: 6 }, (_, index) => ({
+        ...mockHand,
+        id: `combo-${index}`,
+      }));
+      const props = {
+        ...mockProps,
+        parallelHands: comboHands,
+        selectedHandCount: comboHands.length,
+      };
+
+      render(<Results {...props} />);
+
+      expect(screen.getByText(/Highest Combo/i)).toBeInTheDocument();
+      expect(screen.getByText(/Highest Multiplier/i)).toBeInTheDocument();
+      const highestComboRow = screen.getByText(/Highest Combo/i).closest('div');
+      expect(highestComboRow).toBeTruthy();
+      expect(within(highestComboRow as HTMLElement).getByText('6')).toBeInTheDocument();
+      expect(
+        screen.getByText(
+          `${Number(calculateStreakMultiplier(5, gameConfig.streakMultiplier).toFixed(2)).toString()}x`
+        )
+      ).toBeInTheDocument();
+      expect(screen.getByLabelText(/Combo progression graph/i)).toBeInTheDocument();
     });
   });
 

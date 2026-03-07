@@ -157,6 +157,8 @@ export interface GameState {
   creditsAtShopOpen: number | null;
   /** Minimum bet from the round we just finished; used to compute next-round cost when bet increases. */
   prevRoundMinimumBet: number | null;
+  /** Bet size from the round just completed; used for shop affordability display after round transitions. */
+  shopDisplayBetAmount: number | null;
   isEndlessMode: boolean; // Whether endless mode is active
   currentFailureState: FailureStateType; // Current active failure condition
   winningHandsLastRound: number; // Number of winning hands from last round

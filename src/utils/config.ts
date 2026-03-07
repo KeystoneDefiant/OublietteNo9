@@ -100,3 +100,13 @@ export function getCreditsNeededForNextRound(
   const effectiveHandCount = Math.min(selectedHandCount, handCount);
   return effectiveBet * effectiveHandCount;
 }
+
+/** Returns the displayed round cost for the current bet snapshot and selected hands. */
+export function getCreditsNeededForDisplayedRound(
+  displayBetAmount: number,
+  selectedHandCount: number,
+  handCount: number
+): number {
+  const effectiveHandCount = Math.min(selectedHandCount, handCount);
+  return displayBetAmount * effectiveHandCount;
+}

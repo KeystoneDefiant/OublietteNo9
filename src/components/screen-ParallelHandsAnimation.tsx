@@ -6,6 +6,7 @@ import {
   calculateStreakMultiplier,
   getNextThreshold,
   getStreakProgress,
+  summarizeRoundCombos,
 } from '../utils/streakCalculator';
 import { StreakProgressBar } from './StreakProgressBar';
 import { Card } from './Card';
@@ -271,19 +272,17 @@ export function ParallelHandsAnimation({
     [numStacks, msPerHand]
   );
 
-  const handStreakMultipliers = useMemo(() => {
-    const multipliers: number[] = [];
-    let streakCount = initialStreakCounter;
-
-    for (let i = 0; i < parallelHands.length; i++) {
-      multipliers[i] = calculateStreakMultiplier(streakCount, gameConfig.streakMultiplier);
-      const handResult = PokerEvaluator.evaluate(parallelHands[i].cards);
-      const withRewards = PokerEvaluator.applyRewards(handResult, rewardTable);
-      const scored = withRewards.multiplier > 0;
-      streakCount = scored ? streakCount + 1 : Math.max(0, streakCount - 1);
-    }
-    return multipliers;
-  }, [parallelHands, rewardTable, initialStreakCounter]);
+  const handStreakMultipliers = useMemo(
+    () =>
+      summarizeRoundCombos(
+        parallelHands,
+        rewardTable,
+        betAmount,
+        initialStreakCounter,
+        gameConfig.streakMultiplier
+      ).streakMultipliers,
+    [parallelHands, rewardTable, betAmount, initialStreakCounter]
+  );
 
   const onHandRevealed = useCallback(
     (globalIndex: number) => {
@@ -427,7 +426,12 @@ export function ParallelHandsAnimation({
           </div>
         </div>
         <div className="phase-b-scores-section">
-          <div className="phase-b-scores-label">Scored hands</div>
+          <div className="phase-b-scores-label">
+            <span>Scored hands</span>
+            <span className="phase-b-scores-counter">
+              {totalRevealedCount} of {parallelHands.length} hands
+            </span>
+          </div>
           <div className="phase-b-scores-list">
             {Object.entries(scoreByRank).map(([rank, { count, credits }]) => (
               <div key={rank} className="phase-b-score-row">

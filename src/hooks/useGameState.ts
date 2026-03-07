@@ -50,58 +50,61 @@ function loadAnimationSettings(): GameState['animationSpeedMode'] {
   return parsed?.animationSpeedMode ?? DEFAULT_ANIMATION_SPEED;
 }
 
-const INITIAL_STATE: GameState = {
-  screen: 'menu',
-  gamePhase: 'preDraw',
-  isGeneratingHands: false,
-  playerHand: [],
-  heldIndices: [],
-  parallelHands: [],
-  handCount: currentMode.startingHandCount,
-  rewardTable: currentMode.rewards,
-  credits: currentMode.startingCredits,
-  currentRun: 0,
-  additionalHandsBought: 0,
-  betAmount: currentMode.startingBet,
-  selectedHandCount: currentMode.startingHandCount,
-  minimumBet: currentMode.startingBet,
-  baseMinimumBet: currentMode.startingBet,
-  round: 1,
-  totalEarnings: 0,
-  deckModifications: {
-    deadCards: [],
-    wildCards: [],
-    removedCards: [],
-    deadCardRemovalCount: 0,
-  },
-  extraDrawPurchased: false,
-  maxDraws: 1,
-  drawsCompletedThisRound: 0,
-  wildCardCount: 0,
-  gameOver: false,
-  gameOverReason: null,
-  showShopNextRound: false,
-  selectedShopOptions: [],
-  creditsAtShopOpen: null,
-  prevRoundMinimumBet: null,
-  isEndlessMode: false,
-  currentFailureState: null,
-  winningHandsLastRound: 0,
-  devilsDealCard: null,
-  devilsDealCost: 0,
-  devilsDealHeld: false,
-  devilsDealChancePurchases: 0,
-  devilsDealCostReductionPurchases: 0,
-  extraCardsInHand: 0,
-  streakCounter: 0,
-  currentStreakMultiplier: 1.0,
-  audioSettings: loadAudioSettings(),
-  animationSpeedMode: loadAnimationSettings(),
-  cardTheme: getStoredCardTheme(),
-};
+function createInitialState(): GameState {
+  return {
+    screen: 'menu',
+    gamePhase: 'preDraw',
+    isGeneratingHands: false,
+    playerHand: [],
+    heldIndices: [],
+    parallelHands: [],
+    handCount: currentMode.startingHandCount,
+    rewardTable: currentMode.rewards,
+    credits: currentMode.startingCredits,
+    currentRun: 0,
+    additionalHandsBought: 0,
+    betAmount: currentMode.startingBet,
+    selectedHandCount: currentMode.startingHandCount,
+    minimumBet: currentMode.startingBet,
+    baseMinimumBet: currentMode.startingBet,
+    round: 1,
+    totalEarnings: 0,
+    deckModifications: {
+      deadCards: [],
+      wildCards: [],
+      removedCards: [],
+      deadCardRemovalCount: 0,
+    },
+    extraDrawPurchased: false,
+    maxDraws: 1,
+    drawsCompletedThisRound: 0,
+    wildCardCount: 0,
+    gameOver: false,
+    gameOverReason: null,
+    showShopNextRound: false,
+    selectedShopOptions: [],
+    creditsAtShopOpen: null,
+    prevRoundMinimumBet: null,
+    shopDisplayBetAmount: null,
+    isEndlessMode: false,
+    currentFailureState: null,
+    winningHandsLastRound: 0,
+    devilsDealCard: null,
+    devilsDealCost: 0,
+    devilsDealHeld: false,
+    devilsDealChancePurchases: 0,
+    devilsDealCostReductionPurchases: 0,
+    extraCardsInHand: 0,
+    streakCounter: 0,
+    currentStreakMultiplier: 1.0,
+    audioSettings: loadAudioSettings(),
+    animationSpeedMode: loadAnimationSettings(),
+    cardTheme: getStoredCardTheme(),
+  };
+}
 
 export function useGameState() {
-  const [state, setState] = useState<GameState>(INITIAL_STATE);
+  const [state, setState] = useState<GameState>(() => createInitialState());
 
   // Use specialized hooks for different action types
   const gameActions = useGameActions(state, setState);
@@ -157,7 +160,7 @@ export function useGameState() {
 
   const returnToMenu = useCallback(() => {
     startTransition(() => {
-      setState(INITIAL_STATE);
+      setState(createInitialState());
     });
   }, []);
 
@@ -292,6 +295,7 @@ export function useGameState() {
         selectedShopOptions,
         creditsAtShopOpen: showShopNextRound ? newCredits : null,
         prevRoundMinimumBet: showShopNextRound ? prev.minimumBet : null,
+        shopDisplayBetAmount: showShopNextRound ? prev.betAmount : null,
         isEndlessMode,
         currentFailureState,
         winningHandsLastRound: winningHandsCount,
@@ -324,6 +328,7 @@ export function useGameState() {
       showShopNextRound: false,
       selectedShopOptions: [],
       creditsAtShopOpen: null,
+      shopDisplayBetAmount: null,
       isEndlessMode: false,
       currentFailureState: null,
       gameOverReason: null,
@@ -359,6 +364,7 @@ export function useGameState() {
       selectedShopOptions: [],
       creditsAtShopOpen: null,
       prevRoundMinimumBet: null,
+      shopDisplayBetAmount: null,
     }));
   }, [stopMusic]);
 
@@ -488,6 +494,7 @@ export function useGameState() {
         selectedShopOptions: [],
         creditsAtShopOpen: null,
         prevRoundMinimumBet: null,
+        shopDisplayBetAmount: null,
       };
     });
   }, []);

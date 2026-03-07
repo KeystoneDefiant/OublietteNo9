@@ -83,7 +83,7 @@ export function RewardTable({
               ref={isHighlighted ? highlightRef : null}
               title={RANK_TOOLTIPS[rank]}
               className={`
-                flex justify-between items-center p-3 rounded-lg transition-all relative
+                flex items-center gap-4 p-3 rounded-lg transition-all relative
                 ${
                   isHighlighted
                     ? 'border-2 payout-highlight'
@@ -91,8 +91,13 @@ export function RewardTable({
                 }
               `}
             >
-              <span className="font-medium" style={{ color: 'var(--game-text)' }}>{RANK_LABELS[rank]}</span>
-              <span className="font-bold" style={{ color: 'var(--game-accent-gold)' }}>
+              <span className="min-w-0 flex-1 font-medium" style={{ color: 'var(--game-text)' }}>
+                {RANK_LABELS[rank]}
+              </span>
+              <span
+                className="min-w-[5.5rem] sm:min-w-[7rem] flex-shrink-0 text-right font-bold tabular-nums"
+                style={{ color: 'var(--game-accent-gold)' }}
+              >
                 {multiplier > 0 ? `×${multiplier}` : '—'}
               </span>
               {isHighlighted && showPopup && payoutAmount && (

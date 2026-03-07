@@ -54,6 +54,7 @@ export function createTestGameState(overrides: Partial<GameState> = {}): GameSta
     selectedShopOptions: [],
     creditsAtShopOpen: null,
     prevRoundMinimumBet: null,
+    shopDisplayBetAmount: null,
     isEndlessMode: false,
     currentFailureState: null,
     winningHandsLastRound: 0,

@@ -38,6 +38,7 @@ function createMockState(overrides: Partial<GameState> = {}): GameState {
     selectedShopOptions: [],
     creditsAtShopOpen: null,
     prevRoundMinimumBet: null,
+    shopDisplayBetAmount: null,
     isEndlessMode: false,
     currentFailureState: null,
     winningHandsLastRound: 0,

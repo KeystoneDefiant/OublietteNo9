@@ -3,6 +3,7 @@ import {
   checkFailureConditions,
   getFailureStateDescription,
   getEndlessModeConditions,
+  getMinimumWinPercentForRound,
 } from '../failureConditions';
 import { FailureStateType } from '../../types';
 import { getCurrentGameMode } from '../../config/gameConfig';
@@ -198,6 +199,9 @@ describe('checkFailureConditions', () => {
   });
 
   describe('minimum winning hands per round condition', () => {
+    const endlessStartRound = getCurrentGameMode().endlessMode?.startRound ?? 30;
+    const roundAfterFirstEndless = endlessStartRound + 1;
+
     beforeEach(() => {
       const mode = getCurrentGameMode();
       expect(mode.endlessMode?.failureConditions.minimumWinningHandsPerRound?.enabled).toBe(true);
@@ -211,8 +215,8 @@ describe('checkFailureConditions', () => {
         isEndlessMode: true,
         winningHandsLastRound: minWinningHands - 1, // Below required
         betAmount: requiredBet, // Pass minimum bet
-        round: 10,
-        totalEarnings: minEfficiency * 10, // Pass efficiency
+        round: roundAfterFirstEndless,
+        totalEarnings: minEfficiency * roundAfterFirstEndless, // Pass efficiency
       });
       const result = checkFailureConditions(state);
       expect(result).toBe('minimum-winning-hands');
@@ -225,8 +229,8 @@ describe('checkFailureConditions', () => {
         isEndlessMode: true,
         winningHandsLastRound: minWinningHands, // Exactly required (from config)
         betAmount: requiredBet, // Pass minimum bet
-        round: 10,
-        totalEarnings: minEfficiency * 10, // Pass efficiency
+        round: roundAfterFirstEndless,
+        totalEarnings: minEfficiency * roundAfterFirstEndless, // Pass efficiency
       });
       const result = checkFailureConditions(state);
       expect(result).not.toBe('minimum-winning-hands');
@@ -239,8 +243,8 @@ describe('checkFailureConditions', () => {
         isEndlessMode: true,
         winningHandsLastRound: minWinningHands + 5, // Above required (config)
         betAmount: requiredBet, // Pass minimum bet
-        round: 10,
-        totalEarnings: minEfficiency * 10, // Pass efficiency
+        round: roundAfterFirstEndless,
+        totalEarnings: minEfficiency * roundAfterFirstEndless, // Pass efficiency
       });
       const result = checkFailureConditions(state);
       expect(result).not.toBe('minimum-winning-hands');
@@ -252,8 +256,8 @@ describe('checkFailureConditions', () => {
         baseMinimumBet: 10,
         betAmount: 15, // Fails minimum bet multiplier
         winningHandsLastRound: 0, // Would fail winning hands too
-        round: 10,
-        totalEarnings: 500, // Would fail efficiency too
+        round: roundAfterFirstEndless,
+        totalEarnings: 500 * (roundAfterFirstEndless / 10), // Would fail efficiency too
       });
       const result = checkFailureConditions(state);
       // Should return minimum-bet-multiplier (first failing condition)
@@ -320,14 +324,16 @@ describe('checkFailureConditions', () => {
     });
 
     it('should handle zero winning hands correctly', () => {
+      const roundAfterFirstEndless =
+        (getCurrentGameMode().endlessMode?.startRound ?? 30) + 1;
       const baseMinBet = 10;
       const requiredBet = Math.ceil(baseMinBet * betMultiplier);
       const state = createTestGameState({
         isEndlessMode: true,
         winningHandsLastRound: 0,
         betAmount: requiredBet, // Pass minimum bet
-        round: 10,
-        totalEarnings: minEfficiency * 10, // Pass efficiency
+        round: roundAfterFirstEndless,
+        totalEarnings: minEfficiency * roundAfterFirstEndless, // Pass efficiency
       });
       const result = checkFailureConditions(state);
       expect(result).toBe('minimum-winning-hands');
@@ -451,6 +457,20 @@ describe('getFailureStateDescription', () => {
 });
 
 describe('integration scenarios', () => {
+  it('should not evaluate per-round endless hand requirements before the first endless round is completed', () => {
+    const endlessStartRound = getCurrentGameMode().endlessMode?.startRound ?? 30;
+    const state = createTestGameState({
+      isEndlessMode: true,
+      round: endlessStartRound,
+      baseMinimumBet: 10,
+      betAmount: Math.ceil(10 * betMultiplier),
+      totalEarnings: minEfficiency * endlessStartRound,
+      winningHandsLastRound: 0,
+    });
+
+    expect(checkFailureConditions(state)).toBeNull();
+  });
+
   it('should handle a player barely passing all conditions', () => {
     const baseMinBet = 10;
     const requiredBet = Math.ceil(baseMinBet * betMultiplier);
@@ -587,5 +607,19 @@ describe('getEndlessModeConditions', () => {
     const winPctCondition = result.find((c) => c.includes('% of hands'));
     expect(winPctCondition).toBeDefined();
     expect(winPctCondition).toContain('30'); // startPercent + increment for second endless round
+  });
+});
+
+describe('getMinimumWinPercentForRound', () => {
+  it('should return null before endless mode starts', () => {
+    const endlessStartRound = getCurrentGameMode().endlessMode?.startRound ?? 30;
+    expect(getMinimumWinPercentForRound(endlessStartRound - 1)).toBeNull();
+  });
+
+  it('should return the configured start percent on the first endless round', () => {
+    const endlessConfig = getCurrentGameMode().endlessMode!;
+    expect(getMinimumWinPercentForRound(endlessConfig.startRound)).toBe(
+      endlessConfig.failureConditions.minimumWinPercent?.startPercent
+    );
   });
 });

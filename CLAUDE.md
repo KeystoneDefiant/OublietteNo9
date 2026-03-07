@@ -164,6 +164,12 @@ src/
 │   ├── Rules.tsx
 │   ├── Settings.tsx
 │   ├── Shop.tsx
+│   ├── __tests__/               # Component-level UI tests
+│   │   ├── screen-GameTable.test.tsx
+│   │   ├── screen-ParallelHandsAnimation.test.tsx
+│   │   ├── screen-PreDraw.test.tsx
+│   │   ├── screen-Results.test.tsx
+│   │   └── Shop.test.tsx
 │   ├── screen-GameOver.tsx
 │   ├── screen-GameTable.tsx
 │   ├── screen-ParallelHandsAnimation.tsx
@@ -594,13 +600,31 @@ These are potential future enhancements, not critical issues:
 
 ---
 
-**Last Updated**: January 2026 - Major improvements implemented  
+**Last Updated**: March 6, 2026 - Round snapshot, modal, and results polish updates  
 **Evaluator**: Claude (AI Assistant)  
 **Next Review**: After significant changes or when adding tests
 
 ---
 
 ## Recent Improvements (March 2026)
+
+### Round Snapshot, Modal, and Results Polish (March 6, 2026) ✅
+ - **Problem**: Several post-round displays were out of sync with round transitions, some modals still lacked backdrop-close behavior, smaller screens had layout collisions, and the results/reveal screens were missing round-progress summary details.
+ - **Solution**: Centralized round-summary math, refreshed initial state from persisted settings, tightened responsive layout behavior, and extended the reveal/results UI with combo-focused summary data.
+ - **Changes**:
+   - **Round snapshot fixes**: `useGameState.ts` now stores a shop-facing bet snapshot from the completed round; `Shop.tsx` uses that snapshot for next-round affordability display; `failureConditions.ts` now evaluates per-round endless requirements against the last completed round rather than the already-advanced round.
+   - **Settings/modal fixes**: `useGameState.ts` now rebuilds initial state from storage instead of reusing stale module state; `Settings.tsx`, `Credits.tsx`, `CheatsModal.tsx`, `Rules.tsx`, and the PreDraw end-run confirmation now close when clicking the backdrop.
+   - **Responsive layout fixes**: `screen-PreDraw.tsx` now matches the main screen width; `screen-GameTable.tsx` and `DevilsDealCard.tsx` move Devil's Deal below the main action button; `RewardTable.tsx` and `App.tsx` stabilize/widen payout rows for large multipliers.
+   - **Results/reveal enhancements**: `screen-ParallelHandsAnimation.tsx` and `screen-ParallelHandsAnimation.css` add an inline `x of y hands` counter; `streakCalculator.ts` now exposes a reusable round combo summary helper; `screen-Results.tsx` adds Highest Combo, Highest Multiplier, and a combo progression graph.
+   - **Tests**: Added targeted coverage for the new snapshot logic and reveal/results UI, including a new `screen-ParallelHandsAnimation.test.tsx`.
+ - **Impact**: Shop and endless-mode requirements now match player expectations at round boundaries, persisted settings survive resets correctly, modal behavior is more consistent, small-screen layout is cleaner, and players get clearer round-progress feedback in both the animation and results screens.
+ - **Files Modified**: `src/hooks/useGameState.ts`, `src/utils/failureConditions.ts`, `src/components/Shop.tsx`, `src/components/Settings.tsx`, `src/components/Credits.tsx`, `src/components/CheatsModal.tsx`, `src/components/Rules.tsx`, `src/components/screen-PreDraw.tsx`, `src/components/screen-GameTable.tsx`, `src/components/DevilsDealCard.tsx`, `src/components/RewardTable.tsx`, `src/components/screen-Results.tsx`, `src/components/screen-ParallelHandsAnimation.tsx`, `src/components/screen-ParallelHandsAnimation.css`, `src/utils/streakCalculator.ts`, `src/utils/config.ts`, `src/types/index.ts`, `src/test/testHelpers.ts`, component and utility test files, `TODO.md`, `CLAUDE.md`
+ - **Files Created**: `src/components/__tests__/screen-ParallelHandsAnimation.test.tsx`
+ - **Verification (March 6, 2026)**:
+```
+✓ ESLint: `npm run lint`
+✓ Targeted tests: `npx vitest run src/utils/__tests__/config.test.ts src/utils/__tests__/failureConditions.test.ts src/components/__tests__/Shop.test.tsx src/components/__tests__/screen-Results.test.tsx src/components/__tests__/screen-ParallelHandsAnimation.test.tsx`
+```
 
 ### UI Overhaul - Mobile-Friendly, Game-Like Styling (March 2, 2026) ✅
    - **Problem**: UI felt like a generic web app; needed mobile-friendly layout, darker moodier colors, and game-like visual style

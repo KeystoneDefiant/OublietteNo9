@@ -83,7 +83,7 @@ export function PreDraw({
       className="min-h-[100dvh] p-4 sm:p-6 relative overflow-hidden select-none"
       role="main"
     >
-      <div className="max-w-3xl mx-auto relative z-0 flex flex-col min-h-[calc(100dvh-2rem)]">
+      <div className="max-w-4xl mx-auto relative z-0 flex flex-col min-h-[calc(100dvh-2rem)]">
         {/* Header row */}
         <div className="mb-4 sm:mb-6">
           <GameHeader
@@ -211,10 +211,14 @@ export function PreDraw({
       </div>
 
       {showEndRunConfirm && (
-        <div className="fixed inset-0 modal-overlay flex items-center justify-center z-50 p-4">
+        <div
+          className="fixed inset-0 modal-overlay flex items-center justify-center z-50 p-4"
+          onClick={() => setShowEndRunConfirm(false)}
+        >
           <div
             className="game-panel rounded-xl p-6 sm:p-8 max-w-md w-full border border-[var(--game-border)]"
             style={{ boxShadow: '0 8px 32px rgba(0,0,0,0.5)' }}
+            onClick={(e) => e.stopPropagation()}
           >
             <h2 className="text-xl sm:text-2xl font-bold mb-4" style={{ color: 'var(--game-accent-gold)' }}>
               End Run?

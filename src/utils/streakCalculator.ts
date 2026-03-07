@@ -1,4 +1,6 @@
 import { gameConfig } from '../config/gameConfig';
+import { Hand, RewardTable } from '../types';
+import { PokerEvaluator } from './pokerEvaluator';
 
 export interface StreakMultiplierConfig {
   enabled: boolean;
@@ -7,6 +9,24 @@ export interface StreakMultiplierConfig {
   exponentialGrowth: number;
   baseMultiplier: number;
   multiplierIncrement: number;
+}
+
+export interface RoundRankSummary {
+  rank: string;
+  totalPayout: number;
+  count: number;
+}
+
+export interface RoundComboSummary {
+  comboProgression: number[];
+  handsPlayed: number;
+  handsWon: number;
+  highestCombo: number;
+  highestMultiplier: number;
+  rankData: RoundRankSummary[];
+  streakMultipliers: number[];
+  totalPayout: number;
+  winPercent: number;
 }
 
 /**
@@ -167,4 +187,67 @@ export function getStreakProgress(
   const tierRange = nextThreshold - previousThreshold;
   
   return (progressInTier / tierRange) * 100;
+}
+
+export function summarizeRoundCombos(
+  parallelHands: Hand[],
+  rewardTable: RewardTable,
+  betAmount: number,
+  initialStreak = 0,
+  config: StreakMultiplierConfig = gameConfig.streakMultiplier
+): RoundComboSummary {
+  const rankMap = new Map<string, RoundRankSummary>();
+  const streakMultipliers: number[] = [];
+  const comboProgression: number[] = [];
+  const payouts: number[] = [];
+  let handsWon = 0;
+  let highestCombo = initialStreak;
+  let highestMultiplier = calculateStreakMultiplier(initialStreak, config);
+  let streak = initialStreak;
+
+  for (let index = 0; index < parallelHands.length; index += 1) {
+    const hand = parallelHands[index];
+    const result = PokerEvaluator.evaluate(hand.cards);
+    const withRewards = PokerEvaluator.applyRewards(result, rewardTable);
+    const streakMultiplier = calculateStreakMultiplier(streak, config);
+    const handPayout = Math.round(betAmount * withRewards.multiplier * streakMultiplier);
+
+    streakMultipliers.push(streakMultiplier);
+    payouts.push(handPayout);
+
+    if (handPayout > 0) {
+      handsWon += 1;
+    }
+
+    const existing = rankMap.get(result.rank);
+    if (existing) {
+      existing.totalPayout += handPayout;
+      existing.count += 1;
+    } else {
+      rankMap.set(result.rank, {
+        rank: result.rank,
+        totalPayout: handPayout,
+        count: 1,
+      });
+    }
+
+    streak = withRewards.multiplier > 0 ? streak + 1 : Math.max(0, streak - 1);
+    comboProgression.push(streak);
+    highestCombo = Math.max(highestCombo, streak);
+    highestMultiplier = Math.max(highestMultiplier, streakMultiplier);
+  }
+
+  const handsPlayed = parallelHands.length;
+
+  return {
+    comboProgression,
+    handsPlayed,
+    handsWon,
+    highestCombo,
+    highestMultiplier,
+    rankData: Array.from(rankMap.values()),
+    streakMultipliers,
+    totalPayout: payouts.reduce((sum, payout) => sum + payout, 0),
+    winPercent: handsPlayed > 0 ? (handsWon / handsPlayed) * 100 : 0,
+  };
 }

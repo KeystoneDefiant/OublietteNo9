@@ -121,16 +121,6 @@ export function GameTable({
                 data-focused={index === focusedIndex}
               />
             ))}
-            {gameState?.devilsDealCard && (
-              <DevilsDealCard
-                card={gameState.devilsDealCard}
-                cost={gameState.devilsDealCost}
-                quip={devilsDealQuip}
-                isHeld={gameState.devilsDealHeld}
-                isDisabled={heldIndices.length >= 5 && !gameState.devilsDealHeld}
-                onHold={onToggleDevilsDealHold}
-              />
-            )}
           </div>
 
           <div className="mt-4 sm:mt-6 text-center">
@@ -169,6 +159,19 @@ export function GameTable({
               </>
             )}
           </div>
+
+          {gameState?.devilsDealCard && (
+            <div className="mt-4 sm:mt-6 flex justify-center">
+              <DevilsDealCard
+                card={gameState.devilsDealCard}
+                cost={gameState.devilsDealCost}
+                quip={devilsDealQuip}
+                isHeld={gameState.devilsDealHeld}
+                isDisabled={heldIndices.length >= 5 && !gameState.devilsDealHeld}
+                onHold={onToggleDevilsDealHold}
+              />
+            </div>
+          )}
         </div>
       </div>
     </div>

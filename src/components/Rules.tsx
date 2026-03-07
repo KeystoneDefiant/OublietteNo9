@@ -4,8 +4,14 @@ interface RulesProps {
 
 export function Rules({ onClose }: RulesProps) {
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="game-panel rounded-lg shadow-2xl p-8 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+    <div
+      className="fixed inset-0 modal-overlay flex items-center justify-center z-50 p-4"
+      onClick={onClose}
+    >
+      <div
+        className="game-panel rounded-lg shadow-2xl p-8 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto"
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-3xl font-bold" style={{ color: 'var(--game-accent-gold)' }}>Rules</h2>
           <button
