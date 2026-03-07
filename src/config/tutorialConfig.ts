@@ -11,32 +11,32 @@ export const tutorialSlides: TutorialSlide[] = [
   {
     title: 'Welcome to Oubliette Number 9',
     content:
-      "This is a single-player poker game, akin to video poker. You are dealt 5 cards; select any number to hold, and then new cards are drawn to complete your poker hand. Hold the cards you want to keep, then draw to see your result. \n\nA pair of Jacks or better is the lowest hand you can get. A pair of 10s won't do the trick, Mick.",
+      "This is a single-player poker game, akin to video poker. You are dealt 5 cards; select any number of cards you want to keep - the cards you don't keep will be discarded and then you'll play your hand. \n\nA pair of Jacks or better is the lowest hand you can get. A pair of 10s won't do the trick, Mick.",
   },
   {
     title: 'Pay Table & Betting',
     content:
-      "Each round has an ever-increasing bet amount. Your hand payouts are based on the bet size - stronger hands pay more. Check the payout table to see how much each hand rank is worth. The bet amount goes up automatically as you advance through rounds. \n\nIf you can't pay for the next round, you lose the game. \n\nOnce you hit round 30, some new devious and profanity-inspiring rules kick in. You're welcome.",
+      "Each round has an ever-increasing bet amount. Your hand payouts are based on the bet size. Check the payout table to see how much each hand rank is worth. The bet amount goes up automatically as you advance through rounds. \n\nIf you can't pay for the next round, you lose the game. \n\nOnce you hit round 30, some new devious and profanity-inspiring rules kick in. You're welcome.",
   },
   {
     title: 'Parallel Hands',
     content:
-      "After you hold your cards, the deck is cloned and shuffled with the power of Science and Dumbfuckery. You then draw a bunch of hands against the cards you've held against the cloned decks - we call this concept Parallel Hands. \n\nFor instance, if you draw a 7 of Hearts in one hand, you can see it again in the next hand. Each Parallel Hand uses the same bet size: 5 hands at a bet size of 2 costs 10 credits; 100 hands at a bet size of 5 costs 500 credits. \n\nMore hands mean more chances to win, even on a tough draw... but then again it's more chances to lose. Guess it comes down to your personal perspective on things. That said, great held cards can really pay off and the dopamine rush is exquisite!",
+      "After you hold your cards, the deck is cloned and shuffled with the power of Science and Dumbfuckery. You then draw a bunch of hands against the cards you've held using the cloned decks - we call this concept Parallel Hands. \n\nFor instance, if you draw a 7 of Hearts in one hand, you can see it again in the next hand. Each Parallel Hand uses the same bet size: 5 hands at a bet size of 2 costs 10 credits; 100 hands at a bet size of 5 costs 500 credits. \n\nMore hands mean more chances to win, even on a tough draw... but then again it's more chances to lose. I guess it comes down to your personal perspective on things...",
   },
   {
     title: 'The Multiplier',
     content:
-      "Score hands in a row and your multiplier goes up! \n\nMo' mults, Mo' Money! \n\nWhen you don't score a hand, your progress toward the next multiplier level goes down. The number of hands you need to score in a row to reach the next multiplier level increases exponentially as you increase the multiplier. Chain wins together to maximize your earnings. \n\nOr don't. I'm not your manager.",
+      "Score multiple hands in a row and your multiplier goes up! \n\nMo' mults, Mo' money! \n\nWhen you don't score a hand, your progress toward the next multiplier level goes down. The number of hands you need to score in a row to reach the next multiplier level increases exponentially as you increase the multiplier. Chain wins together to maximize your earnings. \n\nOr don't. I'm not your manager.",
   },
   {
     title: 'The Shop',
     content:
-      "Between specific rounds, you can buy upgrades in the fancy shop! \n\nMore Parallel Hands, dead cards, wild cards, extra draws, extra cards in your hand, and more. \n\nEvery purchase affects your game - more hands means more chances to win and boost the multiplier, but each round costs more credits. The shop is randomly generated each round, so you never know what you'll find!\n\nOnce you have enough credits, you will upgrade to the VIP Shop. You're no longer a peasant, so you'll get access to some premium items and more premium selections, but there's not as many... and when you are buying those name brand Parallel Hands, you'll be paying a premium price!",
+      "Every so often, between rounds, you can buy upgrades in the fancy shop! \n\nMore Parallel Hands, dead cards, wild cards, extra draws, extra cards in your hand, and more. \n\nEvery purchase affects your game - more hands means more chances to win and boost the multiplier, but each round costs more credits. The shop is randomly generated each round, so you never know what you'll find!\n\nOnce you have enough credits, you will upgrade to the VIP Shop. You're no longer a peasant, so you'll get access to some premium items and more premium selections, but there's not as many... and when you are buying those name brand Parallel Hands, you'll be paying a premium price!",
   },
   {
     title: 'Wild Cards & Dead Cards',
     content:
-      "Wild cards can substitute for any rank - use them to complete strong hands. \n\nDead cards give you money when you get them, but they don't count toward any poker hand and act as a wasted card draw. Hope you really needed that money, chum. You can remove these cards from the deck if the option shows up in the shop - there are items to remove a single dead card or all dead cards at once.",
+      "Wild cards can substitute for any rank - use them to complete strong hands. \n\nDead cards give you money when you first obtain them from the shop, but they don't count toward any poker hand and act as a wasted card draw. Hope you really needed that money, chum. You can remove these cards from the deck if the option shows up in the shop - there are items to remove a single dead card or all dead cards at once.",
   },
   {
     title: "Devil's Deal",
