@@ -65,16 +65,27 @@ export const gameConfig = {
   // Animation timing configuration (in milliseconds)
   animation: {
     cardFlip: 500, // Card flip animation delay
-    /** Phase B: Rolodex hand reveal - max ms per hand (smooth, up to 1s) */
-    parallelHandsRevealMsPerHand: 1000,
+    /** Phase B: Rolodex hand reveal - cap for single-hand cinematic pacing */
+    parallelHandsRevealMsPerHand: 420,
+    /** Adaptive timing for the Phase B rolodex reveal */
+    parallelHandsRevealTiming: {
+      minMsPerHand: 70,
+      handCountAcceleration: 58,
+      stackDelayFactor: 0.68,
+      dealInRatio: 0.34,
+      lingerRatio: 0.22,
+      rotateOutRatio: 0.44,
+      revealCompletePauseMs: 700,
+      fadeOutMs: 420,
+    },
     /** Phase B: Rolodex max visible hands in stack (pseudo-3D depth) */
     parallelHandsRolodexMaxVisible: 10,
-    /** Rolodex stack count by hand count: 1 stack ≤100, 2 stacks ≤200, 3 stacks ≤300, 4 stacks 301+ */
+    /** Rolodex stack count by hand count: 1 stack ≤18, 2 stacks ≤60, 3 stacks ≤150, 4 stacks 151+ */
     rolodexStacks: {
-      one: { max: 100 },
-      two: { max: 200 },
-      three: { max: 300 },
-      four: { min: 301 },
+      one: { max: 18 },
+      two: { max: 60 },
+      three: { max: 150 },
+      four: { min: 151 },
     },
   },
 

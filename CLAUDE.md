@@ -600,13 +600,29 @@ These are potential future enhancements, not critical issues:
 
 ---
 
-**Last Updated**: March 7, 2026 - Game over polish and payout table motion updates
+**Last Updated**: March 7, 2026 - Game over animation finality and adaptive reveal pacing
 **Evaluator**: Claude (AI Assistant)  
 **Next Review**: After significant changes or when adding tests
 
 ---
 
 ## Recent Improvements (March 2026)
+
+### Game Over Animation Finality and Adaptive Reveal Pacing (March 7, 2026) ✅
+ - **Problem**: The game over hero animation still finished in a transient layout instead of landing cleanly, and the Parallel Hand reveal used a mostly fixed cadence that felt too abrupt on small rounds and too slow on larger ones.
+ - **Solution**: Rebuilt the game over hero motion around a stable final composition with a subtle looping glint, and switched the rolodex reveal to hand-count-aware timing with denser stack usage and stronger ambient styling.
+ - **Changes**:
+   - **Game over hero animation**: `src/components/screen-GameOver.tsx` now wraps the title/subtitle in a dedicated hero copy container, while `src/styles/global.css` replaces the old absolute-position transition with staged settle-in animations, glow breathing, and a slow sweeping glint layer.
+   - **Adaptive reveal pacing**: `src/components/screen-ParallelHandsAnimation.tsx` now derives per-hand timing, stack count, and cascade delay from hand count and animation speed instead of a flat `200 / speed` rule; `src/config/gameConfig.ts` now defines the reveal timing curve and tighter rolodex stack thresholds.
+   - **Reveal presentation polish**: `src/components/screen-ParallelHandsAnimation.css` adds pacing labels, ambient spotlighting, and a front-card shimmer so the reveal reads more intentionally on both compact and wide layouts.
+   - **Tests**: Updated `src/components/__tests__/screen-GameOver.test.tsx` and `src/components/__tests__/screen-ParallelHandsAnimation.test.tsx` to cover the refreshed average-per-round presentation and the large-hand reveal mode.
+ - **Impact**: End-of-run messaging now lands with more polish and finality, while parallel reveal pacing better matches the scale of each round without losing readability or momentum.
+ - **Files Modified**: `src/components/screen-GameOver.tsx`, `src/styles/global.css`, `src/components/screen-ParallelHandsAnimation.tsx`, `src/components/screen-ParallelHandsAnimation.css`, `src/config/gameConfig.ts`, `src/components/__tests__/screen-GameOver.test.tsx`, `src/components/__tests__/screen-ParallelHandsAnimation.test.tsx`, `TODO.md`, `CLAUDE.md`
+ - **Verification (March 7, 2026)**:
+```
+✓ ESLint: `npm run lint`
+✓ Targeted tests: `npx vitest run src/components/__tests__/screen-GameOver.test.tsx src/components/__tests__/screen-ParallelHandsAnimation.test.tsx src/utils/__tests__/gameOverDisplay.test.ts`
+```
 
 ### Game Over Polish and Payout Table Motion (March 7, 2026) ✅
  - **Problem**: The game over screen was still using plain summary cards, the average-per-round stat was underformatted, run-ending streak data was not preserved for summary display, and the payout table modal appeared/disappeared abruptly.

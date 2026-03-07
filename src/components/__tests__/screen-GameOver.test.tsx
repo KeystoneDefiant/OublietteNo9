@@ -30,7 +30,7 @@ describe('GameOver Component', () => {
     const avgCard = screen.getAllByText('Avg per Round')[0]?.closest('div');
     expect(avgCard).toBeTruthy();
     expect(within(avgCard as HTMLElement).getByText('3,086.3')).toBeInTheDocument();
-    expect(screen.getByText('credits/round')).toBeInTheDocument();
+    expect(screen.getAllByText('credits/round')[0]).toBeInTheDocument();
   });
 
   it('shows final parallel hands and best run streak stats', () => {

@@ -83,21 +83,24 @@ export function GameOver({
         </div>
 
         <div className="relative z-10 space-y-6 sm:space-y-8">
-          <section className="relative overflow-hidden rounded-[1.75rem] border border-[var(--game-border)] bg-[rgba(255,255,255,0.02)] min-h-[16rem] sm:min-h-[18rem]">
+          <section className="game-over-hero relative overflow-hidden rounded-[1.75rem] border border-[var(--game-border)] bg-[rgba(255,255,255,0.02)] min-h-[16rem] sm:min-h-[18rem]">
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_rgba(201,162,39,0.12),_transparent_52%)]" />
+            <div className="game-over-hero-glint" aria-hidden="true" />
             <div className="relative h-full px-6 py-8 sm:px-10 sm:py-12">
-              <h1
-                className="game-over-title-animate text-4xl sm:text-6xl lg:text-7xl font-bold text-center uppercase tracking-[0.08em]"
-                style={{ color: 'var(--game-accent-gold)' }}
-              >
-                {display.title}
-              </h1>
-              <p
-                className="game-over-subtitle-animate max-w-3xl text-center text-sm sm:text-lg font-medium leading-relaxed"
-                style={{ color: 'var(--game-text)' }}
-              >
-                {display.subtitle}
-              </p>
+              <div className="game-over-hero-copy">
+                <h1
+                  className="game-over-title-animate text-4xl sm:text-6xl lg:text-7xl font-bold text-center uppercase tracking-[0.08em]"
+                  style={{ color: 'var(--game-accent-gold)' }}
+                >
+                  {display.title}
+                </h1>
+                <p
+                  className="game-over-subtitle-animate max-w-3xl text-center text-sm sm:text-lg font-medium leading-relaxed"
+                  style={{ color: 'var(--game-text)' }}
+                >
+                  {display.subtitle}
+                </p>
+              </div>
             </div>
           </section>
 
@@ -147,6 +150,14 @@ export function GameOver({
                   >
                     {item.value}
                   </span>
+                  {item.label === 'Avg per Round' && (
+                    <span
+                      className="text-[0.65rem] uppercase tracking-[0.12em]"
+                      style={{ color: 'var(--game-text-dim)' }}
+                    >
+                      credits/round
+                    </span>
+                  )}
                 </div>
               ))}
             </div>

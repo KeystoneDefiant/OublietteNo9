@@ -48,6 +48,107 @@ interface ParallelHandsAnimationProps {
   onShowSettings?: () => void;
 }
 
+type RolodexStackConfig = {
+  one?: { max?: number };
+  two?: { max?: number };
+  three?: { max?: number };
+  four?: { min?: number };
+};
+
+type RolodexAnimationConfig = {
+  parallelHandsRevealMsPerHand?: number;
+  parallelHandsRevealTiming?: {
+    minMsPerHand?: number;
+    handCountAcceleration?: number;
+    stackDelayFactor?: number;
+    dealInRatio?: number;
+    lingerRatio?: number;
+    rotateOutRatio?: number;
+    revealCompletePauseMs?: number;
+    fadeOutMs?: number;
+  };
+  parallelHandsRolodexMaxVisible?: number;
+  rolodexStacks?: RolodexStackConfig;
+};
+
+type RolodexTimingProfile = {
+  numStacks: number;
+  maxVisible: number;
+  msPerHand: number;
+  animateInMs: number;
+  rotateFadeMs: number;
+  displayBeforeOut: number;
+  revealCompletePauseMs: number;
+  fadeDurationMs: number;
+  startDelays: number[];
+};
+
+const DEFAULT_ROLODEX_TIMING = {
+  maxMsPerHand: 420,
+  minMsPerHand: 70,
+  handCountAcceleration: 58,
+  stackDelayFactor: 0.68,
+  dealInRatio: 0.34,
+  lingerRatio: 0.22,
+  rotateOutRatio: 0.44,
+  revealCompletePauseMs: 700,
+  fadeOutMs: 420,
+} as const;
+
+function clamp(value: number, min: number, max: number): number {
+  return Math.min(max, Math.max(min, value));
+}
+
+function getRolodexStackCount(handCount: number, stacks: RolodexStackConfig): number {
+  if (handCount <= (stacks.one?.max ?? 18)) return 1;
+  if (handCount <= (stacks.two?.max ?? 60)) return 2;
+  if (handCount <= (stacks.three?.max ?? 150)) return 3;
+  return 4;
+}
+
+function getRolodexTimingProfile(
+  handCount: number,
+  speedNum: number,
+  config: RolodexAnimationConfig
+): RolodexTimingProfile {
+  const timingConfig = {
+    ...DEFAULT_ROLODEX_TIMING,
+    maxMsPerHand: config.parallelHandsRevealMsPerHand ?? DEFAULT_ROLODEX_TIMING.maxMsPerHand,
+    ...(config.parallelHandsRevealTiming ?? {}),
+  };
+  const numStacks = getRolodexStackCount(handCount, config.rolodexStacks ?? {});
+  const maxVisible = config.parallelHandsRolodexMaxVisible ?? 10;
+  const countAwareMsPerHand = clamp(
+    Math.round(
+      timingConfig.maxMsPerHand -
+        Math.log2(Math.max(2, handCount + 1)) * timingConfig.handCountAcceleration
+    ),
+    timingConfig.minMsPerHand,
+    timingConfig.maxMsPerHand
+  );
+  const safeSpeed = Math.max(0.25, speedNum);
+  const msPerHand = Math.max(timingConfig.minMsPerHand, Math.round(countAwareMsPerHand / safeSpeed));
+  const animateInMs = Math.max(60, Math.round(msPerHand * timingConfig.dealInRatio));
+  const lingerMs = Math.max(40, Math.round(msPerHand * timingConfig.lingerRatio));
+  const rotateFadeMs = Math.max(30, Math.round(msPerHand * timingConfig.rotateOutRatio));
+  const displayBeforeOut = Math.max(animateInMs + lingerMs, Math.round(msPerHand - rotateFadeMs));
+  const revealCompletePauseMs = Math.max(220, Math.round(timingConfig.revealCompletePauseMs / safeSpeed));
+  const fadeDurationMs = Math.max(180, Math.round(timingConfig.fadeOutMs / safeSpeed));
+  const stackDelayStep = Math.max(30, Math.round(msPerHand * timingConfig.stackDelayFactor));
+
+  return {
+    numStacks,
+    maxVisible,
+    msPerHand,
+    animateInMs,
+    rotateFadeMs,
+    displayBeforeOut,
+    revealCompletePauseMs,
+    fadeDurationMs,
+    startDelays: Array.from({ length: numStacks }, (_, index) => index * stackDelayStep),
+  };
+}
+
 /** Split hands across stacks: stack s gets indices where i % numStacks === s */
 function getStackHands(
   parallelHands: Hand[],
@@ -231,51 +332,28 @@ export function ParallelHandsAnimation({
   const [isFadingOut, setIsFadingOut] = useState(false);
   const [scoreByRank, setScoreByRank] = useState<Record<string, { count: number; credits: number }>>({});
 
-  const animCfg = gameConfig.animation as {
-    parallelHandsRolodexMaxVisible?: number;
-    rolodexStacks?: { one?: { max?: number }; two?: { max?: number }; three?: { max?: number }; four?: { min?: number } };
-  };
-  const maxVisible = animCfg.parallelHandsRolodexMaxVisible ?? 10;
-
-  // Stack count from config: 1 (≤one.max), 2 (≤two.max), 3 (≤three.max), 4 (≥four.min)
-  const stacks = animCfg.rolodexStacks ?? {
-    one: { max: 100 },
-    two: { max: 200 },
-    three: { max: 300 },
-    four: { min: 301 },
-  };
   const n = parallelHands.length;
-  const numStacks =
-    n <= (stacks.one?.max ?? 100) ? 1
-    : n <= (stacks.two?.max ?? 200) ? 2
-    : n <= (stacks.three?.max ?? 300) ? 3
-    : 4;
+  const animCfg = gameConfig.animation as RolodexAnimationConfig;
+  const speedNum = typeof animationSpeedMode === 'number' ? animationSpeedMode : 1;
+  const timingProfile = useMemo(
+    () => getRolodexTimingProfile(n, speedNum, animCfg),
+    [n, speedNum, animCfg]
+  );
+  const {
+    numStacks,
+    maxVisible,
+    msPerHand,
+    animateInMs,
+    rotateFadeMs,
+    displayBeforeOut,
+    revealCompletePauseMs,
+    fadeDurationMs,
+    startDelays,
+  } = timingProfile;
   const stackHands = useMemo(
     () => getStackHands(parallelHands, numStacks),
     [parallelHands, numStacks]
   );
-
-  // msPerHand: 200 for 1x, scales inversely with speed (0.5x=400ms, 5x=40ms)
-  const speedNum = typeof animationSpeedMode === 'number' ? animationSpeedMode : 1;
-  const msPerHand = Math.round(200 / speedNum);
-  const speedMultiplier = 1 / speedNum; // relative to 1x
-
-  // Ensure card animates to flat before animate-out (scaled by speed)
-  const ANIMATE_IN_MS = 100 * speedMultiplier;
-  const FLAT_DISPLAY_MS = 50 * speedMultiplier;
-  const MIN_DISPLAY_BEFORE_OUT = ANIMATE_IN_MS + FLAT_DISPLAY_MS;
-
-  const ROTATE_FADE_MS = Math.max(20, msPerHand * 0.4);
-  const displayBeforeOut = Math.max(msPerHand - ROTATE_FADE_MS, MIN_DISPLAY_BEFORE_OUT);
-  const REVEAL_COMPLETE_PAUSE_MS = 600 * speedMultiplier;
-  const FADE_DURATION_MS = 400 * speedMultiplier;
-
-  // Cascade delay: each stack starts offset by (stackIndex * msPerHand / numStacks)
-  const startDelays = useMemo(
-    () => Array.from({ length: numStacks }, (_, s) => s * (msPerHand / numStacks)),
-    [numStacks, msPerHand]
-  );
-
   const roundComboSummary = useMemo(
     () =>
       summarizeRoundCombos(
@@ -380,11 +458,18 @@ export function ParallelHandsAnimation({
       !isFadingOut &&
       animationSpeedMode !== 'skip'
     ) {
-      const pauseMs = ROTATE_FADE_MS + REVEAL_COMPLETE_PAUSE_MS;
+      const pauseMs = rotateFadeMs + revealCompletePauseMs;
       const pauseTimer = setTimeout(() => setIsFadingOut(true), pauseMs);
       return () => clearTimeout(pauseTimer);
     }
-  }, [totalRevealedCount, parallelHands.length, isFadingOut, ROTATE_FADE_MS, REVEAL_COMPLETE_PAUSE_MS, animationSpeedMode]);
+  }, [
+    totalRevealedCount,
+    parallelHands.length,
+    isFadingOut,
+    rotateFadeMs,
+    revealCompletePauseMs,
+    animationSpeedMode,
+  ]);
 
   useEffect(() => {
     if (!isFadingOut) return;
@@ -394,10 +479,10 @@ export function ParallelHandsAnimation({
           ...completionSummary,
           finalStreakCount: currentStreakCounter,
         }),
-      FADE_DURATION_MS
+      fadeDurationMs
     );
     return () => clearTimeout(doneTimer);
-  }, [isFadingOut, currentStreakCounter, onAnimationComplete, FADE_DURATION_MS, completionSummary]);
+  }, [isFadingOut, currentStreakCounter, onAnimationComplete, fadeDurationMs, completionSummary]);
 
   return (
     <div
@@ -405,8 +490,9 @@ export function ParallelHandsAnimation({
       data-animation-speed={animationSpeedMode}
       style={
         {
-          '--card-transition-ms': animationSpeedMode === 'skip' ? 30 : Math.max(15, Math.round(100 / speedNum)),
-          '--fade-out-ms': FADE_DURATION_MS,
+          '--card-transition-ms': animationSpeedMode === 'skip' ? 30 : Math.max(animateInMs, rotateFadeMs),
+          '--fade-out-ms': fadeDurationMs,
+          '--rolodex-ms-per-hand': msPerHand,
         } as React.CSSProperties
       }
     >
@@ -452,9 +538,11 @@ export function ParallelHandsAnimation({
         <div className="phase-b-scores-section">
           <div className="phase-b-scores-label">
             <span>Scored hands</span>
-            <span className="phase-b-scores-counter">
-              {totalRevealedCount} of {parallelHands.length} hands
-            </span>
+            <div className="phase-b-reveal-meta">
+              <span className="phase-b-scores-counter">
+                {totalRevealedCount} of {parallelHands.length} hands
+              </span>
+            </div>
           </div>
           <div className="phase-b-scores-list">
             {Object.entries(scoreByRank).map(([rank, { count, credits }]) => (
@@ -470,8 +558,12 @@ export function ParallelHandsAnimation({
           <div className="phase-b-total">{formatCreditsWithSuffix(totalCredits)}</div>
         </div>
       </div>
-      {/* Right: Rolodex stack(s) - grid layout driven by config.parallelHandsGrid thresholds */}
-      <div className={`phase-b-rolodex phase-b-rolodex-stacks-${numStacks}`}>
+      {/* Right: Adaptive rolodex stack(s) with hand-count-aware pacing */}
+      <div
+        className={`phase-b-rolodex phase-b-rolodex-stacks-${numStacks}`}
+        data-hand-count={parallelHands.length}
+        data-stack-count={numStacks}
+      >
         {animationSpeedMode !== 'skip' &&
           stackHands.map((hands, stackIndex) => (
             <div key={stackIndex} className="rolodex-cell">
@@ -479,7 +571,7 @@ export function ParallelHandsAnimation({
                 stackHands={hands}
                 startDelay={startDelays[stackIndex]}
                 displayBeforeOut={displayBeforeOut}
-                ROTATE_FADE_MS={ROTATE_FADE_MS}
+                ROTATE_FADE_MS={rotateFadeMs}
                 handStreakMultipliers={handStreakMultipliers}
                 rewardTable={rewardTable}
                 betAmount={betAmount}

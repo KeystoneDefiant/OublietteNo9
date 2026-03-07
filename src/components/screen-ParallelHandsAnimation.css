@@ -589,6 +589,13 @@
   white-space: nowrap;
 }
 
+.phase-b-reveal-meta {
+  display: flex;
+  align-items: baseline;
+  gap: 0;
+  min-width: 0;
+}
+
 .phase-b-scores-list {
   font-size: 13px;
   color: var(--game-text);
@@ -642,6 +649,7 @@
 .phase-b-rolodex {
   grid-area: rolodex;
   z-index: 12;
+  position: relative;
   display: grid;
   align-items: center;
   justify-items: center;
@@ -650,6 +658,19 @@
   overflow: hidden;
   min-height: 0;
   gap: 8px;
+}
+
+.phase-b-rolodex::before {
+  content: '';
+  position: absolute;
+  inset: 8% 12%;
+  border-radius: 32px;
+  background:
+    radial-gradient(circle at center, rgba(201, 162, 39, 0.18), transparent 48%),
+    radial-gradient(circle at 70% 35%, rgba(139, 21, 32, 0.2), transparent 42%);
+  filter: blur(18px);
+  opacity: 0.85;
+  animation: rolodexAmbientPulse 5.5s ease-in-out infinite;
 }
 
 /* Single stack: 1x1 grid, centered */
@@ -688,12 +709,24 @@
 .rolodex-cell {
   container-type: size;
   container-name: cell;
+  position: relative;
   min-width: 0;
   min-height: 0;
   place-self: stretch;
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+.rolodex-cell::after {
+  content: '';
+  position: absolute;
+  inset: 15% 12%;
+  border-radius: 28px;
+  background: radial-gradient(circle at center, rgba(201, 162, 39, 0.16), transparent 60%);
+  filter: blur(12px);
+  opacity: 0.6;
+  animation: rolodexSpotlight 4.8s ease-in-out infinite;
 }
 
 .rolodex-stack {
@@ -791,6 +824,8 @@
 }
 
 .rolodex-hand-content {
+  position: relative;
+  overflow: hidden;
   background: var(--game-card-panel-bg);
   border-radius: 14px;
   padding: 20px 24px;
@@ -801,6 +836,31 @@
   align-items: center;
   gap: 14px;
   backface-visibility: hidden;
+}
+
+.rolodex-front .rolodex-hand-content {
+  border-color: rgba(201, 162, 39, 0.45);
+  box-shadow:
+    0 18px 50px rgba(0, 0, 0, 0.45),
+    0 0 28px rgba(201, 162, 39, 0.12);
+}
+
+.rolodex-front .rolodex-hand-content::after {
+  content: '';
+  position: absolute;
+  inset: -30%;
+  background: linear-gradient(
+    110deg,
+    transparent 0%,
+    transparent 44%,
+    rgba(255, 255, 255, 0.08) 49%,
+    rgba(255, 255, 255, 0.22) 50%,
+    rgba(201, 162, 39, 0.18) 54%,
+    transparent 60%,
+    transparent 100%
+  );
+  mix-blend-mode: screen;
+  animation: rolodexCardSweep 3.6s ease-in-out infinite;
 }
 
 .rolodex-hand-cards {
@@ -851,6 +911,51 @@
   color: var(--game-accent-gold);
 }
 
+@keyframes rolodexAmbientPulse {
+  0%,
+  100% {
+    transform: scale(0.97);
+    opacity: 0.68;
+  }
+  50% {
+    transform: scale(1.02);
+    opacity: 0.95;
+  }
+}
+
+@keyframes rolodexSpotlight {
+  0%,
+  100% {
+    transform: scale(0.94);
+    opacity: 0.38;
+  }
+  50% {
+    transform: scale(1.04);
+    opacity: 0.7;
+  }
+}
+
+@keyframes rolodexCardSweep {
+  0% {
+    transform: translateX(-135%) skewX(-18deg);
+    opacity: 0;
+  }
+  14% {
+    opacity: 0.08;
+  }
+  30% {
+    opacity: 0.2;
+  }
+  48% {
+    transform: translateX(135%) skewX(-18deg);
+    opacity: 0;
+  }
+  100% {
+    transform: translateX(135%) skewX(-18deg);
+    opacity: 0;
+  }
+}
+
 .phase-b-bottom-bar {
   grid-area: bottom-bar;
   z-index: 13;
@@ -897,6 +1002,11 @@
   .phase-b-held-label,
   .phase-b-scores-label {
     font-size: 11px;
+  }
+
+  .phase-b-reveal-meta {
+    flex-wrap: wrap;
+    justify-content: flex-end;
   }
 
   .phase-b-scores-list {
@@ -958,6 +1068,10 @@
   .phase-b-held-label,
   .phase-b-scores-label {
     font-size: 10px;
+  }
+
+  .phase-b-reveal-meta {
+    gap: 0;
   }
 
   .phase-b-scores-list {
